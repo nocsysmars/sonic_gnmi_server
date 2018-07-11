@@ -7,6 +7,7 @@
 from oc_binding.oc_if_binding import openconfig_interfaces
 from oc_binding.oc_lldp_binding import openconfig_lldp
 from pyangbind.lib.xpathhelper import YANGPathHelper
+from grpc import StatusCode
 import subprocess
 import pdb
 import json
@@ -93,9 +94,7 @@ def lldp_del_all_inf_neighbors(lldp_yph, inf):
     lldp_infs = lldp_yph.get("/lldp")[0].interfaces
     if inf in lldp_infs.interface:
         lldp_inf = lldp_infs.interface[inf]
-
-        for k in lldp_inf.neighbors.neighbor:
-            lldp_inf.neighbors.neighbor.delete(k)
+        lldp_inf._unset_neighbors()
 
 # fill DUT's current lldp info into lldp_yph
 # key_ar [0] : interface name e.g. "eth0"
@@ -136,7 +135,6 @@ def lldp_get_info(lldp_yph, key_ar):
                 if key_ar and inf != key_ar[0]:
                     continue
                 lldp_del_all_inf_neighbors(lldp_yph, inf)
-
                 lldp_get_info_interface(lldp_yph, inf, val)
 
         ret_val = True
@@ -163,29 +161,35 @@ def interface_get_vlan_output():
     return ret_output
 
 def interface_get_info_vlan(oc_inf, key_ar, vlan_output):
-    oc_inf.ethernet.switched_vlan.config.trunk_vlans = []
+    oc_inf.ethernet.switched_vlan._unset_config()
 
     #pdb.set_trace()
-    is_trunk = False
-
+    t_vlan = []
+    u_vlan = []
     for idx in range(len(vlan_output)):
         # skip element 0/1, refer to output of show vlan config
         if idx <= 1: continue
 
         ldata = vlan_output[idx]
-
         #                Name       VID    Member       Mode
         # ex of ldata : ['Vlan400', '400', 'Ethernet6', 'untagged']
         if ldata [2] == key_ar[0]:
             if ldata [3] == 'tagged':
-                oc_inf.ethernet.switched_vlan.config.trunk_vlans.append(int(ldata[1]))
-                is_trunk = True
+                t_vlan.append(int(ldata[1]))
+            else:
+                u_vlan.append(int(ldata[1]))
 
-    if is_trunk:
+    if len(t_vlan) > 0:
+        # trunk mode
         oc_inf.ethernet.switched_vlan.config.interface_mode = 'TRUNK'
-    else:
-        #pdb.set_trace()
-        oc_inf.ethernet.switched_vlan.config._unset_interface_mode()
+        oc_inf.ethernet.switched_vlan.config.trunk_vlans = t_vlan
+
+        if len(u_vlan) > 0: # TODO: what to do if > 1 ???
+            oc_inf.ethernet.switched_vlan.config.native_vlan = u_vlan[0]
+    elif len(u_vlan) > 0: # TODO: what to do if > 1 ???
+        # access mode
+        oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
+        oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
 
 # fill DUT's interface info into inf_yph
 # key_ar [0] : interface name e.g. "eth0"
@@ -219,8 +223,9 @@ def interface_get_info(inf_yph, key_ar):
                 oc_inf = oc_infs.interface.add(inf)
             else:
                 oc_inf = oc_infs.interface[inf]
+                oc_inf._unset_state()
 
-            interface_get_info_vlan(oc_inf, key_ar, vlan_output)
+            interface_get_info_vlan(oc_inf, [inf], vlan_output)
 
             for d, dv in dir_dict.items():
                 for c, cv in cnt_dict.items():
@@ -281,15 +286,15 @@ class ocDispatcher:
         # TODO: not support "/"
         if len(path_ar) < 1:
             #print "Invalid request"
-            return None
+            return StatusCode.INVALID_ARGUMENT
 
         if path_ar[0] not in ocTable:
-            oc_yph = None
+            oc_yph = StatusCode.INVALID_ARGUMENT
         else:
             oc_yph = self.oc_yph
             # suppose key_ar [0] is interface name e.g. "eth0"
             ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, key_ar)
-            if not ret_val: oc_yph = None
+            if not ret_val: oc_yph = StatusCode.INTERNAL
 
         return oc_yph
 

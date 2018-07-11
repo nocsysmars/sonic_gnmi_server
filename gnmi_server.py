@@ -115,61 +115,64 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         #FIXME: Build the get response for all the paths
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
-            is_err = True
+            er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)
 
             #print path_ar
             oc_yph = myDispatcher.GetRequestYph(path_ar, pkey_ar)
-            yp_str = EncodeYangPath(path_ar)
+            if isinstance(oc_yph, grpc.StatusCode):
+                er_code = oc_yph
+            else:
+                yp_str = EncodeYangPath(path_ar)
+                #pdb.set_trace()
+                tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
-            #pdb.set_trace()
+                # TODO: if got more than one obj ?
+                if len(tmp_obj) >= 1:
+                    leaf_str = path_ar[-1]
 
-            tmp_obj = oc_yph.get(yp_str) if oc_yph else []
+                    # sometimes leaf can not be dumped,
+                    # so dump the parent for safe
+                    # set filter True to filter attributes which are not configured
+                    tmp_json = json.loads(pybindJSON.dumps(tmp_obj[0]._parent, filter = True))
 
-            # TODO: if got more than one obj ?
-            if len(tmp_obj) >= 1:
-                leaf_str = path_ar[-1]
+                    tmp_leaf_lst = leaf_str.split("[")
+                    if len(tmp_leaf_lst) > 1:
+                        # leaf_str has key field
+                        # ex: ['interface', 'name=eth0]', 'kkk=aaa]']
+                        for k in tmp_leaf_lst:
+                            tmp_k = k.split("=")
+                            if len(tmp_k) == 1:
+                                fld_str = k
+                            else:
+                                fld_str = tmp_k[1][:-1]
 
-                # sometimes leaf can not be dumped,
-                # so dump the parent for safe
-                # set filter True to filter attributes which are not configured
-                tmp_json = json.loads(pybindJSON.dumps(tmp_obj[0]._parent, filter = True))
-
-                tmp_leaf_lst = leaf_str.split("[")
-                if len(tmp_leaf_lst) > 1:
-                    # leaf_str has key field
-                    # ex: ['interface', 'name=eth0]', 'kkk=aaa]']
-                    for k in tmp_leaf_lst:
-                        tmp_k = k.split("=")
-                        if len(tmp_k) == 1:
-                            fld_str = k
-                        else:
-                            fld_str = tmp_k[1][:-1]
-
-                        if fld_str in tmp_json:
-                            tmp_json = tmp_json[fld_str]
-                else:
-                    if leaf_str in tmp_json:
-                        tmp_json = tmp_json[leaf_str]
+                            if fld_str in tmp_json:
+                                tmp_json = tmp_json[fld_str]
                     else:
-                        tmp_json = None
+                        if leaf_str in tmp_json:
+                            tmp_json = tmp_json[leaf_str]
+                        else:
+                            tmp_json = None
 
-                if tmp_json:
-                    notif = getResp.notification.add()
-                    notif.timestamp = int(time.time())
-                    notif.prefix.CopyFrom(reqGetObj.prefix)
-                    update = notif.update.add()
-                    update.path.CopyFrom(reqGetObj.path[0])
+                    if tmp_json:
+                        notif = getResp.notification.add()
+                        notif.timestamp = int(time.time())
+                        notif.prefix.CopyFrom(reqGetObj.prefix)
+                        update = notif.update.add()
+                        update.path.CopyFrom(reqGetObj.path[0])
 
-                    #pdb.set_trace()
+                        #pdb.set_trace()
 
-                    update.val.json_val = json.dumps(tmp_json)
-                    is_err = False
+                        update.val.json_val = json.dumps(tmp_json)
+                        er_code = grpc.StatusCode.OK
 
-            if is_err:
-                getResp.error.code = grpc.StatusCode.INVALID_ARGUMENT.value[0]
-                getResp.error.message = grpc.StatusCode.INVALID_ARGUMENT.value[1]
+            DBG_STR(er_code)
+
+            if er_code != grpc.StatusCode.OK:
+                getResp.error.code    = er_code.value[0]
+                getResp.error.message = er_code.value[1]
                 break
 
         return getResp
