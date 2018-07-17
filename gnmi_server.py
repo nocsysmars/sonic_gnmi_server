@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #
 # gnmi_server.py
 #

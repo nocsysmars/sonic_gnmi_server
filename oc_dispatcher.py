@@ -6,6 +6,7 @@
 
 from oc_binding.oc_if_binding import openconfig_interfaces
 from oc_binding.oc_lldp_binding import openconfig_lldp
+from oc_binding.oc_platform_binding import openconfig_platform
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
 import subprocess
@@ -18,7 +19,59 @@ ocTable = {
                      "info_f": "interface_get_info"    },
     "lldp"       : { "cls"   : openconfig_lldp,
                      "info_f": "lldp_get_info"         },
+    "components" : { "cls"   : openconfig_platform,
+                     "info_f": "platform_get_info"     },
 }
+
+def platform_get_info(pf_yph, key_ar):
+    # show platform summary
+    #  ex:  Platform: x86_64-accton_as5712_54x-r0
+    #       HwSKU: Accton-AS5712-54X
+    #       ASIC: broadcom
+    show_cmd_pf = 'show platform summary'
+    comp = None
+
+    p = subprocess.Popen(show_cmd_pf, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+
+    #pdb.set_trace()
+
+    if returncode == 0:
+        comps = pf_yph.get("/components")[0]
+        comps._unset_component()
+
+        output = output.splitlines()
+        pf = output[0].split(': ')
+        hw = output[1].split(': ')
+        comp = comps.component.add(hw[1])
+        comp.state._set_type('CHASSIS')
+        comp.state._set_hardware_version(pf[1])
+        comp.state._set_mfg_name(hw[1].split('-')[0])
+
+    # show version
+    #  ex: SONiC Software Version: SONiC.HEAD.434-dirty-20171220.093901
+    #      Distribution: Debian 8.1
+    #      Kernel: 3.16.0-4-amd64
+    #      Build commit: ab2d066
+    #      Build date: Wed Dec 20 09:44:56 UTC 2017
+    #      Built by: johnar@jenkins-worker-3
+
+    show_cmd_ver = 'show version'
+
+    p = subprocess.Popen(show_cmd_ver, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    ### if no error, get the result
+    if returncode == 0:
+        if comp:
+            output = output.splitlines()
+            comp.state._set_software_version(output[0].split(': ')[1])
+
+    return True if comp else False
+
 
 # input : '7 days, 22:55:53' / '0 day, 00:00:11'
 # ret   : xxx
@@ -114,9 +167,8 @@ def lldp_get_info(lldp_yph, key_ar):
     #pdb.set_trace()
     p = subprocess.Popen(lldp_cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
-    ## Wait for end of command. Get return returncode ##
+    ## Wait for end of command. Get return code ##
     returncode = p.wait()
-    ### if no error, get the lldpctl result
 
     if returncode == 0:
         lldp_info = json.loads(output)
@@ -141,6 +193,7 @@ def lldp_get_info(lldp_yph, key_ar):
 
     return ret_val
 
+
 def interface_get_vlan_output():
     """
     use 'show vlan config' command to gather interface counters information
@@ -149,7 +202,7 @@ def interface_get_vlan_output():
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
-    ## Wait for end of command. Get return returncode ##
+    ## Wait for end of command. Get return code ##
     returncode = p.wait()
     ret_output = []
 
@@ -205,7 +258,7 @@ def interface_get_info(inf_yph, key_ar):
     #pdb.set_trace()
     p = subprocess.Popen(pstat_cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
-    ## Wait for end of command. Get return returncode ##
+    ## Wait for end of command. Get return code ##
     returncode = p.wait()
 
     if returncode == 0:
@@ -238,7 +291,7 @@ def interface_get_info(inf_yph, key_ar):
     inf_status_cmd = 'intfutil status'
     p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
-    ## Wait for end of command. Get return returncode ##
+    ## Wait for end of command. Get return code ##
     returncode = p.wait()
 
     if returncode == 0:

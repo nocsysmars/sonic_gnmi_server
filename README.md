@@ -14,4 +14,4 @@
 - OpenConfig yang models can bed used:
     - /lldp/
     - /interfaces/
-
+    - /components/
