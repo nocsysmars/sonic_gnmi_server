@@ -19,6 +19,8 @@ import pyangbind.lib.pybindJSON as pybindJSON
 import json
 import Queue
 import threading
+import logging
+
 #import pdb
 
 DEBUG_MODE = 1
@@ -29,6 +31,7 @@ Timer_Q = []
 def DBG_STR(str):
     if DEBUG_MODE == 1:
         print str
+    logging.debug(str)
 
 #          input : PathElem
 # example of ret : [ 'interfaces', 'interface' ]
@@ -41,7 +44,7 @@ def EncodePath(path):
                   pstr += "[" + str(k) + "=" + str(v) + "]"
         pathStrs += [pstr]
 
-    DBG_STR(pathStrs)
+    #DBG_STR(pathStrs)
 
     return pathStrs
 
@@ -54,7 +57,7 @@ def EncodePathKey(path):
              for k, v in pe.key.iteritems():
                   key_strs += [v]
 
-    DBG_STR(key_strs)
+    #DBG_STR(key_strs)
 
     return key_strs
 
@@ -120,13 +123,17 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)
+            yp_str  = EncodeYangPath(path_ar)
+
+            DBG_STR ("get req path :" + yp_str)
 
             #print path_ar
             oc_yph = myDispatcher.GetRequestYph(path_ar, pkey_ar)
             if isinstance(oc_yph, grpc.StatusCode):
                 er_code = oc_yph
             else:
-                yp_str = EncodeYangPath(path_ar)
+                #yp_str = EncodeYangPath(path_ar)
+
                 #pdb.set_trace()
                 tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
@@ -165,12 +172,13 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                         update = notif.update.add()
                         update.path.CopyFrom(reqGetObj.path[0])
 
+                        DBG_STR ("get req json :" + json.dumps(tmp_json))
                         #pdb.set_trace()
 
                         update.val.json_val = json.dumps(tmp_json)
                         er_code = grpc.StatusCode.OK
 
-            DBG_STR(er_code)
+            DBG_STR ("get req code :" + str(er_code))
 
             if er_code != grpc.StatusCode.OK:
                 getResp.error.code    = er_code.value[0]
@@ -397,9 +405,16 @@ def main():
     parserGrp.add_argument('--tls', action="store_true", help="enable tls connection")
     parserGrp.add_argument('--cert', help="path to the certificate")
     parserGrp.add_argument('--pvtkey', help="path to the private key file")
+    parser.add_argument('--log_level', help="set log level", default =0, type=int)
     args = parser.parse_args()
 
     print args
+    log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
+                     logging.ERROR, logging.CRITICAL]
+    log_path = '/var/log/gnmi_server.log'
+    log_fmt  = '%(asctime)-1s %(levelname)-5s %(filename)s %(message)s'
+    log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
+    logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
 
     gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey)
     gTarget.run()
