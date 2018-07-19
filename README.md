@@ -1,4 +1,4 @@
-# my-gnmi-server
+# my_gnmi_server
 
 - Run the server:
 ```sh

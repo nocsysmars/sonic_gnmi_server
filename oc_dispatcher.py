@@ -24,11 +24,30 @@ ocTable = {
 }
 
 def platform_get_info(pf_yph, key_ar):
-    # show platform summary
-    #  ex:  Platform: x86_64-accton_as5712_54x-r0
-    #       HwSKU: Accton-AS5712-54X
-    #       ASIC: broadcom
-    show_cmd_pf = 'show platform summary'
+    # show platform syseeprom
+    #  ex:  Command: sudo decode-syseeprom
+    #       TlvInfo Header:
+    #          Id String:    TlvInfo
+    #          Version:      1
+    #          Total Length: 169
+    #       TLV Name             Code Len Value
+    #       -------------------- ---- --- -----
+    #       Manufacture Date     0x25  19 06/16/2016 14:01:49           7
+    #       Diag Version         0x2E   7 2.0.1.4
+    #       Label Revision       0x27   4 R01J
+    #       Manufacturer         0x2B   6 Accton                        10
+    #       Manufacture Country  0x2C   2 TW
+    #       Base MAC Address     0x24   6 CC:37:AB:EC:D9:B2
+    #       Serial Number        0x23  14 571254X1625041                13
+    #       Part Number          0x22  13 FP1ZZ5654002A                 14
+    #       Product Name         0x21  15 5712-54X-O-AC-B               15
+    #       MAC Addresses        0x2A   2 74
+    #       Vendor Name          0x2D   8 Edgecore
+    #       Platform Name        0x28  27 x86_64-accton_as5712_54x-r0   18
+    #       ONIE Version         0x29  14 20170619-debug
+    #       CRC-32               0xFE   4 0x5B1B4944
+
+    show_cmd_pf = 'show platform syseeprom'
     comp = None
 
     p = subprocess.Popen(show_cmd_pf, stdout=subprocess.PIPE, shell=True)
@@ -43,12 +62,21 @@ def platform_get_info(pf_yph, key_ar):
         comps._unset_component()
 
         output = output.splitlines()
-        pf = output[0].split(': ')
-        hw = output[1].split(': ')
-        comp = comps.component.add(hw[1])
+
+        pd_name = output[15].split()[4]
+        pf_name = output[18].split()[4]
+        ser_no  = output[13].split()[4]
+        part_no = output[14].split()[4]
+        mfg     = output[10].split()[3]
+        mfg_date= output[7].split()[4].split('/')
+
+        comp = comps.component.add(pd_name)
         comp.state._set_type('CHASSIS')
-        comp.state._set_hardware_version(pf[1])
-        comp.state._set_mfg_name(hw[1].split('-')[0])
+        comp.state._set_hardware_version(pf_name)
+        comp.state._set_mfg_name(mfg)
+        comp.state._set_mfg_date(mfg_date[2] +'-'+ mfg_date[0] +'-'+ mfg_date[1])
+        comp.state._set_serial_no(ser_no)
+        comp.state._set_part_no(part_no)
 
     # show version
     #  ex: SONiC Software Version: SONiC.HEAD.434-dirty-20171220.093901
@@ -126,6 +154,8 @@ def lldp_set_id_field(obj, fld_str, fld_dict):
 #         val - {"age": ..., "chassis": ... }
 def lldp_get_info_interface(lldp_yph, inf, val):
     infs = lldp_yph.get("/interfaces")[0]
+    # bcz /lldp/interfaces/interface ref to oc-if:base-interface-ref
+    # need to create oc-if's interface for lldp's operation
     if inf not in infs.interface:
         infs.interface.add(inf)
 
@@ -156,40 +186,45 @@ def lldp_get_info(lldp_yph, key_ar):
     """
     use 'lldpctl -f xml' command to gather local lldp detailed information
     """
-
-    # bcz /lldp/interfaces/interface ref to oc-if:base-interface-ref
-    # need to create oc-if's interface for lldp's operation
-    #ocTable["interfaces"]["cls"](path_helper= lldp_yph)
-
     lldp_cmd = 'lldpctl -f json'
     ret_val = False
 
     #pdb.set_trace()
-    p = subprocess.Popen(lldp_cmd, stdout=subprocess.PIPE, shell=True)
+    p = subprocess.Popen(lldp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
     ## Wait for end of command. Get return code ##
     returncode = p.wait()
 
+    lldp_root = lldp_yph.get("/lldp")[0]
     if returncode == 0:
+        lldp_root.config.enabled = True
+        lldp_root.config.enabled._mchanged = True
+
         lldp_info = json.loads(output)
 
-        if isinstance(lldp_info["lldp"]["interface"], list):
-            for k in lldp_info["lldp"]["interface"]:
-                for inf, val in k.items():
+        if "interface" in lldp_info["lldp"]:
+            if isinstance(lldp_info["lldp"]["interface"], list):
+                for k in lldp_info["lldp"]["interface"]:
+                    for inf, val in k.items():
+                        if key_ar and inf != key_ar[0]:
+                            continue
+                        lldp_del_all_inf_neighbors(lldp_yph, inf)
+                        # TODO: more than one neighbor ???
+                        lldp_get_info_interface(lldp_yph, inf, val)
+
+            if isinstance(lldp_info["lldp"]["interface"], dict):
+                for inf, val in lldp_info["lldp"]["interface"].items():
                     if key_ar and inf != key_ar[0]:
                         continue
                     lldp_del_all_inf_neighbors(lldp_yph, inf)
-                    # TODO: more than one neighbor ???
                     lldp_get_info_interface(lldp_yph, inf, val)
 
-        if isinstance(lldp_info["lldp"]["interface"], dict):
-            for inf, val in lldp_info["lldp"]["interface"].items():
-                if key_ar and inf != key_ar[0]:
-                    continue
-                lldp_del_all_inf_neighbors(lldp_yph, inf)
-                lldp_get_info_interface(lldp_yph, inf, val)
-
         ret_val = True
+    else:
+        if 'Error response from daemon' in err:
+            lldp_root.config.enabled = False
+            lldp_root._unset_interfaces()
+            ret_val = True
 
     return ret_val
 

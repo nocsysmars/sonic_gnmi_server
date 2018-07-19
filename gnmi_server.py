@@ -408,13 +408,19 @@ def main():
     parser.add_argument('--log_level', help="set log level", default =0, type=int)
     args = parser.parse_args()
 
-    print args
+    #print args
+    log_path = '/var/log/gnmi_server.log'
+    # clear log file
+    with open(log_path, 'w'):
+        pass
+
     log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
-    log_path = '/var/log/gnmi_server.log'
     log_fmt  = '%(asctime)-1s %(levelname)-5s %(filename)s %(message)s'
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
     logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
+
+    DBG_STR(args)
 
     gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey)
     gTarget.run()
