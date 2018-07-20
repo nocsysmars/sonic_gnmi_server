@@ -23,6 +23,17 @@ ocTable = {
                      "info_f": "platform_get_info"     },
 }
 
+#
+# tag_str : "Manufacture Date"
+def platform_get_syseeprom_output_val(sys_output, tag_str, pos):
+    ret_val = None
+
+    for idx in range(len(sys_output)):
+        if tag_str in sys_output[idx]:
+            ret_val = sys_output[idx].split()[pos]
+
+    return ret_val
+
 def platform_get_info(pf_yph, key_ar):
     # show platform syseeprom
     #  ex:  Command: sudo decode-syseeprom
@@ -62,21 +73,30 @@ def platform_get_info(pf_yph, key_ar):
         comps._unset_component()
 
         output = output.splitlines()
+        fld_map = [ {"fld" : "pd",               "tag" : "Product",          "pos" : 4 },
+                    {"fld" : "hardware_version", "tag" : "Platform",         "pos" : 4 },
+                    {"fld" : "serial_no",        "tag" : "Serial",           "pos" : 4 },
+                    {"fld" : "part_no",          "tag" : "Part",             "pos" : 4 },
+                    {"fld" : "mfg_name",         "tag" : "Manufacturer",     "pos" : 3 },
+                    {"fld" : "mfg_date",         "tag" : "Manufacture Date", "pos" : 4 } ]
 
-        pd_name = output[15].split()[4]
-        pf_name = output[18].split()[4]
-        ser_no  = output[13].split()[4]
-        part_no = output[14].split()[4]
-        mfg     = output[10].split()[3]
-        mfg_date= output[7].split()[4].split('/')
+        for idx in range(len(fld_map)):
+            val = platform_get_syseeprom_output_val(output, fld_map[idx]["tag"], fld_map[idx]["pos"])
+            if val:
+                if idx == 0:
+                    comp = comps.component.add(val)
+                    comp.state._set_type('CHASSIS')
+                else:
+                    if idx == 5:
+                        val = val.split('/')
+                        val = val[2] + '-' + val[0] + '-' + val[1]
 
-        comp = comps.component.add(pd_name)
-        comp.state._set_type('CHASSIS')
-        comp.state._set_hardware_version(pf_name)
-        comp.state._set_mfg_name(mfg)
-        comp.state._set_mfg_date(mfg_date[2] +'-'+ mfg_date[0] +'-'+ mfg_date[1])
-        comp.state._set_serial_no(ser_no)
-        comp.state._set_part_no(part_no)
+                    set_fun = getattr(comp.state, "_set_%s" % fld_map[idx]["fld"])
+                    if set_fun:
+                        set_fun(val)
+            else:
+                if idx == 0:
+                    break
 
     # show version
     #  ex: SONiC Software Version: SONiC.HEAD.434-dirty-20171220.093901
