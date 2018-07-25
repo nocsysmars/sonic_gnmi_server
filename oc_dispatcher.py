@@ -374,8 +374,12 @@ def interface_get_info(inf_yph, key_ar):
                         else: val = val.upper()
                         set_fun(val)
 
+                #pdb.set_trace()
+                if ldata[2] !=  'N/A':
+                    oc_inf.ethernet.state._set_port_speed("SPEED_%sB" % ldata[2])
+
+
         ret_val = True
-    #pdb.set_trace()
 
     return ret_val
 
@@ -390,6 +394,28 @@ class ocDispatcher:
         for k in ocTable.keys():
             ocTable[k]["cls"](path_helper= self.oc_yph)
 
+    def CreateAllInterfaces(self):
+        inf_status_cmd = 'intfutil status'
+        p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
+        (output, err) = p.communicate()
+        ## Wait for end of command. Get return code ##
+        returncode = p.wait()
+
+        if returncode == 0:
+            output = output.splitlines()
+            oc_infs = self.oc_yph.get("/interfaces")[0]
+            for idx in range(len(output)):
+                # skip element 0/1, refer to output of intfutil status
+                if idx <= 1: continue
+
+                ldata = output[idx].split()
+                #                Interface    Lanes Speed  MTU     Alias       Oper    Admin
+                # ex of ldata : ['Ethernet0', '13', 'N/A', '9100', 'tenGigE0', 'down', 'up']
+                if ldata[0] not in oc_infs.interface:
+                    oc_inf = oc_infs.interface.add(ldata[0])
+            return True
+        return False
+
     def GetRequestYph(self, path_ar, key_ar):
         # TODO: not support "/"
         if len(path_ar) < 1:
@@ -400,9 +426,10 @@ class ocDispatcher:
             oc_yph = StatusCode.INVALID_ARGUMENT
         else:
             oc_yph = self.oc_yph
-            # suppose key_ar [0] is interface name e.g. "eth0"
-            ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, key_ar)
-            if not ret_val: oc_yph = StatusCode.INTERNAL
+            if path_ar != ['interfaces', 'interface', 'config', 'name']:
+                # suppose key_ar [0] is interface name e.g. "eth0"
+                ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, key_ar)
+                if not ret_val: oc_yph = StatusCode.INTERNAL
 
         return oc_yph
 

@@ -92,6 +92,32 @@ def TimerEventHandler(timer_q):
         l_timer_q[0:] = new_q
         time.sleep(1)
 
+def ExtractJson(oc_obj, leaf_str):
+    # sometimes leaf can not be dumped,
+    # so dump the parent for safe
+    # set filter True to filter attributes which are not configured
+    tmp_json = json.loads(pybindJSON.dumps(oc_obj._parent, filter = True))
+
+    tmp_leaf_lst = leaf_str.split("[")
+    if len(tmp_leaf_lst) > 1:
+        # leaf_str has key field
+        # ex: ['interface', 'name=eth0]', 'kkk=aaa]']
+        for k in tmp_leaf_lst:
+            tmp_k = k.split("=")
+            if len(tmp_k) == 1:
+                fld_str = k
+            else:
+                fld_str = tmp_k[1][:-1]
+
+            if fld_str in tmp_json:
+                tmp_json = tmp_json[fld_str]
+    else:
+        if leaf_str in tmp_json:
+            tmp_json = tmp_json[leaf_str]
+        else:
+            tmp_json = None
+
+    return tmp_json
 
 #
 # class gNMITargetServicer
@@ -141,29 +167,14 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                 if len(tmp_obj) >= 1:
                     leaf_str = path_ar[-1]
 
-                    # sometimes leaf can not be dumped,
-                    # so dump the parent for safe
-                    # set filter True to filter attributes which are not configured
-                    tmp_json = json.loads(pybindJSON.dumps(tmp_obj[0]._parent, filter = True))
-
-                    tmp_leaf_lst = leaf_str.split("[")
-                    if len(tmp_leaf_lst) > 1:
-                        # leaf_str has key field
-                        # ex: ['interface', 'name=eth0]', 'kkk=aaa]']
-                        for k in tmp_leaf_lst:
-                            tmp_k = k.split("=")
-                            if len(tmp_k) == 1:
-                                fld_str = k
-                            else:
-                                fld_str = tmp_k[1][:-1]
-
-                            if fld_str in tmp_json:
-                                tmp_json = tmp_json[fld_str]
+                    if len(tmp_obj) > 1:
+                        tmp_json = []
+                        for idx in range(len(tmp_obj)):
+                            obj_json = ExtractJson(tmp_obj[idx], leaf_str)
+                            if obj_json:
+                                tmp_json.append(obj_json)
                     else:
-                        if leaf_str in tmp_json:
-                            tmp_json = tmp_json[leaf_str]
-                        else:
-                            tmp_json = None
+                        tmp_json = ExtractJson(tmp_obj[0], leaf_str)
 
                     if tmp_json:
                         notif = getResp.notification.add()
@@ -405,7 +416,7 @@ def main():
     parserGrp.add_argument('--tls', action="store_true", help="enable tls connection")
     parserGrp.add_argument('--cert', help="path to the certificate")
     parserGrp.add_argument('--pvtkey', help="path to the private key file")
-    parser.add_argument('--log_level', help="set log level", default =0, type=int)
+    parser.add_argument('--log_level', help="set log level", default =3, type=int)
     args = parser.parse_args()
 
     #print args
@@ -421,6 +432,9 @@ def main():
     logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
 
     DBG_STR(args)
+
+    # create all interfaces to speed up processing request for interfaces later
+    myDispatcher.CreateAllInterfaces()
 
     gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey)
     gTarget.run()
