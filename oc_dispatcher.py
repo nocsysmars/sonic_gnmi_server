@@ -85,7 +85,7 @@ def platform_get_info(pf_yph, key_ar):
             if val:
                 if idx == 0:
                     comp = comps.component.add(val)
-                    comp.state._set_type('CHASSIS')
+                    comp.state._set_type('FABRIC')
                 else:
                     if idx == 5:
                         val = val.split('/')
