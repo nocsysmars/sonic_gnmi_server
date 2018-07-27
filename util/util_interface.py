@@ -8,6 +8,8 @@ import subprocess
 import json
 import pdb
 
+DBG_TEST = True
+
 # inf list needed to clear the old agg id setting
 old_agg_id_lst = []
 
@@ -181,8 +183,8 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
             #                Interface    Lanes Speed  MTU     Alias       Oper    Admin
             # ex of ldata : ['Ethernet0', '13', 'N/A', '9100', 'tenGigE0', 'down', 'up']
             if key_ar and key_ar[0] != ldata[0]: continue
-            oc_inf = inf_yph.get_unique("/interfaces/interface[name=%s]" % ldata[0])
 
+            oc_inf = inf_yph.get_unique("/interfaces/interface[name=%s]" % ldata[0])
             if oc_inf:
                 key_map = {"admin_status": 6, "oper_status" :5, "mtu": 3,}
                 for k, v in key_map.items():
@@ -236,6 +238,9 @@ def interface_create_all_infs(inf_yph):
         for idx in range(len(output)):
             # skip element 0/1, refer to output of intfutil status
             if idx <= 1: continue
+
+            # to save time, create some infs for test only
+            if DBG_TEST and idx > 10:  continue
 
             ldata = output[idx].split()
             #                Interface    Lanes Speed  MTU     Alias       Oper    Admin

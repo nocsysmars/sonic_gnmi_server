@@ -20,7 +20,7 @@ import Queue
 import threading
 import logging
 
-#import pdb
+import pdb
 
 DEBUG_MODE = 1
 
@@ -230,6 +230,10 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             print delPath
 
         # input: path, val
+        #  When the `replace` operation omits values that have been previously set,
+        #  they MUST be treated as deleted from the data tree.
+        #  Otherwise, omitted data elements MUST be created with their
+        #  default values on the target.
         for replace in reqSetObj.replace:
             repPath = pathPrefix + EncodePath(replace.path.elem)
 
@@ -246,7 +250,15 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         # input: same as replace
         for update in reqSetObj.update:
             updPath = pathPrefix + EncodePath(update.path.elem)
+
+            # 1. check if path is valid
+            # 2. issue command to do configuration
+            #
+            # only support '/interfaces/interface[name=Ethernet7]/ethernet/config/aggregate-id'
+            #
             self.__AddOneSetResp(setResp, update.path, 3, grpc.StatusCode.INVALID_ARGUMENT, None)
+
+            pdb.set_trace()
 
             print "updPath", updPath
 
