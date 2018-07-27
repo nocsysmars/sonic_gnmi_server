@@ -14,7 +14,6 @@ from gnmi import gnmi_pb2
 from gnmi import gnmi_pb2_grpc
 
 from oc_dispatcher import ocDispatcher
-from pyangbind.lib.xpathhelper import YANGPathHelper
 import pyangbind.lib.pybindJSON as pybindJSON
 import json
 import Queue

@@ -16,6 +16,7 @@ def platform_get_syseeprom_output_val(sys_output, tag_str, pos):
     for idx in range(len(sys_output)):
         if tag_str in sys_output[idx]:
             ret_val = sys_output[idx].split()[pos]
+            break
 
     return ret_val
 
@@ -28,18 +29,18 @@ def platform_get_info(pf_yph, key_ar):
     #          Total Length: 169
     #       TLV Name             Code Len Value
     #       -------------------- ---- --- -----
-    #       Manufacture Date     0x25  19 06/16/2016 14:01:49           7
+    #       Manufacture Date     0x25  19 06/16/2016 14:01:49
     #       Diag Version         0x2E   7 2.0.1.4
     #       Label Revision       0x27   4 R01J
-    #       Manufacturer         0x2B   6 Accton                        10
+    #       Manufacturer         0x2B   6 Accton
     #       Manufacture Country  0x2C   2 TW
     #       Base MAC Address     0x24   6 CC:37:AB:EC:D9:B2
-    #       Serial Number        0x23  14 571254X1625041                13
-    #       Part Number          0x22  13 FP1ZZ5654002A                 14
-    #       Product Name         0x21  15 5712-54X-O-AC-B               15
+    #       Serial Number        0x23  14 571254X1625041
+    #       Part Number          0x22  13 FP1ZZ5654002A
+    #       Product Name         0x21  15 5712-54X-O-AC-B
     #       MAC Addresses        0x2A   2 74
     #       Vendor Name          0x2D   8 Edgecore
-    #       Platform Name        0x28  27 x86_64-accton_as5712_54x-r0   18
+    #       Platform Name        0x28  27 x86_64-accton_as5712_54x-r0
     #       ONIE Version         0x29  14 20170619-debug
     #       CRC-32               0xFE   4 0x5B1B4944
 

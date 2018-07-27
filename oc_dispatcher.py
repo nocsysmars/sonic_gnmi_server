@@ -14,9 +14,6 @@ from util import util_lldp
 from util import util_interface
 from util import util_platform
 
-import subprocess
-import json
-
 # Dispatch table for openconfig class and info function
 ocTable = {
     "interfaces" : { "cls"   : openconfig_interfaces,

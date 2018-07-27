@@ -8,6 +8,9 @@ import subprocess
 import json
 import pdb
 
+# inf list needed to clear the old agg id setting
+old_agg_id_lst = []
+
 def interface_get_vlan_output():
     """
     use 'show vlan config' command to gather interface counters information
@@ -27,7 +30,7 @@ def interface_get_vlan_output():
 
     return ret_output
 
-def interface_get_info_vlan(oc_inf, key_ar, vlan_output):
+def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
     oc_inf.ethernet.switched_vlan._unset_config()
 
     #pdb.set_trace()
@@ -40,7 +43,7 @@ def interface_get_info_vlan(oc_inf, key_ar, vlan_output):
         ldata = vlan_output[idx]
         #                Name       VID    Member       Mode
         # ex of ldata : ['Vlan400', '400', 'Ethernet6', 'untagged']
-        if ldata [2] == key_ar[0]:
+        if ldata [2] == inf_name:
             if ldata [3] == 'tagged':
                 t_vlan.append(int(ldata[1]))
             else:
@@ -58,16 +61,76 @@ def interface_get_info_vlan(oc_inf, key_ar, vlan_output):
         oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
         oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
 
-# fill DUT's interface info into inf_yph
-# key_ar [0] : interface name e.g. "eth0"
-def interface_get_info(inf_yph, key_ar):
-    """
-    use 'portstat -j' command to gather interface counters information
-    """
-    # 1. fill interface statistics
-    pstat_cmd = 'portstat -j'
+def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
+    #root@switch1:/home/admin# teamshow
+    #Flags: A - active, I - inactive, Up - up, Dw - Down, N/A - not available, S - selected, D - deselected
+    #  No.  Team Dev          Protocol        Ports
+    #-----  ----------------  --------------  -------------------------
+    #    2  PortChannel2      ROUNDROBIN(Up)  Ethernet2(S) Ethernet4(S)
+    #    3  PortChannel3      ROUNDROBIN(Dw)  N/A
+    # PortChannel...
+    #pdb.set_trace()
+    global old_agg_id_lst
+
+    # 1. clear all port's aggregate-id info
+    oc_infs = inf_yph.get("/interfaces")[0]
+    if is_fill_info:
+        for inf in old_agg_id_lst:
+            inf.ethernet.config._unset_aggregate_id()
+        old_agg_id_lst = []
+
     ret_val = False
-    vlan_output = interface_get_vlan_output()
+    teamshow_cmd = 'teamshow'
+    p = subprocess.Popen(teamshow_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+
+    if returncode == 0:
+        output = output.splitlines()
+        for idx in range(len(output)):
+            # skip element 0/1/2, refer to output of teamshow
+            if idx <= 2: continue
+
+            ldata = output[idx].split()
+            #                No.  Team Dev        Protocol          Ports
+            # ex of ldata : ['2', 'PortChannel2', 'ROUNDROBIN(Up)', 'Ethernet2(S)', 'Ethernet4(S)']
+            if ldata[1] not in oc_infs.interface:
+                oc_inf = oc_infs.interface.add(ldata[1])
+            else:
+                oc_inf = oc_infs.interface[ldata[1]]
+                oc_inf._unset_aggregation()
+
+            if is_fill_info:
+                interface_get_info_vlan(oc_inf, ldata[1], vlan_output)
+
+                if 'Up' in ldata[2]:
+                    oc_inf.state._set_oper_status('UP')
+                else:
+                    oc_inf.state._set_oper_status('DOWN')
+
+                if 'LACP' in ldata[2]:
+                    oc_inf.aggregation.state._set_lag_type('LACP')
+                else:
+                    oc_inf.aggregation.state._set_lag_type('STATIC')
+                    ldata_len = len(ldata)
+                    idx = 3
+                    while idx < ldata_len:
+                        ptmp = ldata[idx].split('(')[0]
+                        if 'Ethernet' in ptmp:
+                            oc_inf.aggregation.state.member.append(ptmp)
+                            oc_infs.interface[ptmp].ethernet.config._set_aggregate_id(ldata[1])
+                            old_agg_id_lst.append(oc_infs.interface[ptmp])
+                        idx = idx +1
+
+        ret_val = True
+
+    return ret_val
+
+def interface_get_port_info(inf_yph, key_ar, vlan_output):
+    # 1. fill interface statistics
+    # use 'portstat -j' command to gather interface counters information
+    pstat_cmd = 'portstat -j'
 
     #pdb.set_trace()
     p = subprocess.Popen(pstat_cmd, stdout=subprocess.PIPE, shell=True)
@@ -92,7 +155,7 @@ def interface_get_info(inf_yph, key_ar):
                 oc_inf = oc_infs.interface[inf]
                 oc_inf._unset_state()
 
-            interface_get_info_vlan(oc_inf, [inf], vlan_output)
+            interface_get_info_vlan(oc_inf, inf, vlan_output)
 
             for d, dv in dir_dict.items():
                 for c, cv in cnt_dict.items():
@@ -141,6 +204,24 @@ def interface_get_info(inf_yph, key_ar):
 
     return ret_val
 
+# fill DUT's interface info into inf_yph
+# key_ar [0] : interface name e.g. "eth0"
+def interface_get_info(inf_yph, key_ar):
+    vlan_output = interface_get_vlan_output()
+
+    # 1. fill port channel info
+    #    also fill member port's aggregate-id
+    ret_val = interface_get_pc_info(inf_yph, True, vlan_output)
+
+    if key_ar and "PortChannel" in key_ar[0]:
+        # only need port channel info
+        return ret_val
+
+    # 2. fill port info
+    ret_val = interface_get_port_info(inf_yph, key_ar, vlan_output) or ret_val
+
+    return ret_val
+
 def interface_create_all_infs(inf_yph):
     ret_val = False
     inf_status_cmd = 'intfutil status'
@@ -163,49 +244,6 @@ def interface_create_all_infs(inf_yph):
                 oc_inf = oc_infs.interface.add(ldata[0])
         ret_val = True
 
-    #root@switch1:/home/admin# teamshow
-    #Flags: A - active, I - inactive, Up - up, Dw - Down, N/A - not available, S - selected, D - deselected
-    #  No.  Team Dev          Protocol        Ports
-    #-----  ----------------  --------------  -------------------------
-    #    2  PortChannel2      ROUNDROBIN(Up)  Ethernet2(S) Ethernet4(S)
-    #    3  PortChannel3      ROUNDROBIN(Dw)  N/A
-    # PortChannel...
-    #pdb.set_trace()
-
-    teamshow_cmd = 'teamshow'
-    p = subprocess.Popen(teamshow_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
-        output = output.splitlines()
-        oc_infs = inf_yph.get("/interfaces")[0]
-        for idx in range(len(output)):
-            # skip element 0/1/2, refer to output of teamshow
-            if idx <= 2: continue
-
-            ldata = output[idx].split()
-            #                No.  Team Dev        Protocol          Ports
-            # ex of ldata : ['2', 'PortChannel2', 'ROUNDROBIN(Up)', 'Ethernet2(S)', 'Ethernet4(S)']
-            if ldata[1] not in oc_infs.interface:
-                oc_inf = oc_infs.interface.add(ldata[1])
-            else:
-                oc_inf = oc_infs.interface[inf]
-                oc_inf._unset_aggregation()
-
-            if 'LACP' in ldata[2]:
-                oc_inf.aggregation.state._set_lag_type('LACP')
-            else:
-                oc_inf.aggregation.state._set_lag_type('STATIC')
-                ldata_len = len(ldata)
-                idx = 3
-                while idx < ldata_len:
-                    ptmp = ldata[idx].split('(')[0]
-                    if 'Ethernet' in ptmp:
-                        oc_inf.aggregation.state.member.append(ptmp)
-                    idx = idx +1
-
-        ret_val = True
+    ret_val = interface_get_pc_info(inf_yph, False, None) or ret_val
 
     return ret_val
