@@ -256,11 +256,22 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             #
             # only support '/interfaces/interface[name=Ethernet7]/ethernet/config/aggregate-id'
             #
-            self.__AddOneSetResp(setResp, update.path, 3, grpc.StatusCode.INVALID_ARGUMENT, None)
+            pkey_ar = EncodePathKey(update.path.elem)
+            set_val = getattr(update.val, update.val.WhichOneof("value"))
+            yp_str  = EncodeYangPath(updPath)
+            ret_set = myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
 
-            pdb.set_trace()
+            if ret_set:
+                ret_set = grpc.StatusCode.OK
+            else:
+                IsAnyErr = True
+                ret_set = grpc.StatusCode.INVALID_ARGUMENT
 
-            print "updPath", updPath
+            self.__AddOneSetResp(setResp, update.path, 3, ret_set, None)
+
+            DBG_STR ("set req path :" + yp_str)
+            DBG_STR ("set req val  :" + set_val)
+            DBG_STR ("set req code :" + str(ret_set))
 
         # Fill error message
         # refer to google.golang.org/grpc/codes

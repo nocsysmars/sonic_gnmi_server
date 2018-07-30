@@ -14,6 +14,9 @@ from util import util_lldp
 from util import util_interface
 from util import util_platform
 
+import re
+#import pdb
+
 # Dispatch table for openconfig class and info function
 ocTable = {
     "interfaces" : { "cls"   : openconfig_interfaces,
@@ -22,6 +25,13 @@ ocTable = {
                      "info_f": "util_lldp.lldp_get_info"            },
     "components" : { "cls"   : openconfig_platform,
                      "info_f": "util_platform.platform_get_info"    },
+}
+
+# Dispatch table for registered path and set function
+setPathTable = {
+    # path                                                   set function
+    # [] means key
+    '/interfaces/interface[]/ethernet/config/aggregate-id' : "util_interface.interface_set_aggregate_id"
 }
 
 class ocDispatcher:
@@ -54,4 +64,17 @@ class ocDispatcher:
 
         return oc_yph
 
+    def SetValByPath(self, yp_str, pkey_ar, val):
+        ret_val = False
+        tmp_obj = self.oc_yph.get(yp_str)
+
+#        pdb.set_trace()
+
+        if len(tmp_obj) > 0:
+            # replace key [*] with []
+            reg_path = re.sub(r"\[.*\]", "[]", yp_str)
+            if reg_path in setPathTable:
+                ret_val = eval(setPathTable[reg_path])(pkey_ar, val)
+
+        return ret_val
 

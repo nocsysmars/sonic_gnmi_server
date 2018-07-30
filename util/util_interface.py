@@ -252,3 +252,68 @@ def interface_create_all_infs(inf_yph):
     ret_val = interface_get_pc_info(inf_yph, False, None) or ret_val
 
     return ret_val
+
+def interface_get_old_pc_name_by_port(port_name):
+    old_pc_name = ""
+
+    teamshow_cmd = 'teamshow'
+    p = subprocess.Popen(teamshow_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+
+    if returncode == 0:
+        output = output.splitlines()
+        for idx in range(len(output)):
+            # skip element 0/1/2, refer to output of teamshow
+            if idx <= 2: continue
+
+            ldata = output[idx].split()
+            #                No.  Team Dev        Protocol          Ports
+            # ex of ldata : ['2', 'PortChannel2', 'ROUNDROBIN(Up)', 'Ethernet2(S)', 'Ethernet4(S)']
+
+            ldata_len = len(ldata)
+            idx = 3
+            while idx < ldata_len:
+                if port_name in ldata[idx]:
+                    old_pc_name = ldata[1]
+                    break
+                idx = idx+1
+
+    return old_pc_name
+
+# To make interface join/leave port channel
+def interface_set_aggregate_id(pkey_ar, val):
+    is_remove = False
+    val = val.strip('"')
+    if val == "":
+        # clear setting
+        is_remove = True
+
+    if is_remove:
+        # 1. get old pc info
+        # 2. use teamdctl to remove port
+        pc_name = interface_get_old_pc_name_by_port(pkey_ar[0])
+        if not pc_name: return False
+    else:
+        pc_name = val
+
+    if not is_remove:
+        set_cmd = "ifconfig %s down" % pkey_ar[0]
+        p = subprocess.Popen(set_cmd, stdout=subprocess.PIPE, shell=True)
+        (output, err) = p.communicate()
+        ## Wait for end of command. Get return code ##
+        returncode = p.wait()
+        if returncode != 0: return False
+
+    set_cmd = "teamdctl %s port %s %s" %  (pc_name, ["add", "remove"][is_remove], pkey_ar[0])
+
+    #pdb.set_trace()
+
+    p = subprocess.Popen(set_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    if returncode != 0: return False
+
+    return True
