@@ -44,8 +44,8 @@ class ocDispatcher:
         for k in ocTable.keys():
             ocTable[k]["cls"](path_helper= self.oc_yph)
 
-    def CreateAllInterfaces(self):
-        return util_interface.interface_create_all_infs(self.oc_yph)
+    def CreateAllInterfaces(self, is_dbg_test):
+        return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
 
     def GetRequestYph(self, path_ar, key_ar):
         # TODO: not support "/"

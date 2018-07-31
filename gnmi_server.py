@@ -22,13 +22,13 @@ import logging
 
 import pdb
 
-DEBUG_MODE = 1
+DBG_MODE = 1
 
 myDispatcher = ocDispatcher()
 Timer_Q = []
 
 def DBG_STR(str):
-    if DEBUG_MODE == 1:
+    if DBG_MODE == 1:
         print str
     logging.debug(str)
 
@@ -438,7 +438,7 @@ def main():
     parserGrp.add_argument('--tls', action="store_true", help="enable tls connection")
     parserGrp.add_argument('--cert', help="path to the certificate")
     parserGrp.add_argument('--pvtkey', help="path to the private key file")
-    parser.add_argument('--log_level', help="set log level", default =3, type=int)
+    parser.add_argument('--log-level', help="set log level", default =3, type=int)
     args = parser.parse_args()
 
     #print args
@@ -456,7 +456,7 @@ def main():
     DBG_STR(args)
 
     # create all interfaces to speed up processing request for interfaces later
-    myDispatcher.CreateAllInterfaces()
+    myDispatcher.CreateAllInterfaces(args.log_level > 4)
 
     gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey)
     gTarget.run()

@@ -8,8 +8,6 @@ import subprocess
 import json
 import pdb
 
-DBG_TEST = True
-
 # inf list needed to clear the old agg id setting
 old_agg_id_lst = []
 
@@ -224,7 +222,7 @@ def interface_get_info(inf_yph, key_ar):
 
     return ret_val
 
-def interface_create_all_infs(inf_yph):
+def interface_create_all_infs(inf_yph, is_dbg_test):
     ret_val = False
     inf_status_cmd = 'intfutil status'
     p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
@@ -240,7 +238,7 @@ def interface_create_all_infs(inf_yph):
             if idx <= 1: continue
 
             # to save time, create some infs for test only
-            if DBG_TEST and idx > 10:  continue
+            if is_dbg_test and idx > 10:  continue
 
             ldata = output[idx].split()
             #                Interface    Lanes Speed  MTU     Alias       Oper    Admin
