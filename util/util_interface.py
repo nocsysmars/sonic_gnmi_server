@@ -11,6 +11,8 @@ import pdb
 # inf list needed to clear the old agg id setting
 old_agg_id_lst = []
 
+my_mac_addr = ""
+
 def interface_get_vlan_output():
     """
     use 'show vlan config' command to gather interface counters information
@@ -69,7 +71,6 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
     #    2  PortChannel2      ROUNDROBIN(Up)  Ethernet2(S) Ethernet4(S)
     #    3  PortChannel3      ROUNDROBIN(Dw)  N/A
     # PortChannel...
-    #pdb.set_trace()
     global old_agg_id_lst
 
     # 1. clear all port's aggregate-id info
@@ -103,6 +104,7 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
 
             if is_fill_info:
                 interface_get_info_vlan(oc_inf, ldata[1], vlan_output)
+                oc_inf.state._set_type('ianaift:ieee8023adLag')
 
                 if 'Up' in ldata[2]:
                     oc_inf.state._set_oper_status('UP')
@@ -156,6 +158,7 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
                 oc_inf._unset_state()
 
             interface_get_info_vlan(oc_inf, inf, vlan_output)
+            oc_inf.state._set_type('ift:ethernetCsmacd')
 
             for d, dv in dir_dict.items():
                 for c, cv in cnt_dict.items():
@@ -222,7 +225,20 @@ def interface_get_info(inf_yph, key_ar):
 
     return ret_val
 
+def interface_get_my_mac():
+    global my_mac_addr
+    exec_cmd = 'ip link show eth0 | grep ether | awk \'{print $2}\''
+    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    if returncode == 0:
+        my_mac_addr = output.strip("\n")
+
 def interface_create_all_infs(inf_yph, is_dbg_test):
+    # fill my mac addr fo port channel usage
+    interface_get_my_mac()
+
     ret_val = False
     inf_status_cmd = 'intfutil status'
     p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
@@ -280,10 +296,19 @@ def interface_get_old_pc_name_by_port(port_name):
 
     return old_pc_name
 
+def interface_my_execute_cmd(exe_cmd):
+    p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    return False if returncode != 0 else True
+
 # To make interface join/leave port channel
-def interface_set_aggregate_id(pkey_ar, val):
+def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
+    # not support to create port interface
+    if is_create: return False
+
     is_remove = False
-    val = val.strip('"')
     if val == "":
         # clear setting
         is_remove = True
@@ -308,10 +333,68 @@ def interface_set_aggregate_id(pkey_ar, val):
 
     #pdb.set_trace()
 
-    p = subprocess.Popen(set_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-    if returncode != 0: return False
+    return interface_my_execute_cmd(set_cmd)
+
+# To create/remove port channel by set name
+def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
+    global my_mac_addr
+
+    # support to create/remove port channel only
+    if pkey_ar[0].find("PortChannel") != 0:
+        return False
+
+    if is_create:
+        # key and val should use the same name
+        if pkey_ar[0] != val: return False
+    else:
+        # not support change port channel name
+        if val != "": return False
+
+    set_cmd = "sonic-cfggen -a '{\"PORTCHANNEL\": {\"%s\":%s}}' --write-to-db" % (pkey_ar[0], ["null", "{}"][is_create])
+    oc_infs = oc_yph.get("/interfaces")[0]
+
+    #pdb.set_trace()
+    if is_create:
+        oc_infs.interface.add(pkey_ar[0])
+
+        # need to write to db first to let other app start working
+        if not interface_my_execute_cmd(set_cmd): return False
+
+        # populate create info to teamd
+        conf = """
+        {
+            "device": "%s",
+            "hwaddr": "%s",
+            "runner": {
+                "name": "roundrobin",
+                "active": true,
+                "min_ports": 0,
+                "tx_hash": ["eth", "ipv4", "ipv6"]
+            },
+            "link_watch": {
+                "name": "ethtool"
+            },
+            "ports": {
+            }
+        }
+        """ % (pkey_ar[0], my_mac_addr)
+
+        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c \"cat > /etc/teamd/%s.conf\")" % (conf, pkey_ar[0])
+        if not interface_my_execute_cmd(exec_cmd): return False
+
+        exec_cmd = "docker exec -i teamd teamd -d -f /etc/teamd/%s.conf" % pkey_ar[0]
+        if not interface_my_execute_cmd(exec_cmd): return False
+
+    else:
+        oc_infs.interface.delete(pkey_ar[0])
+        # TODO: caller need to ensure all member ports are removed before remove port channel
+        # populate delete info to teamd
+        exec_cmd = "docker exec -i teamd teamd -k -t %s" % pkey_ar[0]
+        if not interface_my_execute_cmd(exec_cmd): return False
+
+        # remove port channel in db last to let other app finish jobs
+        if not interface_my_execute_cmd(set_cmd): return False
 
     return True
+
+

@@ -31,7 +31,8 @@ ocTable = {
 setPathTable = {
     # path                                                   set function
     # [] means key
-    '/interfaces/interface[]/ethernet/config/aggregate-id' : "util_interface.interface_set_aggregate_id"
+    '/interfaces/interface[]/ethernet/config/aggregate-id' : "util_interface.interface_set_aggregate_id",
+    '/interfaces/interface[]/config/name'                  : "util_interface.interface_set_cfg_name"
 }
 
 class ocDispatcher:
@@ -68,13 +69,13 @@ class ocDispatcher:
         ret_val = False
         tmp_obj = self.oc_yph.get(yp_str)
 
-#        pdb.set_trace()
+        #pdb.set_trace()
 
-        if len(tmp_obj) > 0:
-            # replace key [*] with []
-            reg_path = re.sub(r"\[.*\]", "[]", yp_str)
-            if reg_path in setPathTable:
-                ret_val = eval(setPathTable[reg_path])(pkey_ar, val)
+        # replace key [*] with []
+        reg_path = re.sub(r"\[.*\]", "[]", yp_str)
+
+        if reg_path in setPathTable:
+            ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0)
 
         return ret_val
 
