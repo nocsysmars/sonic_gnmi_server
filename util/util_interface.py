@@ -9,9 +9,26 @@ import json
 import pdb
 
 # inf list needed to clear the old agg id setting
-old_agg_id_lst = []
+OLD_AGG_MBR_LST = []
 
-my_mac_addr = ""
+MY_MAC_ADDR     = ""
+TEAMD_CONF_PATH = "/etc/teamd"
+TEAMD_CONF_TMPL = """
+    {
+        "device": "%s",
+        "hwaddr": "%s",
+        "runner": {
+            "name": "roundrobin",
+            "active": true,
+            "min_ports": 0,
+            "tx_hash": ["eth", "ipv4", "ipv6"]
+        },
+        "link_watch": {
+            "name": "ethtool"
+        },
+        "ports": {
+        }
+    }"""
 
 def interface_get_vlan_output():
     """
@@ -32,6 +49,7 @@ def interface_get_vlan_output():
 
     return ret_output
 
+# fill vlan info into inf
 def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
     oc_inf.ethernet.switched_vlan._unset_config()
 
@@ -63,7 +81,75 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
         oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
         oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
 
+# get all pc info with "teamdctl" command
 def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
+    global OLD_AGG_MBR_LST
+
+    # 1. clear all port's aggregate-id info
+    oc_infs = inf_yph.get("/interfaces")[0]
+    if is_fill_info:
+        for inf in OLD_AGG_MBR_LST:
+            inf.ethernet.config._unset_aggregate_id()
+        OLD_AGG_MBR_LST = []
+
+    #pdb.set_trace()
+
+    ret_val = False
+    exec_cmd = 'sonic-cfggen -d -v "PORTCHANNEL.keys() if PORTCHANNEL"'
+    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    if returncode == 0:
+        pc_lst = eval(output) if output.strip('\n') !="" else []
+
+        for pc in pc_lst:
+            if pc not in oc_infs.interface:
+                oc_inf = oc_infs.interface.add(pc)
+            else:
+                oc_inf = oc_infs.interface[pc]
+                oc_inf._unset_aggregation()
+
+            if is_fill_info:
+                interface_get_info_vlan(oc_inf, pc, vlan_output)
+                oc_inf.state._set_type('ianaift:ieee8023adLag')
+
+                exec_cmd = 'ifconfig %s' % pc
+                p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+                (output, err) = p.communicate()
+                ## Wait for end of command. Get return code ##
+                returncode = p.wait()
+                if returncode == 0:
+                    if 'UP' in output:
+                        oc_inf.state._set_oper_status('UP')
+                    else:
+                        oc_inf.state._set_oper_status('DOWN')
+
+                exec_cmd = 'teamdctl %s state dump' % pc
+                p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+                (output, err) = p.communicate()
+                ## Wait for end of command. Get return code ##
+                returncode = p.wait()
+                if returncode == 0:
+                    pc_state = json.loads(output)
+
+                    if pc_state["setup"]["runner_name"] != "roundrobin":
+                        oc_inf.aggregation.state._set_lag_type('LACP')
+                    else:
+                        oc_inf.aggregation.state._set_lag_type('STATIC')
+
+                        if "ports" in pc_state:
+                            for port in pc_state["ports"]:
+                                oc_inf.aggregation.state.member.append(port)
+                                oc_infs.interface[port].ethernet.config._set_aggregate_id(pc)
+                                OLD_AGG_MBR_LST.append(oc_infs.interface[port])
+
+        ret_val = True
+
+    return ret_val
+
+# get all pc info with "teamshow" command
+def interface_get_pc_info_teamshow(inf_yph, is_fill_info, vlan_output):
     #root@switch1:/home/admin# teamshow
     #Flags: A - active, I - inactive, Up - up, Dw - Down, N/A - not available, S - selected, D - deselected
     #  No.  Team Dev          Protocol        Ports
@@ -71,14 +157,14 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
     #    2  PortChannel2      ROUNDROBIN(Up)  Ethernet2(S) Ethernet4(S)
     #    3  PortChannel3      ROUNDROBIN(Dw)  N/A
     # PortChannel...
-    global old_agg_id_lst
+    global OLD_AGG_MBR_LST
 
     # 1. clear all port's aggregate-id info
     oc_infs = inf_yph.get("/interfaces")[0]
     if is_fill_info:
-        for inf in old_agg_id_lst:
+        for inf in OLD_AGG_MBR_LST:
             inf.ethernet.config._unset_aggregate_id()
-        old_agg_id_lst = []
+        OLD_AGG_MBR_LST = []
 
     ret_val = False
     teamshow_cmd = 'teamshow'
@@ -122,7 +208,7 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
                         if 'Ethernet' in ptmp:
                             oc_inf.aggregation.state.member.append(ptmp)
                             oc_infs.interface[ptmp].ethernet.config._set_aggregate_id(ldata[1])
-                            old_agg_id_lst.append(oc_infs.interface[ptmp])
+                            OLD_AGG_MBR_LST.append(oc_infs.interface[ptmp])
                         idx = idx +1
 
         ret_val = True
@@ -226,17 +312,17 @@ def interface_get_info(inf_yph, key_ar):
     return ret_val
 
 def interface_get_my_mac():
-    global my_mac_addr
-    exec_cmd = 'ip link show eth0 | grep ether | awk \'{print $2}\''
+    global MY_MAC_ADDR
+    exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
     p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
     ## Wait for end of command. Get return code ##
     returncode = p.wait()
     if returncode == 0:
-        my_mac_addr = output.strip("\n")
+        MY_MAC_ADDR = output.strip("\n")
 
 def interface_create_all_infs(inf_yph, is_dbg_test):
-    # fill my mac addr fo port channel usage
+    # fill my mac addr for port channel usage
     interface_get_my_mac()
 
     ret_val = False
@@ -267,7 +353,36 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
 
     return ret_val
 
+# get old pc name by port with "teamdctl" command
 def interface_get_old_pc_name_by_port(port_name):
+    old_pc_name = ""
+
+    exec_cmd = 'sonic-cfggen -d -v "PORTCHANNEL.keys()"'
+    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+    if returncode == 0:
+        pc_lst = eval(output)
+
+        for pc in pc_lst:
+            exec_cmd = 'teamdctl %s config dump actual' % pc
+
+            p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+            (output, err) = p.communicate()
+            ## Wait for end of command. Get return code ##
+            returncode = p.wait()
+
+            if returncode == 0:
+                pc_cfg = json.loads(output)
+                if port_name in pc_cfg["ports"]:
+                    old_pc_name = pc
+                    break
+
+    return old_pc_name
+
+# get old pc name by port with "teamshow" command
+def interface_get_old_pc_name_by_port_teamshow(port_name):
     old_pc_name = ""
 
     teamshow_cmd = 'teamshow'
@@ -335,10 +450,24 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
 
     return interface_my_execute_cmd(set_cmd)
 
+def interface_remove_all_mbr_for_pc(pc_name):
+    exec_cmd = 'teamdctl %s config dump actual' % pc_name
+
+    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+
+    if returncode == 0:
+        pc_cfg = json.loads(output)
+
+        for port in pc_cfg["ports"]:
+            exec_cmd = 'teamdctl %s port remove %s' % (pc_name, port)
+            interface_my_execute_cmd(exec_cmd)
+
+
 # To create/remove port channel by set name
 def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
-    global my_mac_addr
-
     # support to create/remove port channel only
     if pkey_ar[0].find("PortChannel") != 0:
         return False
@@ -350,51 +479,37 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
         # not support change port channel name
         if val != "": return False
 
-    set_cmd = "sonic-cfggen -a '{\"PORTCHANNEL\": {\"%s\":%s}}' --write-to-db" % (pkey_ar[0], ["null", "{}"][is_create])
+    set_cmd = 'sonic-cfggen -a \'{"PORTCHANNEL": {"%s":%s}}\' --write-to-db' \
+                % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
 
     #pdb.set_trace()
     if is_create:
-        oc_infs.interface.add(pkey_ar[0])
-
         # need to write to db first to let other app start working
         if not interface_my_execute_cmd(set_cmd): return False
 
         # populate create info to teamd
-        conf = """
-        {
-            "device": "%s",
-            "hwaddr": "%s",
-            "runner": {
-                "name": "roundrobin",
-                "active": true,
-                "min_ports": 0,
-                "tx_hash": ["eth", "ipv4", "ipv6"]
-            },
-            "link_watch": {
-                "name": "ethtool"
-            },
-            "ports": {
-            }
-        }
-        """ % (pkey_ar[0], my_mac_addr)
+        conf =  TEAMD_CONF_TMPL % (pkey_ar[0], MY_MAC_ADDR)
 
-        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c \"cat > /etc/teamd/%s.conf\")" % (conf, pkey_ar[0])
+        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
+                    % (conf, TEAMD_CONF_PATH, pkey_ar[0])
         if not interface_my_execute_cmd(exec_cmd): return False
 
-        exec_cmd = "docker exec -i teamd teamd -d -f /etc/teamd/%s.conf" % pkey_ar[0]
+        exec_cmd = "docker exec -i teamd teamd -d -f %s/%s.conf" % (TEAMD_CONF_PATH, pkey_ar[0])
         if not interface_my_execute_cmd(exec_cmd): return False
 
+        oc_infs.interface.add(pkey_ar[0])
     else:
         oc_infs.interface.delete(pkey_ar[0])
-        # TODO: caller need to ensure all member ports are removed before remove port channel
+
+        interface_remove_all_mbr_for_pc(pkey_ar[0])
+
         # populate delete info to teamd
         exec_cmd = "docker exec -i teamd teamd -k -t %s" % pkey_ar[0]
-        if not interface_my_execute_cmd(exec_cmd): return False
+        interface_my_execute_cmd(exec_cmd)
 
         # remove port channel in db last to let other app finish jobs
-        if not interface_my_execute_cmd(set_cmd): return False
+        interface_my_execute_cmd(set_cmd)
 
     return True
-
 
