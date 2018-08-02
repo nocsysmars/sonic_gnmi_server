@@ -13,6 +13,7 @@ import grpc
 from gnmi import gnmi_pb2
 from gnmi import gnmi_pb2_grpc
 
+from util import util_utl
 from oc_dispatcher import ocDispatcher
 import pyangbind.lib.pybindJSON as pybindJSON
 import json
@@ -27,11 +28,6 @@ DBG_MODE = 1
 myDispatcher = ocDispatcher()
 Timer_Q = []
 
-def DBG_STR(str):
-    if DBG_MODE == 1:
-        print str
-    logging.debug(str)
-
 #          input : PathElem
 # example of ret : [ 'interfaces', 'interface' ]
 def EncodePath(path):
@@ -42,9 +38,6 @@ def EncodePath(path):
              for k, v in pe.key.iteritems():
                   pstr += "[" + str(k) + "=" + str(v) + "]"
         pathStrs += [pstr]
-
-    #DBG_STR(pathStrs)
-
     return pathStrs
 
 #          input : PathElem
@@ -55,9 +48,6 @@ def EncodePathKey(path):
         if pe.key:
              for k, v in pe.key.iteritems():
                   key_strs += [v]
-
-    #DBG_STR(key_strs)
-
     return key_strs
 
 # example of input : [ 'interfaces', 'interface' ]
@@ -150,7 +140,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             pkey_ar = EncodePathKey(path.elem)
             yp_str  = EncodeYangPath(path_ar)
 
-            DBG_STR ("get req path :" + yp_str)
+            util_utl.utl_log("get req path :" + yp_str)
 
             #print path_ar
             oc_yph = myDispatcher.GetRequestYph(path_ar, pkey_ar)
@@ -182,13 +172,13 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                         update = notif.update.add()
                         update.path.CopyFrom(reqGetObj.path[0])
 
-                        DBG_STR ("get req json :" + json.dumps(tmp_json))
+                        util_utl.utl_log("get req json :" + json.dumps(tmp_json))
                         #pdb.set_trace()
 
                         update.val.json_val = json.dumps(tmp_json)
                         er_code = grpc.StatusCode.OK
 
-            DBG_STR ("get req code :" + str(er_code))
+            util_utl.utl_log("get req code :" + str(er_code))
 
             if er_code != grpc.StatusCode.OK:
                 getResp.error.code    = er_code.value[0]
@@ -269,9 +259,9 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             self.__AddOneSetResp(setResp, update.path, 3, ret_set, None)
 
-            DBG_STR ("set req path :" + yp_str)
-            DBG_STR ("set req val  :" + set_val)
-            DBG_STR ("set req code :" + str(ret_set))
+            util_utl.utl_log("set req path :" + yp_str)
+            util_utl.utl_log("set req val  :" + set_val)
+            util_utl.utl_log("set req code :" + str(ret_set))
 
         # Fill error message
         # refer to google.golang.org/grpc/codes
@@ -453,7 +443,7 @@ def main():
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
     logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
 
-    DBG_STR(args)
+    util_utl.utl_log(args)
 
     # create all interfaces to speed up processing request for interfaces later
     myDispatcher.CreateAllInterfaces(args.log_level > 4)

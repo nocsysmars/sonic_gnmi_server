@@ -29,10 +29,14 @@ ocTable = {
 
 # Dispatch table for registered path and set function
 setPathTable = {
-    # path                                                   set function
-    # [] means key
-    '/interfaces/interface[]/ethernet/config/aggregate-id' : "util_interface.interface_set_aggregate_id",
-    '/interfaces/interface[]/config/name'                  : "util_interface.interface_set_cfg_name"
+    # path : set function
+    # [xxx] means key
+    '/interfaces/interface[name]/ethernet/config/aggregate-id' :
+            "util_interface.interface_set_aggregate_id",
+    '/interfaces/interface[name]/config/name' :
+            "util_interface.interface_set_cfg_name",
+    '/interfaces/interface[name]/config/enabled' :
+            "util_interface.interface_set_cfg_enabled"
 }
 
 class ocDispatcher:
@@ -66,16 +70,14 @@ class ocDispatcher:
         return oc_yph
 
     def SetValByPath(self, yp_str, pkey_ar, val):
-        ret_val = False
         tmp_obj = self.oc_yph.get(yp_str)
 
+        # replace key [xxx=yyy] with [xxx]
+        reg_path = re.sub(r'\[(\w*)=.*\]', r"[\1]", yp_str)
+
         #pdb.set_trace()
-
-        # replace key [*] with []
-        reg_path = re.sub(r"\[.*\]", "[]", yp_str)
-
-        if reg_path in setPathTable:
-            ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0)
+        ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0) \
+                    if reg_path in setPathTable else False
 
         return ret_val
 

@@ -7,6 +7,7 @@
 import subprocess
 import json
 import pdb
+from util import util_utl
 
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
@@ -121,6 +122,11 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
                 returncode = p.wait()
                 if returncode == 0:
                     if 'UP' in output:
+                        oc_inf.state._set_admin_status('UP')
+                    else:
+                        oc_inf.state._set_admin_status('DOWN')
+
+                    if 'RUNNING' in output:
                         oc_inf.state._set_oper_status('UP')
                     else:
                         oc_inf.state._set_oper_status('DOWN')
@@ -140,9 +146,12 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
 
                         if "ports" in pc_state:
                             for port in pc_state["ports"]:
-                                oc_inf.aggregation.state.member.append(port)
-                                oc_infs.interface[port].ethernet.config._set_aggregate_id(pc)
-                                OLD_AGG_MBR_LST.append(oc_infs.interface[port])
+                                if port in oc_infs.interface:
+                                    oc_inf.aggregation.state.member.append(port)
+                                    oc_infs.interface[port].ethernet.config._set_aggregate_id(pc)
+                                    OLD_AGG_MBR_LST.append(oc_infs.interface[port])
+                                else:
+                                    util_utl.utl_log("pc [%s]'s mbr port [%s] does not exist !!!" % (pc, port))
 
         ret_val = True
 
@@ -275,14 +284,10 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
             if oc_inf:
                 key_map = {"admin_status": 6, "oper_status" :5, "mtu": 3,}
                 for k, v in key_map.items():
-                    #if k == "mtu":
-                    #    set_fun = getattr(oc_inf.config, "_set_%s" % (k))
-                    #else:
                     set_fun = getattr(oc_inf.state, "_set_%s" % (k))
                     if set_fun:
                         val = ldata [v]
-                        if k == "mtu": val = int(val)
-                        else: val = val.upper()
+                        val = int(val) if k == "mtu" else val.upper()
                         set_fun(val)
 
                 #pdb.set_trace()
@@ -411,44 +416,27 @@ def interface_get_old_pc_name_by_port_teamshow(port_name):
 
     return old_pc_name
 
-def interface_my_execute_cmd(exe_cmd):
-    p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-    return False if returncode != 0 else True
-
 # To make interface join/leave port channel
 def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
     # not support to create port interface
     if is_create: return False
 
-    is_remove = False
-    if val == "":
-        # clear setting
-        is_remove = True
+    is_remove = True if val == "" else False
 
     if is_remove:
-        # 1. get old pc info
-        # 2. use teamdctl to remove port
+        # get old pc name
         pc_name = interface_get_old_pc_name_by_port(pkey_ar[0])
         if not pc_name: return False
     else:
         pc_name = val
+        # set port down before adding port to port channel
+        exec_cmd = 'ifconfig %s down' % pkey_ar[0]
+        util_utl.utl_execute_cmd(exec_cmd)
 
-    if not is_remove:
-        set_cmd = "ifconfig %s down" % pkey_ar[0]
-        p = subprocess.Popen(set_cmd, stdout=subprocess.PIPE, shell=True)
-        (output, err) = p.communicate()
-        ## Wait for end of command. Get return code ##
-        returncode = p.wait()
-        if returncode != 0: return False
+    # use teamdctl to add/remove port
+    set_cmd = 'teamdctl %s port %s %s' %  (pc_name, ["add", "remove"][is_remove], pkey_ar[0])
 
-    set_cmd = "teamdctl %s port %s %s" %  (pc_name, ["add", "remove"][is_remove], pkey_ar[0])
-
-    #pdb.set_trace()
-
-    return interface_my_execute_cmd(set_cmd)
+    return util_utl.utl_execute_cmd(set_cmd)
 
 def interface_remove_all_mbr_for_pc(pc_name):
     exec_cmd = 'teamdctl %s config dump actual' % pc_name
@@ -463,7 +451,7 @@ def interface_remove_all_mbr_for_pc(pc_name):
 
         for port in pc_cfg["ports"]:
             exec_cmd = 'teamdctl %s port remove %s' % (pc_name, port)
-            interface_my_execute_cmd(exec_cmd)
+            util_utl.utl_execute_cmd(exec_cmd)
 
 
 # To create/remove port channel by set name
@@ -486,17 +474,17 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
     #pdb.set_trace()
     if is_create:
         # need to write to db first to let other app start working
-        if not interface_my_execute_cmd(set_cmd): return False
+        if not util_utl.utl_execute_cmd(set_cmd): return False
 
         # populate create info to teamd
         conf =  TEAMD_CONF_TMPL % (pkey_ar[0], MY_MAC_ADDR)
 
         exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
                     % (conf, TEAMD_CONF_PATH, pkey_ar[0])
-        if not interface_my_execute_cmd(exec_cmd): return False
+        if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-        exec_cmd = "docker exec -i teamd teamd -d -f %s/%s.conf" % (TEAMD_CONF_PATH, pkey_ar[0])
-        if not interface_my_execute_cmd(exec_cmd): return False
+        exec_cmd = 'docker exec -i teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
+        if not util_utl.utl_execute_cmd(exec_cmd): return False
 
         oc_infs.interface.add(pkey_ar[0])
     else:
@@ -505,11 +493,22 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
         interface_remove_all_mbr_for_pc(pkey_ar[0])
 
         # populate delete info to teamd
-        exec_cmd = "docker exec -i teamd teamd -k -t %s" % pkey_ar[0]
-        interface_my_execute_cmd(exec_cmd)
+        exec_cmd = 'docker exec -i teamd teamd -k -t %s' % pkey_ar[0]
+        util_utl.utl_execute_cmd(exec_cmd)
 
         # remove port channel in db last to let other app finish jobs
-        interface_my_execute_cmd(set_cmd)
+        util_utl.utl_execute_cmd(set_cmd)
 
     return True
 
+# To set admin status of inf
+def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
+    # not support create
+    if is_create: return False
+
+    exec_cmd = 'ifconfig %s %s' % (pkey_ar[0], ["down", "up"][val.upper() == "TRUE"])
+
+    #pdb.set_trace()
+    util_utl.utl_execute_cmd(exec_cmd)
+
+    return True
