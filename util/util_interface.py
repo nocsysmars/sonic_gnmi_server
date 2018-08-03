@@ -12,9 +12,17 @@ from util import util_utl
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
 
-MY_MAC_ADDR     = ""
-TEAMD_CONF_PATH = "/etc/teamd"
-TEAMD_CONF_TMPL = """
+VLAN_ID_MAX         = 4094
+VLAN_ID_MIN         = 1
+
+GET_VAR_LST_CMD_TMPL= 'sonic-cfggen -d -v "{0}"'
+GET_LST_CMD_TMPL    = 'sonic-cfggen -d -v "{0}.keys() if {0}"'
+GET_VLAN_MBR_LST_CMD= GET_LST_CMD_TMPL.format("VLAN_MEMBER")
+GET_VLAN_LST_CMD    = GET_LST_CMD_TMPL.format("VLAN")
+GET_PC_LST_CMD      = GET_LST_CMD_TMPL.format("PORTCHANNEL")
+MY_MAC_ADDR         = ""
+TEAMD_CONF_PATH     = "/etc/teamd"
+TEAMD_CONF_TMPL     = """
     {
         "device": "%s",
         "hwaddr": "%s",
@@ -35,15 +43,9 @@ def interface_get_vlan_output():
     """
     use 'show vlan config' command to gather interface counters information
     """
-    cmd = 'show vlan config'
-
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
     ret_output = []
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('show vlan config')
+    if is_ok:
         output = output.splitlines()
         for idx in range(len(output)):
             ret_output.append(output[idx].split())
@@ -57,9 +59,8 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
     #pdb.set_trace()
     t_vlan = []
     u_vlan = []
-    for idx in range(len(vlan_output)):
-        # skip element 0/1, refer to output of show vlan config
-        if idx <= 1: continue
+    # skip element 0/1, refer to output of show vlan config
+    for idx in range(2, len(vlan_output)):
 
         ldata = vlan_output[idx]
         #                Name       VID    Member       Mode
@@ -82,6 +83,20 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
         oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
         oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
 
+# fill inf's admin/oper status by "ifconfig xxx" output
+def interface_fill_admin_oper(oc_inf, exec_cmd):
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        if 'UP' in output:
+            oc_inf.state._set_admin_status('UP')
+        else:
+            oc_inf.state._set_admin_status('DOWN')
+
+        if 'RUNNING' in output:
+            oc_inf.state._set_oper_status('UP')
+        else:
+            oc_inf.state._set_oper_status('DOWN')
+
 # get all pc info with "teamdctl" command
 def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
     global OLD_AGG_MBR_LST
@@ -93,16 +108,10 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
             inf.ethernet.config._unset_aggregate_id()
         OLD_AGG_MBR_LST = []
 
-    #pdb.set_trace()
-
     ret_val = False
-    exec_cmd = 'sonic-cfggen -d -v "PORTCHANNEL.keys() if PORTCHANNEL"'
-    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-    if returncode == 0:
-        pc_lst = eval(output) if output.strip('\n') !="" else []
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_PC_LST_CMD)
+    if is_ok:
+        pc_lst = [] if output.strip('\n') =='' else eval(output)
 
         for pc in pc_lst:
             if pc not in oc_infs.interface:
@@ -116,27 +125,11 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
                 oc_inf.state._set_type('ianaift:ieee8023adLag')
 
                 exec_cmd = 'ifconfig %s' % pc
-                p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-                (output, err) = p.communicate()
-                ## Wait for end of command. Get return code ##
-                returncode = p.wait()
-                if returncode == 0:
-                    if 'UP' in output:
-                        oc_inf.state._set_admin_status('UP')
-                    else:
-                        oc_inf.state._set_admin_status('DOWN')
-
-                    if 'RUNNING' in output:
-                        oc_inf.state._set_oper_status('UP')
-                    else:
-                        oc_inf.state._set_oper_status('DOWN')
+                interface_fill_admin_oper(oc_inf, exec_cmd)
 
                 exec_cmd = 'teamdctl %s state dump' % pc
-                p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-                (output, err) = p.communicate()
-                ## Wait for end of command. Get return code ##
-                returncode = p.wait()
-                if returncode == 0:
+                (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+                if is_ok:
                     pc_state = json.loads(output)
 
                     if pc_state["setup"]["runner_name"] != "roundrobin":
@@ -176,17 +169,11 @@ def interface_get_pc_info_teamshow(inf_yph, is_fill_info, vlan_output):
         OLD_AGG_MBR_LST = []
 
     ret_val = False
-    teamshow_cmd = 'teamshow'
-    p = subprocess.Popen(teamshow_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('teamshow')
+    if is_ok:
         output = output.splitlines()
-        for idx in range(len(output)):
-            # skip element 0/1/2, refer to output of teamshow
-            if idx <= 2: continue
+        # skip element 0/1/2, refer to output of teamshow
+        for idx in range(3, len(output)):
 
             ldata = output[idx].split()
             #                No.  Team Dev        Protocol          Ports
@@ -227,15 +214,8 @@ def interface_get_pc_info_teamshow(inf_yph, is_fill_info, vlan_output):
 def interface_get_port_info(inf_yph, key_ar, vlan_output):
     # 1. fill interface statistics
     # use 'portstat -j' command to gather interface counters information
-    pstat_cmd = 'portstat -j'
-
-    #pdb.set_trace()
-    p = subprocess.Popen(pstat_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('portstat -j')
+    if is_ok:
         pstat_info = json.loads(output)
 
         oc_infs = inf_yph.get("/interfaces")[0]
@@ -263,17 +243,11 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
         ret_val = True
 
     # 2. fill admin/oper status/mtu
-    inf_status_cmd = 'intfutil status'
-    p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('intfutil status')
+    if is_ok:
         output = output.splitlines()
-        for idx in range(len(output)):
-            # skip element 0/1, refer to output of intfutil status
-            if idx <= 1: continue
+        # skip element 0/1, refer to output of intfutil status
+        for idx in range(2, len(output)):
 
             ldata = output[idx].split()
             #                Interface    Lanes Speed  MTU     Alias       Oper    Admin
@@ -298,14 +272,44 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
 
     return ret_val
 
+# get all vlan info
+def interface_get_vlan_info(inf_yph, is_fill_info):
+    exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        vlan_cfg = {} if output.strip('\n') == '' else eval(output)
+
+        oc_infs = inf_yph.get("/interfaces")[0]
+
+        # vlan_cfg ex : "{'Vlan1113': {'vlanid': '1113'},
+        #                 'Vlan1111': {'members': ['Ethernet2', 'Ethernet5'], 'vlanid': '1111'}}"
+        for vname, vdata in  vlan_cfg.items():
+            if vname not in oc_infs.interface:
+                oc_inf = oc_infs.interface.add(vname)
+            else:
+                oc_inf = oc_infs.interface[vname]
+                oc_inf._unset_state()
+
+            if is_fill_info:
+                exec_cmd = 'ifconfig %s' % vname
+                interface_fill_admin_oper(oc_inf, exec_cmd)
+
+        return True
+
 # fill DUT's interface info into inf_yph
 # key_ar [0] : interface name e.g. "eth0"
 def interface_get_info(inf_yph, key_ar):
-    vlan_output = interface_get_vlan_output()
 
+    # 0. fill vlan info
+    ret_val = interface_get_vlan_info(inf_yph, True)
+    if key_ar and "Vlan" in key_ar[0]:
+        # only need vlan info
+        return ret_val
+
+    vlan_output = interface_get_vlan_output()
     # 1. fill port channel info
     #    also fill member port's aggregate-id
-    ret_val = interface_get_pc_info(inf_yph, True, vlan_output)
+    ret_val = interface_get_pc_info(inf_yph, True, vlan_output) or ret_val
 
     if key_ar and "PortChannel" in key_ar[0]:
         # only need port channel info
@@ -319,30 +323,20 @@ def interface_get_info(inf_yph, key_ar):
 def interface_get_my_mac():
     global MY_MAC_ADDR
     exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
-    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-    if returncode == 0:
-        MY_MAC_ADDR = output.strip("\n")
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok: MY_MAC_ADDR = output.strip('\n')
 
 def interface_create_all_infs(inf_yph, is_dbg_test):
     # fill my mac addr for port channel usage
     interface_get_my_mac()
 
     ret_val = False
-    inf_status_cmd = 'intfutil status'
-    p = subprocess.Popen(inf_status_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('intfutil status')
+    if is_ok:
         output = output.splitlines()
         oc_infs = inf_yph.get("/interfaces")[0]
-        for idx in range(len(output)):
-            # skip element 0/1, refer to output of intfutil status
-            if idx <= 1: continue
+        # skip element 0/1, refer to output of intfutil status
+        for idx in range(2, len(output)):
 
             # to save time, create some infs for test only
             if is_dbg_test and idx > 10:  continue
@@ -356,29 +350,22 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
 
     ret_val = interface_get_pc_info(inf_yph, False, None) or ret_val
 
+    ret_val = interface_get_vlan_info(inf_yph, False) or ret_val
+
     return ret_val
 
 # get old pc name by port with "teamdctl" command
 def interface_get_old_pc_name_by_port(port_name):
     old_pc_name = ""
 
-    exec_cmd = 'sonic-cfggen -d -v "PORTCHANNEL.keys()"'
-    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-    if returncode == 0:
-        pc_lst = eval(output)
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_PC_LST_CMD)
+    if is_ok:
+        pc_lst = [] if output.strip('\n') == '' else eval(output)
 
         for pc in pc_lst:
             exec_cmd = 'teamdctl %s config dump actual' % pc
-
-            p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-            (output, err) = p.communicate()
-            ## Wait for end of command. Get return code ##
-            returncode = p.wait()
-
-            if returncode == 0:
+            (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+            if is_ok:
                 pc_cfg = json.loads(output)
                 if port_name in pc_cfg["ports"]:
                     old_pc_name = pc
@@ -390,17 +377,11 @@ def interface_get_old_pc_name_by_port(port_name):
 def interface_get_old_pc_name_by_port_teamshow(port_name):
     old_pc_name = ""
 
-    teamshow_cmd = 'teamshow'
-    p = subprocess.Popen(teamshow_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('teamshow')
+    if is_ok:
         output = output.splitlines()
-        for idx in range(len(output)):
-            # skip element 0/1/2, refer to output of teamshow
-            if idx <= 2: continue
+        # skip element 0/1/2, refer to output of teamshow
+        for idx in range(3, len(output)):
 
             ldata = output[idx].split()
             #                No.  Team Dev        Protocol          Ports
@@ -426,7 +407,7 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
     if is_remove:
         # get old pc name
         pc_name = interface_get_old_pc_name_by_port(pkey_ar[0])
-        if not pc_name: return False
+        if not pc_name: return True
     else:
         pc_name = val
         # set port down before adding port to port channel
@@ -440,33 +421,16 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
 
 def interface_remove_all_mbr_for_pc(pc_name):
     exec_cmd = 'teamdctl %s config dump actual' % pc_name
-
-    p = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode == 0:
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
         pc_cfg = json.loads(output)
 
         for port in pc_cfg["ports"]:
             exec_cmd = 'teamdctl %s port remove %s' % (pc_name, port)
             util_utl.utl_execute_cmd(exec_cmd)
 
-
 # To create/remove port channel by set name
-def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
-    # support to create/remove port channel only
-    if pkey_ar[0].find("PortChannel") != 0:
-        return False
-
-    if is_create:
-        # key and val should use the same name
-        if pkey_ar[0] != val: return False
-    else:
-        # not support change port channel name
-        if val != "": return False
-
+def interface_set_cfg_name_pc(oc_yph, pkey_ar, val, is_create):
     set_cmd = 'sonic-cfggen -a \'{"PORTCHANNEL": {"%s":%s}}\' --write-to-db' \
                 % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
@@ -492,6 +456,7 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
 
         interface_remove_all_mbr_for_pc(pkey_ar[0])
 
+        # TODO: need to remove vlan config before removing the pc
         # populate delete info to teamd
         exec_cmd = 'docker exec -i teamd teamd -k -t %s' % pkey_ar[0]
         util_utl.utl_execute_cmd(exec_cmd)
@@ -500,6 +465,74 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
         util_utl.utl_execute_cmd(set_cmd)
 
     return True
+
+# vlan_name should be in "VlanXXX" format
+def interface_extract_vid(vlan_name):
+    vid_str = vlan_name.lstrip('Vlan')
+
+    ret_vid = vid_str.isdigit() and \
+                int(vid_str) if int(vid_str) in range (VLAN_ID_MIN, VLAN_ID_MAX) else 0 \
+                or 0
+
+    return ret_vid
+
+# To create/remove vlan by set name
+def interface_set_cfg_name_vlan(oc_yph, pkey_ar, val, is_create):
+    pdb.set_trace()
+    ret_val = False
+    vid = interface_extract_vid(pkey_ar[0])
+    if vid > 0:
+        if not is_create:
+            # remove all vlan member before removing vlan
+            exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
+            (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+            if is_ok:
+                vlan_cfg = {} if output.strip('\n') == '' else eval(output)
+
+                # vlan_cfg ex : "{'Vlan1113': {'vlanid': '1113'},
+                #                 'Vlan1111': {'members': ['Ethernet2', 'Ethernet5'], 'vlanid': '1111'}}"
+                for vname, vdata in  vlan_cfg.items():
+                    if vid == int(vdata['vlanid']):
+                        mbrs = vdata['members'] if 'members' in vdata else []
+                        for mbr in mbrs:
+                            set_cmd = 'config vlan member del %d %s' % (vid, mbr)
+                            util_utl.utl_execute_cmd(set_cmd)
+
+        set_cmd = 'config vlan %s %d' % (["del", "add"][is_create], vid)
+        util_utl.utl_execute_cmd(set_cmd)
+
+        oc_infs = oc_yph.get("/interfaces")[0]
+        if is_create:
+            oc_infs.interface.add(pkey_ar[0])
+        else:
+            oc_infs.interface.delete(pkey_ar[0])
+
+        ret_val = True
+
+    return ret_val
+
+# To set name of inf
+def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
+    # support to create/remove port channel/vlan only
+    #  if_type 1 : PC
+    #  if_type 2 : VLAN
+    if_type = 1 if pkey_ar[0].find("PortChannel") == 0 else \
+              2 if pkey_ar[0].find("Vlan") == 0 else 0
+
+    if if_type == 0: return False
+
+    if is_create:
+        if val == "": return True
+        # key and val should use the same name
+        if pkey_ar[0] != val: return False
+    else:
+        if pkey_ar[0] == val: return True
+        # not support to change name
+        if val != "": return False
+
+    return [interface_set_cfg_name_pc, interface_set_cfg_name_vlan] \
+                [if_type -1](oc_yph, pkey_ar, val, is_create)
+
 
 # To set admin status of inf
 def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
@@ -512,3 +545,8 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
     util_utl.utl_execute_cmd(exec_cmd)
 
     return True
+
+# To set inf's vlan membership
+def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
+
+    return False
