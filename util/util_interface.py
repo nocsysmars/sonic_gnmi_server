@@ -7,22 +7,29 @@
 import subprocess
 import json
 import pdb
+#import time
 from util import util_utl
 
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
 
-VLAN_ID_MAX         = 4094
-VLAN_ID_MIN         = 1
+VLAN_AUTO_CREATE     = True
+VLAN_ID_MAX          = 4094
+VLAN_ID_MIN          = 1
 
-GET_VAR_LST_CMD_TMPL= 'sonic-cfggen -d -v "{0}"'
-GET_LST_CMD_TMPL    = 'sonic-cfggen -d -v "{0}.keys() if {0}"'
-GET_VLAN_MBR_LST_CMD= GET_LST_CMD_TMPL.format("VLAN_MEMBER")
-GET_VLAN_LST_CMD    = GET_LST_CMD_TMPL.format("VLAN")
-GET_PC_LST_CMD      = GET_LST_CMD_TMPL.format("PORTCHANNEL")
-MY_MAC_ADDR         = ""
-TEAMD_CONF_PATH     = "/etc/teamd"
-TEAMD_CONF_TMPL     = """
+GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
+GET_LST_CMD_TMPL     = 'sonic-cfggen -d -v "{0}.keys() if {0}"'
+GET_VLAN_MBR_LST_CMD = GET_LST_CMD_TMPL.format("VLAN_MEMBER")
+GET_VLAN_LST_CMD     = GET_LST_CMD_TMPL.format("VLAN")
+GET_PC_LST_CMD       = GET_LST_CMD_TMPL.format("PORTCHANNEL")
+
+CFG_VLAN_MBR_CMD_TMPL= 'config vlan member {0} {1} {2} {3}'
+CFG_VLAN_CMD_TMPL    = 'config vlan {0} {1}'
+
+MY_MAC_ADDR          = ""
+TEAMD_CFG_PORT_CMD_TMPL='teamdctl {0} port {1} {2}'
+TEAMD_CONF_PATH      = "/etc/teamd"
+TEAMD_CONF_TMPL      = """
     {
         "device": "%s",
         "hwaddr": "%s",
@@ -54,8 +61,6 @@ def interface_get_vlan_output():
 
 # fill vlan info into inf
 def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
-    oc_inf.ethernet.switched_vlan._unset_config()
-
     #pdb.set_trace()
     t_vlan = []
     u_vlan = []
@@ -71,20 +76,27 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
             else:
                 u_vlan.append(int(ldata[1]))
 
-    if len(t_vlan) > 0:
-        # trunk mode
-        oc_inf.ethernet.switched_vlan.config.interface_mode = 'TRUNK'
-        oc_inf.ethernet.switched_vlan.config.trunk_vlans = t_vlan
+    # fill info if oc_inf exists
+    if oc_inf:
+        oc_inf.ethernet.switched_vlan._unset_config()
 
-        if len(u_vlan) > 0: # TODO: what to do if > 1 ???
-            oc_inf.ethernet.switched_vlan.config.native_vlan = u_vlan[0]
-    elif len(u_vlan) > 0: # TODO: what to do if > 1 ???
-        # access mode
-        oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
-        oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
+        if len(t_vlan) > 0:
+            # trunk mode
+            oc_inf.ethernet.switched_vlan.config.interface_mode = 'TRUNK'
+            oc_inf.ethernet.switched_vlan.config.trunk_vlans = t_vlan
+
+            if len(u_vlan) > 0: # TODO: what to do if > 1 ???
+                oc_inf.ethernet.switched_vlan.config.native_vlan = u_vlan[0]
+        elif len(u_vlan) > 0: # TODO: what to do if > 1 ???
+            # access mode
+            oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
+            oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
+    else:
+        return (t_vlan, u_vlan)
 
 # fill inf's admin/oper status by "ifconfig xxx" output
-def interface_fill_admin_oper(oc_inf, exec_cmd):
+def interface_fill_admin_oper(oc_inf, inf_name):
+    exec_cmd = 'ifconfig %s' % inf_name
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
         if 'UP' in output:
@@ -124,8 +136,7 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
                 interface_get_info_vlan(oc_inf, pc, vlan_output)
                 oc_inf.state._set_type('ianaift:ieee8023adLag')
 
-                exec_cmd = 'ifconfig %s' % pc
-                interface_fill_admin_oper(oc_inf, exec_cmd)
+                interface_fill_admin_oper(oc_inf, pc)
 
                 exec_cmd = 'teamdctl %s state dump' % pc
                 (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
@@ -291,8 +302,7 @@ def interface_get_vlan_info(inf_yph, is_fill_info):
                 oc_inf._unset_state()
 
             if is_fill_info:
-                exec_cmd = 'ifconfig %s' % vname
-                interface_fill_admin_oper(oc_inf, exec_cmd)
+                interface_fill_admin_oper(oc_inf, vname)
 
         return True
 
@@ -415,9 +425,8 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
         util_utl.utl_execute_cmd(exec_cmd)
 
     # use teamdctl to add/remove port
-    set_cmd = 'teamdctl %s port %s %s' %  (pc_name, ["add", "remove"][is_remove], pkey_ar[0])
-
-    return util_utl.utl_execute_cmd(set_cmd)
+    exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, ["add", "remove"][is_remove], pkey_ar[0])
+    return util_utl.utl_execute_cmd(exec_cmd)
 
 def interface_remove_all_mbr_for_pc(pc_name):
     exec_cmd = 'teamdctl %s config dump actual' % pc_name
@@ -426,11 +435,11 @@ def interface_remove_all_mbr_for_pc(pc_name):
         pc_cfg = json.loads(output)
 
         for port in pc_cfg["ports"]:
-            exec_cmd = 'teamdctl %s port remove %s' % (pc_name, port)
+            exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
             util_utl.utl_execute_cmd(exec_cmd)
 
 # To create/remove port channel by set name
-def interface_set_cfg_name_pc(oc_yph, pkey_ar, val, is_create):
+def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create):
     set_cmd = 'sonic-cfggen -a \'{"PORTCHANNEL": {"%s":%s}}\' --write-to-db' \
                 % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
@@ -456,7 +465,6 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, val, is_create):
 
         interface_remove_all_mbr_for_pc(pkey_ar[0])
 
-        # TODO: need to remove vlan config before removing the pc
         # populate delete info to teamd
         exec_cmd = 'docker exec -i teamd teamd -k -t %s' % pkey_ar[0]
         util_utl.utl_execute_cmd(exec_cmd)
@@ -477,8 +485,8 @@ def interface_extract_vid(vlan_name):
     return ret_vid
 
 # To create/remove vlan by set name
-def interface_set_cfg_name_vlan(oc_yph, pkey_ar, val, is_create):
-    pdb.set_trace()
+def interface_set_cfg_name_vlan(oc_yph, pkey_ar, is_create):
+    #pdb.set_trace()
     ret_val = False
     vid = interface_extract_vid(pkey_ar[0])
     if vid > 0:
@@ -495,11 +503,13 @@ def interface_set_cfg_name_vlan(oc_yph, pkey_ar, val, is_create):
                     if vid == int(vdata['vlanid']):
                         mbrs = vdata['members'] if 'members' in vdata else []
                         for mbr in mbrs:
-                            set_cmd = 'config vlan member del %d %s' % (vid, mbr)
-                            util_utl.utl_execute_cmd(set_cmd)
+                            exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('del', '', vid, mbr)
+                            util_utl.utl_execute_cmd(exec_cmd)
 
-        set_cmd = 'config vlan %s %d' % (["del", "add"][is_create], vid)
-        util_utl.utl_execute_cmd(set_cmd)
+                #time.sleep(2)
+
+        exec_cmd = CFG_VLAN_CMD_TMPL.format(["del", "add"][is_create], vid)
+        util_utl.utl_execute_cmd(exec_cmd)
 
         oc_infs = oc_yph.get("/interfaces")[0]
         if is_create:
@@ -531,7 +541,7 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
         if val != "": return False
 
     return [interface_set_cfg_name_pc, interface_set_cfg_name_vlan] \
-                [if_type -1](oc_yph, pkey_ar, val, is_create)
+                [if_type -1](oc_yph, pkey_ar, is_create)
 
 
 # To set admin status of inf
@@ -546,7 +556,105 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
 
     return True
 
-# To set inf's vlan membership
-def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
+# Return false if any vlan in the list not exist
+# auto create vlan if VLAN_AUTO_CREATE == True
+def interface_is_vlan_lst_valid(oc_yph, vid_lst):
+    ret_val = True
 
-    return False
+    exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        vlan_cfg = {} if output.strip('\n') == '' else eval(output)
+
+        #is_add_vlan = False
+        for vid in vid_lst:
+            if "Vlan%s" % str(vid) not in vlan_cfg:
+                if not VLAN_AUTO_CREATE:
+                    ret_val = False
+                    break
+                else:
+                    # auto create vlan
+                    interface_set_cfg_name_vlan(oc_yph, ["Vlan%s" % str(vid)], True)
+                    util_utl.utl_log("auto create vlan %d" % vid)
+                    #is_add_vlan = True
+
+        #if is_add_vlan:
+        #    time.sleep(2)
+    return ret_val
+
+# To set inf's tagged vlan membership
+def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
+    # pdb.set_trace()
+
+    # not support create
+    if is_create: return False
+
+    vlan_output = interface_get_vlan_output()
+    (old_tvlan, old_uvlan) = interface_get_info_vlan(None, pkey_ar[0], vlan_output)
+
+    # handle syntax error exception
+    try:
+        new_tvlan = [] if val == "" else eval(val)
+    except:
+        return False
+
+    del_tvlan =[]
+    for vid in old_tvlan:
+        int_vid = int(vid)
+        if int_vid not in new_tvlan:
+            del_tvlan.append(int_vid)
+        else:
+            new_tvlan.remove(int_vid)
+
+
+    # check if all new tvlan exists
+    if new_tvlan and not interface_is_vlan_lst_valid(oc_yph, new_tvlan):
+        util_utl.utl_log("new vlan list not valid !")
+        return False
+
+    # remove inf from vlan
+    for vid in del_tvlan:
+        exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('del', '', vid, pkey_ar[0])
+        util_utl.utl_execute_cmd(exec_cmd)
+
+    # add inf into vlan
+    for vid in new_tvlan:
+        exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('add', '', vid, pkey_ar[0])
+        util_utl.utl_execute_cmd(exec_cmd)
+
+    return True
+
+# To set inf's native vlan
+def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create):
+    # not support create
+    if is_create: return False
+
+    vlan_output = interface_get_vlan_output()
+    (old_tvlan, old_uvlan) = interface_get_info_vlan(None, pkey_ar[0], vlan_output)
+
+    if val == "":
+        new_uvlan = 0
+    else:
+        new_uvlan = interface_extract_vid(val)
+
+        if new_uvlan == 0: return False
+
+        # check if new uvlan exists
+        if not interface_is_vlan_lst_valid(oc_yph, [new_uvlan] ):
+            util_utl.utl_log("native vlan not valid !")
+            return False
+
+    # remove inf from old uvlan
+    for vid in old_uvlan:
+        exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('del', '', vid, pkey_ar[0])
+        util_utl.utl_execute_cmd(exec_cmd)
+
+    # add inf into new uvlan
+    if new_uvlan != 0:
+        exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('add', '-u', new_uvlan, pkey_ar[0])
+        util_utl.utl_execute_cmd(exec_cmd)
+
+    return True
+
+
+

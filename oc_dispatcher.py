@@ -39,6 +39,8 @@ setPathTable = {
             "util_interface.interface_set_cfg_enabled",
     '/interfaces/interface[name]/ethernet/switched-vlan/config/trunk-vlans' :
             "util_interface.interface_set_trunk_vlans",
+    '/interfaces/interface[name]/ethernet/switched-vlan/config/native-vlan' :
+            "util_interface.interface_set_native_vlan",
 }
 
 class ocDispatcher:
