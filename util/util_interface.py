@@ -311,10 +311,11 @@ def interface_get_vlan_info(inf_yph, is_fill_info):
 def interface_get_info(inf_yph, key_ar):
 
     # 0. fill vlan info
-    ret_val = interface_get_vlan_info(inf_yph, True)
-    if key_ar and "Vlan" in key_ar[0]:
-        # only need vlan info
-        return ret_val
+    if not key_ar or "Vlan" in key_ar[0]:
+        ret_val = interface_get_vlan_info(inf_yph, True)
+        if key_ar and "Vlan" in key_ar[0]:
+            # only need vlan info
+            return ret_val
 
     vlan_output = interface_get_vlan_output()
     # 1. fill port channel info
@@ -462,7 +463,7 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create):
                     % (conf, TEAMD_CONF_PATH, pkey_ar[0])
         if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-        exec_cmd = 'docker exec -i teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
+        exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
         if not util_utl.utl_execute_cmd(exec_cmd): return False
 
         oc_infs.interface.add(pkey_ar[0])
@@ -472,7 +473,7 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create):
         interface_remove_all_mbr_for_pc(pkey_ar[0])
 
         # populate delete info to teamd
-        exec_cmd = 'docker exec -i teamd teamd -k -t %s' % pkey_ar[0]
+        exec_cmd = 'docker exec teamd teamd -k -t %s' % pkey_ar[0]
         util_utl.utl_execute_cmd(exec_cmd)
 
         # remove port channel in db last to let other app finish jobs

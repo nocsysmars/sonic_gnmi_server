@@ -18,7 +18,7 @@ def utl_log(str, lvl = logging.DEBUG):
     logging.log (lvl, str)
 
 def utl_execute_cmd(exe_cmd):
-    p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, shell=True)
+    p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
     ## Wait for end of command. Get return code ##
     returncode = p.wait()

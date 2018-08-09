@@ -8,25 +8,21 @@
 
 import argparse
 import time
-from concurrent import futures
-import grpc
-from gnmi import gnmi_pb2
-from gnmi import gnmi_pb2_grpc
-
-from util import util_utl
-from oc_dispatcher import ocDispatcher
-import pyangbind.lib.pybindJSON as pybindJSON
 import json
 import Queue
 import threading
 import logging
-
 import pdb
 
-DBG_MODE = 1
+from concurrent import futures
+import grpc
+from gnmi import gnmi_pb2
+from gnmi import gnmi_pb2_grpc
+import pyangbind.lib.pybindJSON as pybindJSON
 
-myDispatcher = ocDispatcher()
-Timer_Q = []
+from util import util_utl
+from oc_dispatcher import ocDispatcher
+
 
 #          input : PathElem
 # example of ret : [ 'interfaces', 'interface' ]
@@ -59,28 +55,6 @@ def EncodeYangPath(path_ar):
 
     return ypath
 
-# timer_rec: { 'req':, 'subs':, 'cur-tick':, 'context': , 'workq': }
-# workq_rec: { 'req':, 'subs': }
-def TimerEventHandler(timer_q):
-    l_timer_q = []
-    while True:
-        #pdb.set_trace()
-        while len(timer_q) > 0:
-            l_timer_q.append(timer_q.pop())
-
-        new_q = []
-        for trec in l_timer_q:
-            if trec['context'].is_active():
-                trec['cur-tick'] -= 1
-                if trec['cur-tick'] == 0:
-                    trec['workq'].put( { 'req' : trec['req'],
-                                         'subs': trec['subs'] }
-                                     )
-                else:
-                    new_q.append(trec)
-        l_timer_q[0:] = new_q
-        time.sleep(1)
-
 def ExtractJson(oc_obj, leaf_str):
     # sometimes leaf can not be dumped,
     # so dump the parent for safe
@@ -112,6 +86,13 @@ def ExtractJson(oc_obj, leaf_str):
 # class gNMITargetServicer
 #
 class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
+    def __init__(self, isDbgTest):
+        self.myDispatcher = ocDispatcher()
+        self.Timer_Q = []
+        self.is_stopped = False
+
+        # create all interfaces to speed up processing request for interfaces later
+        self.myDispatcher.CreateAllInterfaces(isDbgTest)
 
     def __getCapabilitiesResponseObj(self):
         capResp = gnmi_pb2.CapabilityResponse()
@@ -143,7 +124,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             util_utl.utl_log("get req path :" + yp_str)
 
             #print path_ar
-            oc_yph = myDispatcher.GetRequestYph(path_ar, pkey_ar)
+            oc_yph = self.myDispatcher.GetRequestYph(path_ar, pkey_ar)
             if isinstance(oc_yph, grpc.StatusCode):
                 er_code = oc_yph
             else:
@@ -199,7 +180,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         IsAnyErr = False
         pathPrefix = EncodePath(reqSetObj.prefix.elem)
 
-        print reqSetObj
+        util_utl.utl_log(reqSetObj)
 
         # Now Build the set response
         #
@@ -217,7 +198,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         # input: path (delete)
         for delete in reqSetObj.delete:
             delPath = pathPrefix + EncodePath(delete.elem)
-            print delPath
+            util_utl.utl_log(delPath)
 
         # input: path, val
         #  When the `replace` operation omits values that have been previously set,
@@ -229,13 +210,13 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             k = replace.val.WhichOneof("value")
 
-            print k
+            util_utl.utl_log(k)
 
             val = getattr(replace.val, k)
 
-            print val
+            util_utl.utl_log(val)
 
-            print repPath
+            util_utl.utl_log(repPath)
 
         # input: same as replace
         for update in reqSetObj.update:
@@ -249,7 +230,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             pkey_ar = EncodePathKey(update.path.elem)
             set_val = getattr(update.val, update.val.WhichOneof("value"))
             yp_str  = EncodeYangPath(updPath)
-            ret_set = myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
+            ret_set = self.myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
 
             if ret_set:
                 ret_set = grpc.StatusCode.OK
@@ -281,11 +262,11 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
         # TODO: process more than one req ?
         for req in reqSubObj:
-            print req
+            util_utl.utl_log(req)
             #pdb.set_trace()
 
             k = req.WhichOneof("request")
-            print k
+            util_utl.utl_log(k)
             #val = getattr(req, k)
             #print val
 
@@ -297,12 +278,15 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                                  'subs': subs }
                     my_work_q.put(work_rec)
 
-                while True:
+                while not self.is_stopped:
                     # wait here until work_rec occurs (from Timer_Q or enter here first time)
-                    cur_work_rec = my_work_q.get()
+                    try:
+                        cur_work_rec = my_work_q.get(True, 1)
+                    except Queue.Empty:
+                        continue
 
-                    cur_req = work_rec['req']
-                    cur_subs= work_rec['subs']
+                    cur_req = cur_work_rec['req']
+                    cur_subs= cur_work_rec['subs']
 
                     print ["stream", "once", "poll"][cur_req.subscribe.mode]
                     subResp = gnmi_pb2.SubscribeResponse()
@@ -334,7 +318,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                                 'context' : context,
                                 'workq'   : my_work_q
                         }
-                        Timer_Q.append(trec)
+                        self.Timer_Q.append(trec)
                         pass
                     elif cur_req.subscribe.mode == 1:
                         # once
@@ -364,22 +348,22 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
     # gNMI Services Capabilities Routine
     def Capabilities(self, request, context):
-        print "Recv'ed Capabiality Request"
+        util_utl.utl_log("Recv'ed Capabiality Request")
         return self.__getCapabilitiesResponseObj()
 
     # gNMI Services Get Routine
     def Get(self, request, context):
-        print "Recv'ed Get Request"
+        util_utl.utl_log("Recv'ed Get Request")
         return self.__processGetRequestObj(request)
 
     # gNMI Services Set Routine
     def Set(self, request, context):
-        print "Recv'ed Set Request"
+        util_utl.utl_log("Recv'ed Set Request")
         return self.__processSetRequestObj(request)
 
     # gNMI Services Subscribe Routine
     def Subscribe(self, request, context):
-        print "Recv'ed Subscribe Request"
+        util_utl.utl_log("Recv'ed Subscribe Request")
         return self.__processSubscribeRequestObj(request, context)
 
 #
@@ -387,9 +371,16 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 #
 class gNMITarget:
     """gNMI Wrapper for the Server/Target"""
-    def __init__(self, targetUrl, tlsEnabled, caCertPath, privKeyPath):
+    def __init__(self, targetUrl, tlsEnabled, caCertPath, privKeyPath, isDbgTest):
+        if isDbgTest:
+            util_utl.DBG_MODE = 0
+
+        self.is_stopped = False
+        self.is_ready = False
         self.grpcServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        gnmi_pb2_grpc.add_gNMIServicer_to_server(gNMITargetServicer(), self.grpcServer)
+        self.grpcServicer = gNMITargetServicer(isDbgTest)
+
+        gnmi_pb2_grpc.add_gNMIServicer_to_server(self.grpcServicer, self.grpcServer)
 
         if tlsEnabled == True:
             # secure connection
@@ -404,19 +395,51 @@ class gNMITarget:
             # insecure connection
             self.grpcServer.add_insecure_port(targetUrl)
 
+    # timer_rec: { 'req':, 'subs':, 'cur-tick':, 'context': , 'workq': }
+    # workq_rec: { 'req':, 'subs': }
+    def TimerEventHandler(self, timer_q):
+        l_timer_q = []
+        while not self.is_stopped:
+            #pdb.set_trace()
+            while len(timer_q) > 0:
+                l_timer_q.append(timer_q.pop())
+
+            new_q = []
+            for trec in l_timer_q:
+                if trec['context'].is_active():
+                    trec['cur-tick'] -= 1
+                    if trec['cur-tick'] == 0:
+                        trec['workq'].put( { 'req' : trec['req'],
+                                             'subs': trec['subs'] }
+                                         )
+                    else:
+                        new_q.append(trec)
+                else:
+                    util_utl.utl_log("subscribe client exit %s" % trec['subs'].path )
+
+            l_timer_q[0:] = new_q
+            time.sleep(1)
+
     def run(self):
         threads = []
-        t = threading.Thread(target=TimerEventHandler, args = (Timer_Q,))
+        t = threading.Thread(target=self.TimerEventHandler, args = (self.grpcServicer.Timer_Q,))
         threads.append(t)
-        t.daemon = True
+        #t.daemon = True
         t.start()
 
         self.grpcServer.start()
+        self.is_ready = True
         try:
-            while True:
-                time.sleep(60*60*24)
+            while not self.is_stopped:
+                time.sleep(1)
         except KeyboardInterrupt:
+            self.is_stopped = True
+        finally:
+            self.grpcServicer.is_stopped = True
             self.grpcServer.stop(0)
+
+        t.join()
+
 
 #
 # main
@@ -445,10 +468,7 @@ def main():
 
     util_utl.utl_log(args)
 
-    # create all interfaces to speed up processing request for interfaces later
-    myDispatcher.CreateAllInterfaces(args.log_level > 4)
-
-    gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey)
+    gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey, args.log_level > 4)
     gTarget.run()
 
 # Starts here
