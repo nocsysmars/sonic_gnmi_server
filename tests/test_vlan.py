@@ -6,16 +6,11 @@ import threading
 import argparse
 import logging
 import sys
+from test_inc import GNMI_URL_CMD_TMPL
+from test_inc import TEST_URL
 
 sys.path.append("../")
 from gnmi_server import gNMITarget
-
-TEST_URL               = 'localhost:5001'
-
-# {0} : get/update
-# {1} : path (ex: "/interfaces/interface/config/name")
-# {2} : new value
-GNMI_CMD_TMPL          = '/home/admin/gocode/bin/gnmi -addr ' + TEST_URL + ' {0} {1} {2}'
 
 PATH_GET_ALL_INF_NAME  = '/interfaces/interface/config/name'
 PATH_INF_CFG_NAME_TMPL = '/interfaces/interface[name={0}]/config/name'
@@ -23,6 +18,7 @@ PATH_INF_TAG_VLAN_TMPL = '/interfaces/interface[name={0}]/ethernet/switched-vlan
 PATH_INF_UTAG_VLAN_TMPL= '/interfaces/interface[name={0}]/ethernet/switched-vlan/config/native-vlan'
 PATH_GET_INF_TMPL      = '/interfaces/interface[name={0}]'
 
+GNMI_CMD_TMPL          = GNMI_URL_CMD_TMPL.format(TEST_URL)
 
 # 1. need to install gnmi command manually to the same path as GNMI_CMD_TMPL.
 
@@ -35,10 +31,10 @@ class TestVlan(unittest.TestCase):
     dbg_print        = False
 
     def setUp(self):
-        self.time_beg = time.clock()
+        self.time_beg = time.time()
 
     def tearDown(self):
-        print "Time spent : %s", time.clock() - self.time_beg
+        print "Time spent : %s" % (time.time() - self.time_beg)
 
     @classmethod
     def setUpClass(cls):
@@ -168,10 +164,15 @@ def suite():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--external', action="store_true", help="test external server")
+    parser.add_argument('--target', help="target url, typically localhost:<port>")
     parser.add_argument('--dbg', action="store_true", help="print debug messages")
     args = parser.parse_args()
-    TestVlan.use_internal_svr = not args.external
+
+    if args.target:
+        TestVlan.use_internal_svr = False
+        TEST_URL = args.target
+        GNMI_CMD_TMPL = GNMI_URL_CMD_TMPL.format(TEST_URL)
+
     TestVlan.dbg_print        = args.dbg
 
     runner = unittest.TextTestRunner(verbosity=2, failfast=True)
