@@ -8,14 +8,33 @@ import subprocess
 import json
 import logging
 import inspect
+import sys
+import os
 
-DBG_MODE = 1
+DBG_MODE  = 1
+DBG_PERF  = 1
 
 def utl_log(str, lvl = logging.DEBUG):
     if DBG_MODE == 1:
         print str
 
-    logging.log (lvl, str)
+    f1 = sys._getframe(1)
+    if f1:
+        my_logger = logging.getLogger()
+        if lvl < my_logger.getEffectiveLevel(): return
+        rec = my_logger.makeRecord(
+            'gnmi_svr',
+            lvl,
+            f1.f_code.co_filename,
+            f1.f_lineno,
+            str,
+            None,
+            None,
+            os.path.basename(f1.f_code.co_filename))
+
+        my_logger.handle(rec)
+    else:
+        logging.log (lvl, str)
 
 def utl_execute_cmd(exe_cmd):
     p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)

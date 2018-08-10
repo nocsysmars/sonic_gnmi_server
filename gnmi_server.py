@@ -116,6 +116,9 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         #FIXME: Build the get response for all the paths
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
+            if util_utl.DBG_PERF:
+                time_beg = time.clock()
+
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)
@@ -161,10 +164,15 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             util_utl.utl_log("get req code :" + str(er_code))
 
+            if util_utl.DBG_PERF:
+                time_end = time.clock()
+                util_utl.utl_log("Time spent %s : get (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
+
             if er_code != grpc.StatusCode.OK:
                 getResp.error.code    = er_code.value[0]
                 getResp.error.message = er_code.value[1]
                 break
+
 
         return getResp
 
@@ -209,17 +217,16 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             repPath = pathPrefix + EncodePath(replace.path.elem)
 
             k = replace.val.WhichOneof("value")
-
             util_utl.utl_log(k)
-
             val = getattr(replace.val, k)
-
             util_utl.utl_log(val)
-
             util_utl.utl_log(repPath)
 
         # input: same as replace
         for update in reqSetObj.update:
+            if util_utl.DBG_PERF:
+                time_beg = time.clock()
+
             updPath = pathPrefix + EncodePath(update.path.elem)
 
             # 1. check if path is valid
@@ -230,6 +237,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             pkey_ar = EncodePathKey(update.path.elem)
             set_val = getattr(update.val, update.val.WhichOneof("value"))
             yp_str  = EncodeYangPath(updPath)
+
             ret_set = self.myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
 
             if ret_set:
@@ -243,6 +251,10 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             util_utl.utl_log("set req path :" + yp_str)
             util_utl.utl_log("set req val  :" + set_val)
             util_utl.utl_log("set req code :" + str(ret_set))
+
+            if util_utl.DBG_PERF:
+                time_end = time.clock()
+                util_utl.utl_log("Time spent %s : set (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
 
         # Fill error message
         # refer to google.golang.org/grpc/codes
@@ -462,7 +474,7 @@ def main():
 
     log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
-    log_fmt  = '%(asctime)-1s %(levelname)-5s %(filename)s %(message)s'
+    log_fmt  = '%(asctime)-1s %(levelname)-5s [%(filename)s %(funcName)s %(lineno)d] %(message)s'
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
     logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
 

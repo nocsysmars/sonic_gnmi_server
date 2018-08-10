@@ -4,6 +4,7 @@ import time
 import pdb
 import threading
 import argparse
+import logging
 import sys
 
 sys.path.append("../")
@@ -34,11 +35,22 @@ class TestVlan(unittest.TestCase):
     dbg_print        = False
 
     def setUp(self):
-        pass
+        self.time_beg = time.clock()
+
+    def tearDown(self):
+        print "Time spent : %s", time.clock() - self.time_beg
 
     @classmethod
     def setUpClass(cls):
         if cls.use_internal_svr:
+            log_path = '/var/log/gnmi_server.log'
+            # clear log file
+            with open(log_path, 'w'):
+                pass
+
+            log_fmt  = '%(asctime)-1s %(levelname)-5s [%(filename)s %(funcName)s %(lineno)d] %(message)s'
+            logging.basicConfig(level = logging.CRITICAL, format = log_fmt, filename = log_path)
+
             cls.test_svr = gNMITarget(TEST_URL, False, None, None, True)
             cls.test_thd = threading.Thread(target=cls.test_svr.run)
             cls.test_thd.start()
