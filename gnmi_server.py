@@ -117,7 +117,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
             if util_utl.DBG_PERF:
-                time_beg = time.clock()
+                time_beg = time.time()
 
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
@@ -165,7 +165,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             util_utl.utl_log("get req code :" + str(er_code))
 
             if util_utl.DBG_PERF:
-                time_end = time.clock()
+                time_end = time.time()
                 util_utl.utl_log("Time spent %s : get (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
 
             if er_code != grpc.StatusCode.OK:
@@ -225,7 +225,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         # input: same as replace
         for update in reqSetObj.update:
             if util_utl.DBG_PERF:
-                time_beg = time.clock()
+                time_beg = time.time()
 
             updPath = pathPrefix + EncodePath(update.path.elem)
 
@@ -253,7 +253,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             util_utl.utl_log("set req code :" + str(ret_set))
 
             if util_utl.DBG_PERF:
-                time_end = time.clock()
+                time_end = time.time()
                 util_utl.utl_log("Time spent %s : set (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
 
         # Fill error message

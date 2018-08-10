@@ -36,10 +36,10 @@ class TestPortChannel(unittest.TestCase):
     dbg_print        = False
 
     def setUp(self):
-        self.time_beg = time.clock()
+        self.time_beg = time.time()
 
     def tearDown(self):
-        print "Time spent : %s", time.clock() - self.time_beg
+        print "Time spent : %s" % (time.time() - self.time_beg)
 
     @classmethod
     def setUpClass(cls):

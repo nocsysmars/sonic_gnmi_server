@@ -10,6 +10,7 @@ import logging
 import inspect
 import sys
 import os
+import time
 
 DBG_MODE  = 1
 DBG_PERF  = 1
@@ -37,10 +38,17 @@ def utl_log(str, lvl = logging.DEBUG):
         logging.log (lvl, str)
 
 def utl_execute_cmd(exe_cmd):
+    if DBG_PERF:
+        time_beg = time.time()
+
     p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
     ## Wait for end of command. Get return code ##
     returncode = p.wait()
+
+    if DBG_PERF:
+        time_end = time.time()
+        utl_log("Time spent %s : (%s)" %  ((time_end - time_beg), exe_cmd), logging.CRITICAL)
 
     if returncode != 0:
         utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[1][3]), logging.ERROR)
@@ -49,10 +57,17 @@ def utl_execute_cmd(exe_cmd):
     return True
 
 def utl_get_execute_cmd_output(exe_cmd):
+    if DBG_PERF:
+        time_beg = time.time()
+
     p = subprocess.Popen(exe_cmd, stdout=subprocess.PIPE, shell=True)
     (output, err) = p.communicate()
     ## Wait for end of command. Get return code ##
     returncode = p.wait()
+
+    if DBG_PERF:
+        time_end = time.time()
+        utl_log("Time spent %s : (%s)" %  ((time_end - time_beg), exe_cmd), logging.CRITICAL)
 
     if returncode != 0:
         utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[1][3]), logging.ERROR)
