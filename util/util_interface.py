@@ -311,8 +311,6 @@ def interface_get_vlan_info(inf_yph, is_fill_info):
 # fill DUT's interface info into inf_yph
 # key_ar [0] : interface name e.g. "eth0"
 def interface_get_info(inf_yph, key_ar):
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ******************" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     is_done = False
     # 0. fill vlan info
@@ -335,9 +333,6 @@ def interface_get_info(inf_yph, key_ar):
     if not is_done:
         # 2. fill port info
         ret_val = interface_get_port_info(inf_yph, key_ar, vlan_output) or ret_val
-
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ******************" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     return ret_val
 
@@ -426,9 +421,6 @@ def interface_get_old_pc_name_by_port_teamshow(port_name):
 
 # To make interface join/leave port channel
 def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     # not support to create port interface
     if is_create: return False
 
@@ -449,9 +441,6 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create):
 
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     return ret_val
 
 def interface_remove_all_mbr_for_pc(pc_name):
@@ -466,9 +455,6 @@ def interface_remove_all_mbr_for_pc(pc_name):
 
 # To create/remove port channel by set name
 def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create):
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     set_cmd = 'sonic-cfggen -a \'{"PORTCHANNEL": {"%s":%s}}\' --write-to-db' \
                 % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
@@ -501,9 +487,6 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create):
         # remove port channel in db last to let other app finish jobs
         util_utl.utl_execute_cmd(set_cmd)
 
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     return True
 
 # vlan_name should be in "VlanXXX" format
@@ -518,9 +501,6 @@ def interface_extract_vid(vlan_name):
 
 # To create/remove vlan by set name
 def interface_set_cfg_name_vlan(oc_yph, pkey_ar, is_create):
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     #pdb.set_trace()
     ret_val = False
     vid = interface_extract_vid(pkey_ar[0])
@@ -554,9 +534,6 @@ def interface_set_cfg_name_vlan(oc_yph, pkey_ar, is_create):
 
         ret_val = True
 
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     return ret_val
 
 # To set name of inf
@@ -584,8 +561,6 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create):
 
 # To set admin status of inf
 def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     # not support create
     if is_create: return False
@@ -594,9 +569,6 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create):
 
     #pdb.set_trace()
     util_utl.utl_execute_cmd(exec_cmd)
-
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     return True
 
@@ -629,8 +601,6 @@ def interface_is_vlan_lst_valid(oc_yph, vid_lst):
 # To set inf's tagged vlan membership
 def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
     # pdb.set_trace()
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     # not support create
     if is_create: return False
@@ -668,16 +638,11 @@ def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
         exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('add', '', vid, pkey_ar[0])
         util_utl.utl_execute_cmd(exec_cmd)
 
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
-
     return True
 
 # To set inf's native vlan
 def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create):
     # not support create
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) beg ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     if is_create: return False
 
@@ -705,9 +670,6 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create):
     if new_uvlan != 0:
         exec_cmd = CFG_VLAN_MBR_CMD_TMPL.format('add', '-u', new_uvlan, pkey_ar[0])
         util_utl.utl_execute_cmd(exec_cmd)
-
-    if util_utl.DBG_PERF:
-        util_utl.utl_log("(%s) end ==================" %  sys._getframe().f_code.co_name, logging.CRITICAL)
 
     return True
 

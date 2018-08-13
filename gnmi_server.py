@@ -116,9 +116,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         #FIXME: Build the get response for all the paths
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
-            if util_utl.DBG_PERF:
-                time_beg = time.time()
-
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)
@@ -163,10 +160,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                         er_code = grpc.StatusCode.OK
 
             util_utl.utl_log("get req code :" + str(er_code))
-
-            if util_utl.DBG_PERF:
-                time_end = time.time()
-                util_utl.utl_log("Time spent %s : get (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
 
             if er_code != grpc.StatusCode.OK:
                 getResp.error.code    = er_code.value[0]
@@ -224,9 +217,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
         # input: same as replace
         for update in reqSetObj.update:
-            if util_utl.DBG_PERF:
-                time_beg = time.time()
-
             updPath = pathPrefix + EncodePath(update.path.elem)
 
             # 1. check if path is valid
@@ -251,10 +241,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             util_utl.utl_log("set req path :" + yp_str)
             util_utl.utl_log("set req val  :" + set_val)
             util_utl.utl_log("set req code :" + str(ret_set))
-
-            if util_utl.DBG_PERF:
-                time_end = time.time()
-                util_utl.utl_log("Time spent %s : set (%s)" %  ((time_end - time_beg), yp_str), logging.CRITICAL)
 
         # Fill error message
         # refer to google.golang.org/grpc/codes
@@ -474,9 +460,9 @@ def main():
 
     log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
-    log_fmt  = '%(asctime)-1s %(levelname)-5s [%(filename)s %(funcName)s %(lineno)d] %(message)s'
+    log_fmt  = '%(asctime)s.%(msecs)03d %(levelname)-5s [%(filename)s %(lineno)d %(funcName)s] %(message)s'
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
-    logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path)
+    logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path, datefmt='%y-%m-%d %H:%M:%S')
 
     util_utl.utl_log(args)
 

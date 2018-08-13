@@ -13,6 +13,7 @@ from grpc import StatusCode
 from util import util_lldp
 from util import util_interface
 from util import util_platform
+from util import util_utl
 
 import re
 #import pdb
@@ -56,6 +57,8 @@ class ocDispatcher:
     def CreateAllInterfaces(self, is_dbg_test):
         return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
 
+    @util_utl.utl_timeit
+    @util_utl.utl_log_outer
     def GetRequestYph(self, path_ar, key_ar):
         # TODO: not support "/"
         if len(path_ar) < 1:
@@ -73,6 +76,8 @@ class ocDispatcher:
 
         return oc_yph
 
+    @util_utl.utl_timeit
+    @util_utl.utl_log_outer
     def SetValByPath(self, yp_str, pkey_ar, val):
         tmp_obj = self.oc_yph.get(yp_str)
 
