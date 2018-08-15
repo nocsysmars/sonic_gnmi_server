@@ -91,7 +91,7 @@ class TestVlan(unittest.TestCase):
         self.assertNotIn(vlan_name, output)
 
     def test_add_port_to_tag_vlan(self):
-        inf_name = 'Ethernet2'
+        inf_name = 'Ethernet4'
         output = self.run_script(['update',
                                   PATH_INF_TAG_VLAN_TMPL.format(inf_name),
                                   '"[2001, 2002]"'])
@@ -104,7 +104,7 @@ class TestVlan(unittest.TestCase):
         self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
     def test_remove_port_from_tag_vlan(self):
-        inf_name = 'Ethernet2'
+        inf_name = 'Ethernet4'
         output = self.run_script(['update',
                                   PATH_INF_TAG_VLAN_TMPL.format(inf_name),
                                   '"[]"'])
@@ -119,13 +119,13 @@ class TestVlan(unittest.TestCase):
         output = self.run_script(['update', PATH_INF_CFG_NAME_TMPL.format(vlan_2001), '""'])
         output = self.run_script(['update', PATH_INF_CFG_NAME_TMPL.format(vlan_2002), '""'])
 
-        output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_name), ''])
+        output = self.run_script(['get', PATH_GET_ALL_INF_NAME, ''])
         self.assertNotIn(vlan_2001, output)
         self.assertNotIn(vlan_2002, output)
         #time.sleep(2)
 
     def test_add_port_to_untag_vlan(self):
-        inf_name = 'Ethernet3'
+        inf_name = 'Ethernet8'
         output = self.run_script(['update',
                                   PATH_INF_UTAG_VLAN_TMPL.format(inf_name),
                                   '"1111"'])
@@ -137,7 +137,7 @@ class TestVlan(unittest.TestCase):
         self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
     def test_remove_port_from_untag_vlan(self):
-        inf_name = 'Ethernet3'
+        inf_name = 'Ethernet8'
         output = self.run_script(['update',
                                   PATH_INF_UTAG_VLAN_TMPL.format(inf_name),
                                   '""'])

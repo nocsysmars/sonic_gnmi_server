@@ -112,7 +112,7 @@ def interface_fill_admin_oper(oc_inf, inf_name):
             oc_inf.state._set_oper_status('DOWN')
 
 # get all pc info with "teamdctl" command
-def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
+def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
     global OLD_AGG_MBR_LST
 
     # 1. clear all port's aggregate-id info
@@ -127,7 +127,13 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
     if is_ok:
         pc_lst = [] if output.strip('\n') =='' else eval(output)
 
+        is_key_pc = True if key_ar and key_ar[0].find('PortChannel') == 0 else False
+        is_key_et = True if key_ar and key_ar[0].find('Ethernet')    == 0 else False
+
         for pc in pc_lst:
+            # case 1, key: PortChannelX
+            if is_key_pc and key_ar[0] != pc: continue
+
             if pc not in oc_infs.interface:
                 oc_inf = oc_infs.interface.add(pc)
             else:
@@ -135,29 +141,36 @@ def interface_get_pc_info(inf_yph, is_fill_info, vlan_output):
                 oc_inf._unset_aggregation()
 
             if is_fill_info:
-                interface_get_info_vlan(oc_inf, pc, vlan_output)
-                oc_inf.state._set_type('ianaift:ieee8023adLag')
+                if not is_key_et:
+                    interface_get_info_vlan(oc_inf, pc, vlan_output)
+                    oc_inf.state._set_type('ianaift:ieee8023adLag')
 
-                interface_fill_admin_oper(oc_inf, pc)
+                    interface_fill_admin_oper(oc_inf, pc)
 
                 exec_cmd = 'teamdctl %s state dump' % pc
                 (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
                 if is_ok:
                     pc_state = json.loads(output)
 
-                    if pc_state["setup"]["runner_name"] != "roundrobin":
-                        oc_inf.aggregation.state._set_lag_type('LACP')
-                    else:
-                        oc_inf.aggregation.state._set_lag_type('STATIC')
+                    if not is_key_et:
+                        if pc_state["setup"]["runner_name"] != "roundrobin":
+                            oc_inf.aggregation.state._set_lag_type('LACP')
+                        else:
+                            oc_inf.aggregation.state._set_lag_type('STATIC')
 
-                        if "ports" in pc_state:
-                            for port in pc_state["ports"]:
-                                if port in oc_infs.interface:
-                                    oc_inf.aggregation.state.member.append(port)
-                                    oc_infs.interface[port].ethernet.config._set_aggregate_id(pc)
+                    if "ports" in pc_state:
+                        for port in pc_state["ports"]:
+                            if port in oc_infs.interface:
+                                if not is_key_et:
                                     OLD_AGG_MBR_LST.append(oc_infs.interface[port])
-                                else:
-                                    util_utl.utl_log("pc [%s]'s mbr port [%s] does not exist !!!" % (pc, port))
+                                    oc_inf.aggregation.state.member.append(port)
+                                oc_infs.interface[port].ethernet.config._set_aggregate_id(pc)
+                            else:
+                                util_utl.utl_log("pc [%s]'s mbr port [%s] does not exist !!!" % (pc, port))
+
+                            # case 2, key: EthernetX
+                            if is_key_et and key_ar[0] == port:
+                                return True
 
         ret_val = True
 
@@ -286,7 +299,7 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
     return ret_val
 
 # get all vlan info
-def interface_get_vlan_info(inf_yph, is_fill_info):
+def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
     exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -315,7 +328,7 @@ def interface_get_info(inf_yph, key_ar):
     is_done = False
     # 0. fill vlan info
     if not key_ar or "Vlan" in key_ar[0]:
-        ret_val = interface_get_vlan_info(inf_yph, True)
+        ret_val = interface_get_vlan_info(inf_yph, True, key_ar)
         if key_ar and "Vlan" in key_ar[0]:
             # only need vlan info
             is_done = True
@@ -324,7 +337,7 @@ def interface_get_info(inf_yph, key_ar):
         vlan_output = interface_get_vlan_output()
         # 1. fill port channel info
         #    also fill member port's aggregate-id
-        ret_val = interface_get_pc_info(inf_yph, True, vlan_output) or ret_val
+        ret_val = interface_get_pc_info(inf_yph, True, key_ar, vlan_output) or ret_val
 
         if key_ar and "PortChannel" in key_ar[0]:
             # only need port channel info
@@ -366,9 +379,9 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
                 oc_inf = oc_infs.interface.add(ldata[0])
         ret_val = True
 
-    ret_val = interface_get_pc_info(inf_yph, False, None) or ret_val
+    ret_val = interface_get_pc_info(inf_yph, False, None, None) or ret_val
 
-    ret_val = interface_get_vlan_info(inf_yph, False) or ret_val
+    ret_val = interface_get_vlan_info(inf_yph, False, None) or ret_val
 
     time_end = time.clock()
 

@@ -82,7 +82,7 @@ class TestPortChannel(unittest.TestCase):
     def test_create_pc(self):
         pc_name = 'PortChannel2'
         output = self.run_script(['update', PATH_INF_CFG_NAME_TMPL.format(pc_name), '"{0}"'.format(pc_name)])
-        output = self.run_script(['get', PATH_GET_ALL_INF_NAME, ''])
+        output = self.run_script(['get', PATH_GET_INF_TMPL.format(pc_name), ''])
         self.assertIn(pc_name, output)
 
     def test_destroy_pc(self):
@@ -92,7 +92,7 @@ class TestPortChannel(unittest.TestCase):
         self.assertNotIn(pc_name, output)
 
     def test_add_port_to_pc(self):
-        inf_name = 'Ethernet2'
+        inf_name = 'Ethernet4'
         pc_name  = 'PortChannel2'
         output = self.run_script(['update',
                                   PATH_INF_AGG_ID_TMPL.format(inf_name),
@@ -118,7 +118,7 @@ class TestPortChannel(unittest.TestCase):
         self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
     def test_remove_port_from_pc(self):
-        inf_name = 'Ethernet2'
+        inf_name = 'Ethernet4'
         pc_name  = 'PortChannel2'
         output = self.run_script(['update',
                                   PATH_INF_AGG_ID_TMPL.format(inf_name),
