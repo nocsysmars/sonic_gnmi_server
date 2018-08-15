@@ -59,24 +59,15 @@ def ExtractJson(oc_obj, leaf_str):
     # sometimes leaf can not be dumped,
     # so dump the parent for safe
     # set filter True to filter attributes which are not configured
-    tmp_json = json.loads(pybindJSON.dumps(oc_obj._parent, filter = True))
-
-    tmp_leaf_lst = leaf_str.split("[")
-    if len(tmp_leaf_lst) > 1:
-        # leaf_str has key field
-        # ex: ['interface', 'name=eth0]', 'kkk=aaa]']
-        for k in tmp_leaf_lst:
-            tmp_k = k.split("=")
-            if len(tmp_k) == 1:
-                fld_str = k
-            else:
-                fld_str = tmp_k[1][:-1]
-
-            if fld_str in tmp_json:
-                tmp_json = tmp_json[fld_str]
+    if hasattr(oc_obj, 'get'):
+        tmp_json = json.loads(pybindJSON.dumps(oc_obj, filter = True))
     else:
-        if leaf_str in tmp_json:
-            tmp_json = tmp_json[leaf_str]
+        tmp_json = json.loads(pybindJSON.dumps(oc_obj._parent, filter = True))
+
+        leaf_name = oc_obj.yang_name()
+
+        if leaf_name in tmp_json:
+            tmp_json = tmp_json[leaf_name]
         else:
             tmp_json = None
 
@@ -87,12 +78,9 @@ def ExtractJson(oc_obj, leaf_str):
 #
 class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
     def __init__(self, isDbgTest):
-        self.myDispatcher = ocDispatcher()
+        self.myDispatcher = ocDispatcher(isDbgTest)
         self.Timer_Q = []
         self.is_stopped = False
-
-        # create all interfaces to speed up processing request for interfaces later
-        self.myDispatcher.CreateAllInterfaces(isDbgTest)
 
     def __getCapabilitiesResponseObj(self):
         capResp = gnmi_pb2.CapabilityResponse()

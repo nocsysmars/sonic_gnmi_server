@@ -7,6 +7,7 @@
 from oc_binding.oc_if_binding import openconfig_interfaces
 from oc_binding.oc_lldp_binding import openconfig_lldp
 from oc_binding.oc_platform_binding import openconfig_platform
+from oc_binding.oc_nwi_binding import openconfig_network_instance
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
 
@@ -14,6 +15,7 @@ from util import util_lldp
 from util import util_interface
 from util import util_platform
 from util import util_utl
+from util import util_nwi
 
 import re
 #import pdb
@@ -26,6 +28,9 @@ ocTable = {
                      "info_f": "util_lldp.lldp_get_info"            },
     "components" : { "cls"   : openconfig_platform,
                      "info_f": "util_platform.platform_get_info"    },
+    "network-instances" : {
+                     "cls"   : openconfig_network_instance,
+                     "info_f": "util_nwi.nwi_get_info"              },
 }
 
 # Dispatch table for registered path and set function
@@ -47,15 +52,22 @@ setPathTable = {
 class ocDispatcher:
     """ Open Config Dispatcher that dispatch requests to
         other openconfig binding modules """
-    def __init__(self):
+    def __init__(self, is_dbg_test):
         # create the full yang tree
         # for performance, only update the tree node requested
         self.oc_yph = YANGPathHelper()
         for k in ocTable.keys():
             ocTable[k]["cls"](path_helper= self.oc_yph)
 
-    def CreateAllInterfaces(self, is_dbg_test):
-        return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
+        # create all interfaces to speed up processing request for interfaces later
+        util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
+
+        # create default network instance
+        util_nwi.nwi_create_dflt_nwi(self.oc_yph, is_dbg_test)
+
+
+    #def CreateAllInterfaces(self, is_dbg_test):
+    #    return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
 
     @util_utl.utl_timeit
     @util_utl.utl_log_outer

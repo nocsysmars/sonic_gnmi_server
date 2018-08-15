@@ -39,7 +39,9 @@ def utl_log(str, lvl = logging.DEBUG, c_lvl=1):
     else:
         logging.log (lvl, str)
 
+# decorator to get function execution time
 def utl_timeit(f):
+    @functools.wraps(f)
     def timed(*args, **kw):
         if DBG_PERF:
             t_beg = time.time()
@@ -52,6 +54,7 @@ def utl_timeit(f):
         return result
     return timed
 
+# decorator to add separation line in logs
 def utl_log_outer(f):
     @functools.wraps(f)
     def wrapped(*args, **kw):
@@ -73,7 +76,7 @@ def utl_execute_cmd(exe_cmd):
     returncode = p.wait()
 
     if returncode != 0:
-        # if no decorator, use inspect.stack()[1][3]
+        # if no decorator, use inspect.stack()[1][3] to get caller
         utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
         return False
 
@@ -87,7 +90,7 @@ def utl_get_execute_cmd_output(exe_cmd):
     returncode = p.wait()
 
     if returncode != 0:
-        # if no decorator, use inspect.stack()[1][3]
+        # if no decorator, use inspect.stack()[1][3] to get caller
         utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
         return (False, None)
 
