@@ -15,3 +15,4 @@
     - /lldp/
     - /interfaces/
     - /components/
+    - /network-instances/network-instance[name=default]/fdb/

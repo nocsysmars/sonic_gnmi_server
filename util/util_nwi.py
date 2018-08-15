@@ -21,6 +21,9 @@ def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
 #    pdb.set_trace()
 #    pass
 
+# key_ar[0] : 'default' (instance name)
+# key_ar[1] : mac
+# key_ar[2] : vlan
 def nwi_get_info(nwi_yph, key_ar):
     """
     fdbshow example:
@@ -38,10 +41,29 @@ def nwi_get_info(nwi_yph, key_ar):
         output = output.splitlines()
         # skip element 0/1, refer to output of fdbshow
 
+        #pdb.set_trace()
+
+        key_mac  = None
+        key_vlan = None
+        if key_ar:
+            if len(key_ar) > 3: return False
+
+            for key in key_ar[1:]:
+                if ':' in key:
+                    if key_mac != None: return False
+                    key_mac = key
+                else:
+                    if key_vlan != None: return False
+                    key_vlan = key
+
         for idx in range(2, len(output)-1):
             ldata = output[idx].split()
+            if key_mac  and key_mac  != ldata[2]: continue
+            if key_vlan and key_vlan != ldata[1]: continue
+
             mac_entry = oc_nwi_dflt.fdb.mac_table.entries.entry.add(mac_address=ldata[2], vlan=int(ldata[1]))
             mac_entry.interface.interface_ref.config.interface = ldata[3]
+            mac_entry.state._set_entry_type('DYNAMIC')
 
         #pdb.set_trace()
 

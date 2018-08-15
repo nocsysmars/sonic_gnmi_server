@@ -274,7 +274,7 @@ module openconfig-vlan {
 
           uses vlan-config;
         }
-
+/* squid: not used
         container state {
 
           config false;
@@ -284,6 +284,7 @@ module openconfig-vlan {
           uses vlan-state;
         }
         uses vlan-members-state;
+*/
       }
     }
   }

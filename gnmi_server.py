@@ -104,6 +104,8 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         #FIXME: Build the get response for all the paths
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
+            #pdb.set_trace()
+
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)

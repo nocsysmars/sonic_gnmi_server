@@ -133,7 +133,7 @@ module openconfig-interfaces {
         subinterface is required, this leaf must be specified
         to indicate the base interface.";
     }
-
+/* squid: not used
     leaf subinterface {
       type leafref {
         path "/oc-if:interfaces/" +
@@ -145,7 +145,7 @@ module openconfig-interfaces {
         interface to be specified using the interface leaf in
         this container.  If only a reference to a base interface
         is requuired, this leaf should not be set.";
-    }
+    } */
   }
 
   grouping interface-ref-state-container {
