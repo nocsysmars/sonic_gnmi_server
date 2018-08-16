@@ -36,16 +36,16 @@ def nwi_get_info(nwi_yph, key_ar):
     """
     (is_ok, output) = util_utl.utl_get_execute_cmd_output('fdbshow')
     if is_ok:
-        oc_nwi_dflt = nwi_yph.get("/network-instances/network-instance[name=default]")[0]
-        oc_nwi_dflt.fdb.mac_table._unset_entries()
-        output = output.splitlines()
-        # skip element 0/1, refer to output of fdbshow
-
-        #pdb.set_trace()
+        oc_nwis = nwi_yph.get("/network-instances")
 
         key_mac  = None
         key_vlan = None
         if key_ar:
+            if key_ar[0] in oc_nwis[0].network_instance:
+                oc_nwi = oc_nwis[0].network_instance[key_ar[0]]
+            else:
+                return False
+
             if len(key_ar) > 3: return False
 
             for key in key_ar[1:]:
@@ -55,13 +55,19 @@ def nwi_get_info(nwi_yph, key_ar):
                 else:
                     if key_vlan != None: return False
                     key_vlan = key
+        else:
+            # only support default network instance
+            oc_nwi = oc_nwis[0].network_instance['default']
 
+        oc_nwi.fdb.mac_table._unset_entries()
+        output = output.splitlines()
+        # skip element 0/1, refer to output of fdbshow
         for idx in range(2, len(output)-1):
             ldata = output[idx].split()
             if key_mac  and key_mac  != ldata[2]: continue
             if key_vlan and key_vlan != ldata[1]: continue
 
-            mac_entry = oc_nwi_dflt.fdb.mac_table.entries.entry.add(mac_address=ldata[2], vlan=int(ldata[1]))
+            mac_entry = oc_nwi.fdb.mac_table.entries.entry.add(mac_address=ldata[2], vlan=int(ldata[1]))
             mac_entry.interface.interface_ref.config.interface = ldata[3]
             mac_entry.state._set_entry_type('DYNAMIC')
 
