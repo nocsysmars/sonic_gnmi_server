@@ -18,7 +18,7 @@ from util import util_utl
 from util import util_nwi
 
 import re
-#import pdb
+import pdb
 
 # Dispatch table for openconfig class and info function
 ocTable = {
@@ -47,6 +47,8 @@ setPathTable = {
             "util_interface.interface_set_trunk_vlans",
     '/interfaces/interface[name]/ethernet/switched-vlan/config/native-vlan' :
             "util_interface.interface_set_native_vlan",
+    '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
+            "util_interface.interface_set_ip_v4",
 }
 
 class ocDispatcher:
@@ -94,7 +96,7 @@ class ocDispatcher:
         tmp_obj = self.oc_yph.get(yp_str)
 
         # replace key [xxx=yyy] with [xxx]
-        reg_path = re.sub(r'\[(\w*)=.*\]', r"[\1]", yp_str)
+        reg_path = re.sub(r'\[(\w*)=[^]]*\]', r"[\1]", yp_str)
 
         #pdb.set_trace()
         ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0) \

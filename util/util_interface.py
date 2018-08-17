@@ -10,6 +10,8 @@ import pdb
 import time
 import sys
 import logging
+import re
+import netaddr
 from util import util_utl
 
 # inf list needed to clear the old agg id setting
@@ -96,6 +98,23 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
     else:
         return (t_vlan, u_vlan)
 
+# fill inf's ip v4 info here
+def interface_fill_ip_info(oc_inf, inf_name):
+    oc_inf.routed_vlan._unset_ipv4()
+
+    exec_cmd = 'ip addr show {0}'.format(inf_name)
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        output = output.splitlines()
+        for idx in range(2, len(output)):
+            m = re.match(r'.*inet ([\d.\/]+) (.*)', output[idx])
+            if m:
+                ip_info = m.group(1).split('/')
+
+                oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
+                oc_addr.config.prefix_length = int(ip_info[1])
+
+
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_admin_oper(oc_inf, inf_name):
     exec_cmd = 'ifconfig %s' % inf_name
@@ -110,6 +129,15 @@ def interface_fill_admin_oper(oc_inf, inf_name):
             oc_inf.state._set_oper_status('UP')
         else:
             oc_inf.state._set_oper_status('DOWN')
+
+        #pdb.set_trace()
+
+        #oc_inf.routed_vlan._unset_ipv4()
+        #output = " ".join(output.replace('\n', ' ').split())
+        #m = re.match(r'.*inet addr:([\d.]+) Bcast:([\d.]+) Mask:([\d.]+)(.*)', output)
+        #if m:
+        #    oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(m.group(1))
+        #    oc_addr.config.prefix_length = netaddr.IPAddress(m.group(3)).netmask_bits()
 
 # get all pc info with "teamdctl" command
 def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
@@ -146,6 +174,8 @@ def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
                     oc_inf.state._set_type('ianaift:ieee8023adLag')
 
                     interface_fill_admin_oper(oc_inf, pc)
+
+                    interface_fill_ip_info(oc_inf, pc)
 
                 exec_cmd = 'teamdctl %s state dump' % pc
                 (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
@@ -259,6 +289,9 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
                 oc_inf._unset_state()
 
             interface_get_info_vlan(oc_inf, inf, vlan_output)
+
+            interface_fill_ip_info(oc_inf, inf)
+
             oc_inf.state._set_type('ift:ethernetCsmacd')
 
             for d, dv in dir_dict.items():
@@ -300,6 +333,7 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
 
 # get all vlan info
 def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
+    #pdb.set_trace()
     exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -318,6 +352,8 @@ def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
 
             if is_fill_info:
                 interface_fill_admin_oper(oc_inf, vname)
+
+                interface_fill_ip_info(oc_inf, vname)
 
         return True
 
@@ -685,6 +721,25 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create):
         util_utl.utl_execute_cmd(exec_cmd)
 
     return True
+
+# ex:    pkey_ar = [u'Vlan3000', u'100.100.100.100']
+#   val for del = '{"ip" : "0",   "prefix-length" : 24 }'
+#   val for add = '{"ip" : "xxx", "prefix-length" : 24 }'
+# To set inf's ip address (v4)
+def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create):
+
+    try:
+        ip_cfg  = [] if val == "" else eval(val)
+        ip_new  = ip_cfg["ip"]
+        ip_pfx  = ip_cfg["prefix-length"]
+    except:
+        return False
+
+    op_str = 'del' if ip_new == "0" or ip_new == "" else 'add'
+
+    exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(op_str, pkey_ar[1], ip_pfx, pkey_ar[0])
+
+    return util_utl.utl_execute_cmd(exec_cmd)
 
 
 
