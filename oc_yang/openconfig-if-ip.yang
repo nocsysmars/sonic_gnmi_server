@@ -997,7 +997,7 @@ module openconfig-if-ip {
           uses ipv4-proxy-arp-config;
         }
       }
-
+*/
       container neighbors {
         description
           "Enclosing container for neighbor list";
@@ -1039,7 +1039,7 @@ module openconfig-if-ip {
           }
         }
       }
-
+/*  squid: not used
       uses oc-if:sub-unnumbered-top;
 
       container config {

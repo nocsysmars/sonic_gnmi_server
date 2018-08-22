@@ -98,11 +98,27 @@ def interface_get_info_vlan(oc_inf, inf_name, vlan_output):
     else:
         return (t_vlan, u_vlan)
 
+# fill inf's ip v4 neighbours (arp) info here
+def interface_fill_nbr_info(oc_inf, inf_name):
+    exec_cmd = 'ip -4 neigh show dev {0}'.format(inf_name)
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        # ex:
+        #  10.0.1.136 lladdr cc:37:ab:e0:c0:c4 STALE
+        #  10.0.1.246  FAILED
+        output = output.splitlines()
+        for idx in range(0, len(output)-1):
+            if "FAILED" in output[idx]: continue
+            nbr_info = output[idx].split()
+            oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor.add(nbr_info[0])
+            oc_nbr.config.link_layer_address = nbr_info[2]
+            oc_nbr.state._set_origin('DYNAMIC')
+
 # fill inf's ip v4 info here
 def interface_fill_ip_info(oc_inf, inf_name):
     oc_inf.routed_vlan._unset_ipv4()
 
-    exec_cmd = 'ip addr show {0}'.format(inf_name)
+    exec_cmd = 'ip -4 addr show {0}'.format(inf_name)
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
         output = output.splitlines()
@@ -114,6 +130,7 @@ def interface_fill_ip_info(oc_inf, inf_name):
                 oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
                 oc_addr.config.prefix_length = int(ip_info[1])
 
+        interface_fill_nbr_info(oc_inf, inf_name)
 
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_admin_oper(oc_inf, inf_name):
@@ -129,15 +146,6 @@ def interface_fill_admin_oper(oc_inf, inf_name):
             oc_inf.state._set_oper_status('UP')
         else:
             oc_inf.state._set_oper_status('DOWN')
-
-        #pdb.set_trace()
-
-        #oc_inf.routed_vlan._unset_ipv4()
-        #output = " ".join(output.replace('\n', ' ').split())
-        #m = re.match(r'.*inet addr:([\d.]+) Bcast:([\d.]+) Mask:([\d.]+)(.*)', output)
-        #if m:
-        #    oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(m.group(1))
-        #    oc_addr.config.prefix_length = netaddr.IPAddress(m.group(3)).netmask_bits()
 
 # get all pc info with "teamdctl" command
 def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
@@ -174,7 +182,6 @@ def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
                     oc_inf.state._set_type('ianaift:ieee8023adLag')
 
                     interface_fill_admin_oper(oc_inf, pc)
-
                     interface_fill_ip_info(oc_inf, pc)
 
                 exec_cmd = 'teamdctl %s state dump' % pc
@@ -289,7 +296,6 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
                 oc_inf._unset_state()
 
             interface_get_info_vlan(oc_inf, inf, vlan_output)
-
             interface_fill_ip_info(oc_inf, inf)
 
             oc_inf.state._set_type('ift:ethernetCsmacd')
@@ -352,7 +358,6 @@ def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
 
             if is_fill_info:
                 interface_fill_admin_oper(oc_inf, vname)
-
                 interface_fill_ip_info(oc_inf, vname)
 
         return True
