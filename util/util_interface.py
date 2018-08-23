@@ -52,7 +52,7 @@ TEAMD_CONF_TMPL      = """
 
 def interface_get_vlan_output():
     """
-    use 'show vlan config' command to gather interface counters information
+    use 'show vlan config' command to gather vlan information
     """
     ret_output = []
     (is_ok, output) = util_utl.utl_get_execute_cmd_output('show vlan config')
@@ -120,9 +120,14 @@ def interface_fill_ip_info(oc_inf, inf_name):
 
     exec_cmd = 'ip -4 addr show {0}'.format(inf_name)
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+
     if is_ok:
         output = output.splitlines()
-        for idx in range(2, len(output)):
+        # ex:
+        #  89: Vlan3000@Bridge: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN group default
+        #  inet 100.100.100.200/24 scope global Vlan3000
+        #  valid_lft forever preferred_lft forever
+        for idx in range(1, len(output)):
             m = re.match(r'.*inet ([\d.\/]+) (.*)', output[idx])
             if m:
                 ip_info = m.group(1).split('/')
@@ -208,67 +213,6 @@ def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
                             # case 2, key: EthernetX
                             if is_key_et and key_ar[0] == port:
                                 return True
-
-        ret_val = True
-
-    return ret_val
-
-# get all pc info with "teamshow" command
-def interface_get_pc_info_teamshow(inf_yph, is_fill_info, vlan_output):
-    #root@switch1:/home/admin# teamshow
-    #Flags: A - active, I - inactive, Up - up, Dw - Down, N/A - not available, S - selected, D - deselected
-    #  No.  Team Dev          Protocol        Ports
-    #-----  ----------------  --------------  -------------------------
-    #    2  PortChannel2      ROUNDROBIN(Up)  Ethernet2(S) Ethernet4(S)
-    #    3  PortChannel3      ROUNDROBIN(Dw)  N/A
-    # PortChannel...
-    global OLD_AGG_MBR_LST
-
-    # 1. clear all port's aggregate-id info
-    oc_infs = inf_yph.get("/interfaces")[0]
-    if is_fill_info:
-        for inf in OLD_AGG_MBR_LST:
-            inf.ethernet.config._unset_aggregate_id()
-        OLD_AGG_MBR_LST = []
-
-    ret_val = False
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output('teamshow')
-    if is_ok:
-        output = output.splitlines()
-        # skip element 0/1/2, refer to output of teamshow
-        for idx in range(3, len(output)):
-
-            ldata = output[idx].split()
-            #                No.  Team Dev        Protocol          Ports
-            # ex of ldata : ['2', 'PortChannel2', 'ROUNDROBIN(Up)', 'Ethernet2(S)', 'Ethernet4(S)']
-            if ldata[1] not in oc_infs.interface:
-                oc_inf = oc_infs.interface.add(ldata[1])
-            else:
-                oc_inf = oc_infs.interface[ldata[1]]
-                oc_inf._unset_aggregation()
-
-            if is_fill_info:
-                interface_get_info_vlan(oc_inf, ldata[1], vlan_output)
-                oc_inf.state._set_type('ianaift:ieee8023adLag')
-
-                if 'Up' in ldata[2]:
-                    oc_inf.state._set_oper_status('UP')
-                else:
-                    oc_inf.state._set_oper_status('DOWN')
-
-                if 'LACP' in ldata[2]:
-                    oc_inf.aggregation.state._set_lag_type('LACP')
-                else:
-                    oc_inf.aggregation.state._set_lag_type('STATIC')
-                    ldata_len = len(ldata)
-                    idx = 3
-                    while idx < ldata_len:
-                        ptmp = ldata[idx].split('(')[0]
-                        if 'Ethernet' in ptmp:
-                            oc_inf.aggregation.state.member.append(ptmp)
-                            oc_infs.interface[ptmp].ethernet.config._set_aggregate_id(ldata[1])
-                            OLD_AGG_MBR_LST.append(oc_infs.interface[ptmp])
-                        idx = idx +1
 
         ret_val = True
 
@@ -446,30 +390,6 @@ def interface_get_old_pc_name_by_port(port_name):
                 if port_name in pc_cfg["ports"]:
                     old_pc_name = pc
                     break
-
-    return old_pc_name
-
-# get old pc name by port with "teamshow" command
-def interface_get_old_pc_name_by_port_teamshow(port_name):
-    old_pc_name = ""
-
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output('teamshow')
-    if is_ok:
-        output = output.splitlines()
-        # skip element 0/1/2, refer to output of teamshow
-        for idx in range(3, len(output)):
-
-            ldata = output[idx].split()
-            #                No.  Team Dev        Protocol          Ports
-            # ex of ldata : ['2', 'PortChannel2', 'ROUNDROBIN(Up)', 'Ethernet2(S)', 'Ethernet4(S)']
-
-            ldata_len = len(ldata)
-            idx = 3
-            while idx < ldata_len:
-                if port_name in ldata[idx]:
-                    old_pc_name = ldata[1]
-                    break
-                idx = idx+1
 
     return old_pc_name
 
@@ -679,7 +599,7 @@ def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create):
 
     # check if all new tvlan exists
     if new_tvlan and not interface_is_vlan_lst_valid(oc_yph, new_tvlan):
-        util_utl.utl_log("new vlan list not valid !")
+        util_utl.utl_log("new vlan list is not valid !")
         return False
 
     # remove inf from vlan
@@ -712,7 +632,7 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create):
 
         # check if new uvlan exists
         if not interface_is_vlan_lst_valid(oc_yph, [new_uvlan] ):
-            util_utl.utl_log("native vlan not valid !")
+            util_utl.utl_log("native vlan is not valid !")
             return False
 
     # remove inf from old uvlan
