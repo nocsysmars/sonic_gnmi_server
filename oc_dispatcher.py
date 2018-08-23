@@ -8,6 +8,8 @@ from oc_binding.oc_if_binding import openconfig_interfaces
 from oc_binding.oc_lldp_binding import openconfig_lldp
 from oc_binding.oc_platform_binding import openconfig_platform
 from oc_binding.oc_nwi_binding import openconfig_network_instance
+from oc_binding.oc_lr_binding import openconfig_local_routing
+
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
 
@@ -16,6 +18,7 @@ from util import util_interface
 from util import util_platform
 from util import util_utl
 from util import util_nwi
+from util import util_lr
 
 import re
 import pdb
@@ -31,6 +34,8 @@ ocTable = {
     "network-instances" : {
                      "cls"   : openconfig_network_instance,
                      "info_f": "util_nwi.nwi_get_info"              },
+    "local-routes" : { "cls"   : openconfig_local_routing,
+                     "info_f": "util_lr.lr_get_info"                },
 }
 
 # Dispatch table for registered path and set function
@@ -49,6 +54,8 @@ setPathTable = {
             "util_interface.interface_set_native_vlan",
     '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
             "util_interface.interface_set_ip_v4",
+    '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
+            "util_lr.lr_set_route_v4",
 }
 
 class ocDispatcher:
@@ -98,7 +105,6 @@ class ocDispatcher:
         # replace key [xxx=yyy] with [xxx]
         reg_path = re.sub(r'\[(\w*)=[^]]*\]', r"[\1]", yp_str)
 
-        #pdb.set_trace()
         ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0) \
                     if reg_path in setPathTable else False
 

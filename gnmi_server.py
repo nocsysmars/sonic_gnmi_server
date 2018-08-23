@@ -71,6 +71,9 @@ def ExtractJson(oc_obj, leaf_str):
         else:
             tmp_json = None
 
+    if leaf_str and leaf_str in tmp_json:
+        tmp_json = tmp_json[leaf_str]
+
     return tmp_json
 
 #
@@ -99,13 +102,9 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         pfx_ar = EncodePath(reqGetObj.prefix.elem)
         t = reqGetObj.type
 
-        #pdb.set_trace()
-
         #FIXME: Build the get response for all the paths
         getResp = gnmi_pb2.GetResponse()
         for path in reqGetObj.path:
-            #pdb.set_trace()
-
             er_code = grpc.StatusCode.INVALID_ARGUMENT
             path_ar = pfx_ar + EncodePath(path.elem)
             pkey_ar = EncodePathKey(path.elem)
@@ -113,41 +112,41 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             util_utl.utl_log("get req path :" + yp_str)
 
-            #print path_ar
             oc_yph = self.myDispatcher.GetRequestYph(path_ar, pkey_ar)
             if isinstance(oc_yph, grpc.StatusCode):
                 er_code = oc_yph
             else:
-                #yp_str = EncodeYangPath(path_ar)
+                tmp_obj = oc_yph.get(yp_str) if oc_yph else []
+                tmp_json = None
 
                 #pdb.set_trace()
-                tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
                 # TODO: if got more than one obj ?
-                if len(tmp_obj) >= 1:
-                    leaf_str = path_ar[-1]
-
-                    if len(tmp_obj) > 1:
-                        tmp_json = []
-                        for idx in range(len(tmp_obj)):
-                            obj_json = ExtractJson(tmp_obj[idx], leaf_str)
-                            if obj_json:
-                                tmp_json.append(obj_json)
+                if len(tmp_obj) > 1:
+                    if tmp_obj[0]._parent == tmp_obj[1]._parent:
+                        leaf_str = path_ar[-1]
+                        tmp_json = ExtractJson(tmp_obj[0]._parent, leaf_str)
                     else:
-                        tmp_json = ExtractJson(tmp_obj[0], leaf_str)
+                        tmp_json = {}
+                        for idx in range(len(tmp_obj)):
+                            obj_json = ExtractJson(tmp_obj[idx], None)
+                            if obj_json:
+                                tmp_json[tmp_obj[idx]._yang_path()]= obj_json
 
-                    if tmp_json:
-                        notif = getResp.notification.add()
-                        notif.timestamp = int(time.time())
-                        notif.prefix.CopyFrom(reqGetObj.prefix)
-                        update = notif.update.add()
-                        update.path.CopyFrom(reqGetObj.path[0])
+                elif len(tmp_obj) == 1:
+                    tmp_json = ExtractJson(tmp_obj[0], None)
 
-                        util_utl.utl_log("get req json :" + json.dumps(tmp_json))
-                        #pdb.set_trace()
+                if tmp_json:
+                    notif = getResp.notification.add()
+                    notif.timestamp = int(time.time())
+                    notif.prefix.CopyFrom(reqGetObj.prefix)
+                    update = notif.update.add()
+                    update.path.CopyFrom(reqGetObj.path[0])
 
-                        update.val.json_val = json.dumps(tmp_json)
-                        er_code = grpc.StatusCode.OK
+                    util_utl.utl_log("get req json :" + json.dumps(tmp_json))
+
+                    update.val.json_val = json.dumps(tmp_json)
+                    er_code = grpc.StatusCode.OK
 
             util_utl.utl_log("get req code :" + str(er_code))
 
