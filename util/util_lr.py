@@ -7,7 +7,7 @@
 import subprocess
 import json
 import pdb
-from util import util_utl
+import util_utl
 
 def lr_add_static_route(lr_obj, pfx_str):
     if pfx_str == 'default':
@@ -18,7 +18,10 @@ def lr_add_static_route(lr_obj, pfx_str):
 def lr_add_nexthop(lr_yph, sr_obj, idx, nh_str, inf):
     infs = lr_yph.get("/interfaces")[0]
     if inf not in infs.interface:
-        infs.interface.add(inf)
+        # currently 'eth0' is not usable via gnmi service
+        # so just return if inf does not exist
+        # infs.interface.add(inf)
+        return
 
     nh = sr_obj.next_hops.next_hop.add(idx)
     nh.config.next_hop = nh_str
@@ -88,11 +91,11 @@ def lr_set_route_v4(oc_yph, pkey_ar, val, is_create):
     # {2} : nexthop via 10.0.0.108 dev Ethernet54
     IP_ROUTE_CMD_TMPL = "ip route {0} {1} {2}"
 
-    # delete old route
+    # delete all old routes
     exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[0], "")
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
-    # add new route
+    # add new routes
     if nh_str != "":
         exec_cmd = IP_ROUTE_CMD_TMPL.format("add", pkey_ar[0], nh_str)
         ret_val = util_utl.utl_execute_cmd(exec_cmd)

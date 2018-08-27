@@ -84,7 +84,7 @@ class TestIp(test_inc.MyTestCase):
                                   "'{0}'".format(cfg_str)])
 
         output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_1), ''])
-        self.assertNotIn(cfg_str, "".join(output.replace('\n', '').split()))
+        self.assertNotIn(ip1, "".join(output.replace('\n', '').split()))
 
         cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format("", pfx)
         output = self.run_script(['update',
@@ -92,7 +92,7 @@ class TestIp(test_inc.MyTestCase):
                                   "'{0}'".format(cfg_str)])
 
         output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_2), ''])
-        self.assertNotIn(cfg_str, "".join(output.replace('\n', '').split()))
+        self.assertNotIn(ip2, "".join(output.replace('\n', '').split()))
 
     def test_add_static_route(self):
         ip_pfx   = "172.17.2.0/24"

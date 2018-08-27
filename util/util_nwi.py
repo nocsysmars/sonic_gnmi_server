@@ -7,7 +7,7 @@
 import subprocess
 import json
 import pdb
-from util import util_utl
+import util_utl
 
 @util_utl.utl_timeit
 def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):

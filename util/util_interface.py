@@ -12,7 +12,7 @@ import sys
 import logging
 import re
 import netaddr
-from util import util_utl
+import util_utl
 
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
@@ -20,6 +20,8 @@ OLD_AGG_MBR_LST = []
 VLAN_AUTO_CREATE     = True
 VLAN_ID_MAX          = 4094
 VLAN_ID_MIN          = 1
+
+MGMT_PORT_NAME       = 'eth0'
 
 GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
 GET_LST_CMD_TMPL     = 'sonic-cfggen -d -v "{0}.keys() if {0}"'
@@ -138,9 +140,14 @@ def interface_fill_ip_info(oc_inf, inf_name):
         interface_fill_nbr_info(oc_inf, inf_name)
 
 # fill inf's admin/oper status by "ifconfig xxx" output
-def interface_fill_admin_oper(oc_inf, inf_name):
-    exec_cmd = 'ifconfig %s' % inf_name
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+def interface_fill_admin_oper(oc_inf, inf_name, ifcfg_output = None):
+    if ifcfg_output:
+        is_ok = True
+        output = ifcfg_output
+    else:
+        exec_cmd = 'ifconfig %s' % inf_name
+        (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+
     if is_ok:
         if 'UP' in output:
             oc_inf.state._set_admin_status('UP')
@@ -221,6 +228,7 @@ def interface_get_pc_info(inf_yph, is_fill_info, key_ar, vlan_output):
 def interface_get_port_info(inf_yph, key_ar, vlan_output):
     # 1. fill interface statistics
     # use 'portstat -j' command to gather interface counters information
+    ret_val = False
     (is_ok, output) = util_utl.utl_get_execute_cmd_output('portstat -j')
     if is_ok:
         pstat_info = json.loads(output)
@@ -284,6 +292,7 @@ def interface_get_port_info(inf_yph, key_ar, vlan_output):
 # get all vlan info
 def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
     #pdb.set_trace()
+    ret_val = False
     exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -306,13 +315,38 @@ def interface_get_vlan_info(inf_yph, is_fill_info, key_ar):
 
         return True
 
+def interface_get_mgmtport_info(inf_yph, is_fill_info, key_ar):
+    ret_val = False
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ifconfig %s' % MGMT_PORT_NAME)
+    if is_ok:
+        oc_infs = inf_yph.get("/interfaces")[0]
+        if MGMT_PORT_NAME not in oc_infs.interface:
+            oc_inf = oc_infs.interface.add(MGMT_PORT_NAME)
+        else:
+            oc_inf = oc_infs.interface[MGMT_PORT_NAME]
+
+        if is_fill_info:
+            interface_fill_admin_oper(oc_inf, MGMT_PORT_NAME, output)
+            interface_fill_ip_info(oc_inf, MGMT_PORT_NAME)
+
+        ret_val = True
+
+    return ret_val
+
 # fill DUT's interface info into inf_yph
 # key_ar [0] : interface name e.g. "eth0"
 def interface_get_info(inf_yph, key_ar):
 
     is_done = False
+    # fill mgmt port info, not used now
+    #if not key_ar or MGMT_PORT_NAME == key_ar[0]:
+    #    ret_val = interface_get_mgmtport_info(inf_yph, True, key_ar)
+    #    if key_ar and MGMT_PORT_NAME == key_ar[0]:
+    #        # only need mgmt port info
+    #        is_done = True
+
     # 0. fill vlan info
-    if not key_ar or "Vlan" in key_ar[0]:
+    if not is_done and (not key_ar or "Vlan" in key_ar[0]):
         ret_val = interface_get_vlan_info(inf_yph, True, key_ar)
         if key_ar and "Vlan" in key_ar[0]:
             # only need vlan info
@@ -363,6 +397,8 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
             if ldata[0] not in oc_infs.interface:
                 oc_inf = oc_infs.interface.add(ldata[0])
         ret_val = True
+
+    #ret_val = interface_get_mgmtport_info(inf_yph, False, None) or ret_val
 
     ret_val = interface_get_pc_info(inf_yph, False, None, None) or ret_val
 
