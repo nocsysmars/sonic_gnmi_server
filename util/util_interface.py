@@ -8,10 +8,7 @@ import subprocess
 import json
 import pdb
 import time
-import sys
-import logging
 import re
-import netaddr
 import util_utl
 
 # inf list needed to clear the old agg id setting
@@ -374,9 +371,8 @@ def interface_get_my_mac():
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok: MY_MAC_ADDR = output.strip('\n')
 
+@util_utl.utl_timeit
 def interface_create_all_infs(inf_yph, is_dbg_test):
-    time_beg = time.clock()
-
     # fill my mac addr for port channel usage
     interface_get_my_mac()
 
@@ -403,10 +399,6 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
     ret_val = interface_get_pc_info(inf_yph, False, None, None) or ret_val
 
     ret_val = interface_get_vlan_info(inf_yph, False, None) or ret_val
-
-    time_end = time.clock()
-
-    util_utl.utl_log("Time spent in creating all infs : %s" %  (time_end - time_beg))
 
     return ret_val
 
