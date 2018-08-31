@@ -9,6 +9,7 @@ from oc_binding.oc_lldp_binding import openconfig_lldp
 from oc_binding.oc_platform_binding import openconfig_platform
 from oc_binding.oc_nwi_binding import openconfig_network_instance
 from oc_binding.oc_lr_binding import openconfig_local_routing
+from oc_binding.oc_acl_binding import openconfig_acl
 
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
@@ -19,6 +20,7 @@ from util import util_platform
 from util import util_utl
 from util import util_nwi
 from util import util_lr
+from util import util_acl
 
 import re
 import pdb
@@ -34,8 +36,10 @@ ocTable = {
     "network-instances" : {
                      "cls"   : openconfig_network_instance,
                      "info_f": "util_nwi.nwi_get_info"              },
-    "local-routes" : { "cls"   : openconfig_local_routing,
+    "local-routes" : { "cls" : openconfig_local_routing,
                      "info_f": "util_lr.lr_get_info"                },
+    "acl"          : { "cls" : openconfig_acl,
+                     "info_f": "util_acl.acl_get_info"              },
 }
 
 # Dispatch table for registered path and set function
@@ -56,6 +60,9 @@ setPathTable = {
             "util_interface.interface_set_ip_v4",
     '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
             "util_lr.lr_set_route_v4",
+    # multiple keys must in alphabet order
+    '/acl/acl-sets/acl-set[name][type]/config' :
+            "util_acl.acl_set_acl_set",
 }
 
 class ocDispatcher:

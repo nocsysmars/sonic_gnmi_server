@@ -31,7 +31,7 @@ def EncodePath(path):
     for pe in path:
         pstr = pe.name
         if pe.key:
-             for k, v in pe.key.iteritems():
+             for k, v in sorted(pe.key.iteritems()):
                   pstr += "[" + str(k) + "=" + str(v) + "]"
         pathStrs += [pstr]
     return pathStrs
@@ -42,7 +42,7 @@ def EncodePathKey(path):
     key_strs = []
     for pe in path:
         if pe.key:
-             for k, v in pe.key.iteritems():
+             for k, v in sorted(pe.key.iteritems()):
                   key_strs += [v]
     return key_strs
 
