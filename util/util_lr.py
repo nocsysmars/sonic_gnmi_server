@@ -29,7 +29,7 @@ def lr_add_nexthop(lr_yph, sr_obj, idx, nh_str, inf):
 
 # fill DUT's route info into lr_yph
 # key_ar [0] : e.g. ""
-def lr_get_info(lr_yph, key_ar):
+def lr_get_info(lr_yph, path_ar, key_ar):
     """
     use 'ip route show' command to gather information
     """

@@ -159,7 +159,7 @@ def acl_fill_binding_info(oc_acl, acl_name, acl_type, acl_info):
 # fill DUT's current acl info into root_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
-def acl_get_info(root_yph, key_ar):
+def acl_get_info(root_yph, path_ar, key_ar):
     #pdb.set_trace()
     oc_acl = root_yph.get("/acl")[0]
 
@@ -253,16 +253,13 @@ def acl_rule_copy_cfg(rule_yang, rule_sonic, key):
 # get rule name and copy pri info from rule_yang to rule_sonic
 def acl_rule_get_name_and_pri(rule_yang, rule_sonic):
     rule_name = None
-    pri = None
     seq_id = None
     if 'sequence-id' in rule_yang:
         seq_id = int (rule_yang['sequence-id'])
-        #pri = "{0}".format(rule_yang['sequence-id'])
 
     if 'config' in rule_yang:
         if not seq_id and 'sequence-id' in rule_yang:
             seq_id = int (rule_yang['sequence-id'])
-            #pri = "{0}".format(rule_yang['conifg']['sequence-id'])
 
         if 'description' in rule_yang['config']:
             rule_name = rule_yang['config']['description']
@@ -272,7 +269,7 @@ def acl_rule_get_name_and_pri(rule_yang, rule_sonic):
 
     if not rule_name:
         if seq_id:
-            rule_name = 'RULE_{0}'.format(pri)
+            rule_name = 'RULE_{0}'.format(seq_id)
 
     return rule_name
 

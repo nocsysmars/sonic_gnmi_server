@@ -60,7 +60,7 @@ setPathTable = {
             "util_interface.interface_set_ip_v4",
     '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
             "util_lr.lr_set_route_v4",
-    # multiple keys must in alphabet order
+    # multiple keys must be in alphabet order
     '/acl/acl-sets/acl-set[name][type]/config' :
             "util_acl.acl_set_acl_set",
     '/acl/acl-sets/acl-set[name][type]/acl-entries/acl-entry' :
@@ -101,10 +101,10 @@ class ocDispatcher:
             oc_yph = StatusCode.INVALID_ARGUMENT
         else:
             oc_yph = self.oc_yph
-            if path_ar != ['interfaces', 'interface', 'config', 'name']:
-                # suppose key_ar [0] is interface name e.g. "eth0"
-                ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, key_ar)
-                if not ret_val: oc_yph = StatusCode.INTERNAL
+
+            # suppose key_ar [0] is interface name e.g. "eth0"
+            ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, path_ar, key_ar)
+            if not ret_val: oc_yph = StatusCode.INTERNAL
 
         return oc_yph
 

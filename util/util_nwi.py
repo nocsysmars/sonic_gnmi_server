@@ -24,7 +24,7 @@ def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
 # key_ar[0] : 'default' (instance name)
 # key_ar[1] : mac
 # key_ar[2] : vlan
-def nwi_get_info(nwi_yph, key_ar):
+def nwi_get_info(nwi_yph, path_ar, key_ar):
     """
     fdbshow example:
     No.    Vlan  MacAddress         Port
