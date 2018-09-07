@@ -455,7 +455,7 @@ def main():
 
     util_utl.utl_log(args)
 
-    gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey, args.log_level > 4)
+    gTarget = gNMITarget(args.targetURL, args.tls, args.cert, args.pvtkey, args.log_level < 0)
     gTarget.run()
 
 # Starts here

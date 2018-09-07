@@ -63,6 +63,10 @@ setPathTable = {
     # multiple keys must in alphabet order
     '/acl/acl-sets/acl-set[name][type]/config' :
             "util_acl.acl_set_acl_set",
+    '/acl/acl-sets/acl-set[name][type]/acl-entries/acl-entry' :
+            "util_acl.acl_set_acl_entry",
+    '/acl/interfaces/interface[id]/ingress-acl-sets/ingress-acl-set[set-name][type]/config' :
+            "util_acl.acl_set_interface",
 }
 
 class ocDispatcher:
@@ -110,7 +114,7 @@ class ocDispatcher:
         tmp_obj = self.oc_yph.get(yp_str)
 
         # replace key [xxx=yyy] with [xxx]
-        reg_path = re.sub(r'\[(\w*)=[^]]*\]', r"[\1]", yp_str)
+        reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
 
         ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0) \
                     if reg_path in setPathTable else False

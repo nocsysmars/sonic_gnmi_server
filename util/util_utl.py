@@ -39,6 +39,9 @@ def utl_log(str, lvl = logging.DEBUG, c_lvl=1):
     else:
         logging.log (lvl, str)
 
+def utl_err(str):
+    utl_log(str, logging.ERROR, 2)
+
 # decorator to get function execution time
 def utl_timeit(f):
     @functools.wraps(f)

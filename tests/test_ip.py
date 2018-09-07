@@ -151,7 +151,7 @@ if __name__ == '__main__':
         TestIp.use_internal_svr = False
         test_inc.TEST_URL = args.target
 
-    TestIp.dbg_print        = args.dbg
+    TestIp.dbg_print = args.dbg
 
     runner = unittest.TextTestRunner(verbosity=2, failfast=True)
     runner.run(suite())
