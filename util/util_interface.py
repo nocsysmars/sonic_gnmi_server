@@ -14,6 +14,10 @@ import util_utl
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
 
+# inf list needed to check existence
+OLD_VLAN_INF_LST = []
+OLD_PC_INF_LST = []
+
 VLAN_AUTO_CREATE     = True
 VLAN_ID_MAX          = 4094
 VLAN_ID_MIN          = 1
@@ -70,6 +74,41 @@ def interface_get_vlan_output():
 
     return ret_output
 
+def interface_get_ip4_addr_output():
+    """
+    use 'ip -4 addr show' command to gather information
+    """
+    ret_output = []
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ip -4 addr show')
+    if is_ok:
+        ret_output = output.splitlines()
+
+    return ret_output
+
+def interface_get_ip4_nbr_output():
+    """
+    use 'ip -4 neigh show' command to gather information
+    """
+    ret_output = []
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ip -4 neigh show')
+    if is_ok:
+        output = output.splitlines()
+        for idx in range(len(output)):
+            ret_output.append(output[idx].split())
+
+    return ret_output
+
+def interface_get_ifcfg_output():
+    """
+    use 'ifconfig -a' command to gather information
+    """
+    ret_output = []
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ifconfig -a')
+    if is_ok:
+        ret_output = output.splitlines()
+
+    return ret_output
+
 # fill a inf's vlan info
 def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
     #pdb.set_trace()
@@ -106,67 +145,95 @@ def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
         return (t_vlan, u_vlan)
 
 # fill inf's ip v4 neighbours (arp) info here
-def interface_fill_inf_nbr_info(oc_inf, inf_name):
-    exec_cmd = 'ip -4 neigh show dev {0}'.format(inf_name)
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
-    if is_ok:
-        # ex:
-        #  10.0.1.136 lladdr cc:37:ab:e0:c0:c4 STALE
-        #  10.0.1.246  FAILED
-        output = output.splitlines()
-        for idx in range(0, len(output)-1):
-            if "FAILED" in output[idx]: continue
-            nbr_info = output[idx].split()
-            oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor.add(nbr_info[0])
-            oc_nbr.config.link_layer_address = nbr_info[2]
-            oc_nbr.state._set_origin('DYNAMIC')
+def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
+    # ex:
+    #  192.168.200.10 dev eth0 lladdr a0:36:9f:8d:52:fa STALE
+    #  192.168.200.66 dev eth0 lladdr 34:64:a9:2b:2e:ad REACHABLE
+    #  192.168.200.1 dev eth0  FAILED
+    output = out_tbl["ip4_nbr_output"]
+    for idx in range(0, len(output)-1):
+        nbr_info =  output[idx]
+        if nbr_info[2] != inf_name: continue
+        if nbr_info[3] == 'FAILED': continue
+
+        oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor.add(nbr_info[0])
+        oc_nbr.config.link_layer_address = nbr_info[4]
+        oc_nbr.state._set_origin('DYNAMIC')
+
+
+def interface_get_inf_ip_output(ip4_addr_output, inf_name):
+    ret_output = []
+    is_found = False
+    if "Vlan" in inf_name:
+        match_name = inf_name + "@Bridge:"
+    else:
+        match_name = inf_name + ":"
+
+    for idx in range(0, len(ip4_addr_output)):
+        if is_found:
+            if ':' in ip4_addr_output[idx]:
+                break
+            else:
+                ret_output.append(ip4_addr_output[idx])
+
+        if match_name in ip4_addr_output[idx]:
+            is_found = True
+            ret_output.append(ip4_addr_output[idx])
+
+    return ret_output
+
+def interface_get_inf_ifcfg_output(ifcfg_output, inf_name):
+    ret_output = []
+    is_found = False
+    for idx in range(0, len(ifcfg_output)):
+        if is_found:
+            if '' == ifcfg_output[idx]:
+                break
+            else:
+                ret_output.append(ifcfg_output[idx])
+
+        if inf_name in ifcfg_output[idx]:
+            is_found = True
+            ret_output.append(ifcfg_output[idx])
+
+    return ret_output
 
 # fill inf's ip v4 info here
-def interface_fill_inf_ip_info(oc_inf, inf_name):
+def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
     oc_inf.routed_vlan._unset_ipv4()
 
-    exec_cmd = 'ip -4 addr show {0}'.format(inf_name)
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    # ex:
+    #  89: Vlan3000@Bridge: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN group default
+    #  inet 100.100.100.200/24 scope global Vlan3000
+    #  valid_lft forever preferred_lft forever
+    output = interface_get_inf_ip_output(out_tbl["ip4_addr_output"], inf_name)
+    for idx in range(1, len(output)):
+        m = re.match(r'.*inet ([\d.\/]+) (.*)', output[idx])
+        if m:
+            ip_info = m.group(1).split('/')
 
-    if is_ok:
-        output = output.splitlines()
-        # ex:
-        #  89: Vlan3000@Bridge: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN group default
-        #  inet 100.100.100.200/24 scope global Vlan3000
-        #  valid_lft forever preferred_lft forever
-        for idx in range(1, len(output)):
-            m = re.match(r'.*inet ([\d.\/]+) (.*)', output[idx])
-            if m:
-                ip_info = m.group(1).split('/')
+            oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
+            oc_addr.config.prefix_length = int(ip_info[1])
 
-                oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
-                oc_addr.config.prefix_length = int(ip_info[1])
-
-        interface_fill_inf_nbr_info(oc_inf, inf_name)
+    interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl)
 
 # fill inf's admin/oper status by "ifconfig xxx" output
-def interface_fill_inf_admin_oper(oc_inf, inf_name, ifcfg_output = None):
-    if ifcfg_output:
-        is_ok = True
-        output = ifcfg_output
-    else:
-        exec_cmd = 'ifconfig %s' % inf_name
-        (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
-
-    if is_ok:
-        if 'UP' in output:
+def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
+    output = interface_get_inf_ifcfg_output(out_tbl["ifcfg_output"], inf_name)
+    if output:
+        if 'UP' in output[1]:
             oc_inf.state._set_admin_status('UP')
         else:
             oc_inf.state._set_admin_status('DOWN')
 
-        if 'RUNNING' in output:
+        if 'RUNNING' in output[1]:
             oc_inf.state._set_oper_status('UP')
         else:
             oc_inf.state._set_oper_status('DOWN')
 
 # get all pc info with "teamdctl" command
-def interface_get_pc_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output):
-    global OLD_AGG_MBR_LST
+def interface_get_pc_inf_info(inf_yph, fill_info_bmp, key_ar, out_tbl):
+    global OLD_AGG_MBR_LST, OLD_PC_INF_LST
 
     # 1. clear all port's aggregate-id info
     oc_infs = inf_yph.get("/interfaces")[0]
@@ -176,6 +243,7 @@ def interface_get_pc_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output):
         OLD_AGG_MBR_LST = []
 
     ret_val = False
+    new_pc_inf_lst = []
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_PC_LST_CMD)
     if is_ok:
         pc_lst = [] if output.strip('\n') =='' else eval(output)
@@ -194,14 +262,16 @@ def interface_get_pc_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output):
                 oc_inf = oc_infs.interface[pc]
                 oc_inf._unset_aggregation()
 
+            new_pc_inf_lst.append(pc)
+
             if not is_key_et:
                 if fill_info_bmp & FILL_INFO_STATE:
                     oc_inf.state._set_type('ianaift:ieee8023adLag')
-                    interface_fill_inf_admin_oper(oc_inf, pc)
+                    interface_fill_inf_admin_oper(oc_inf, pc, out_tbl)
                 if fill_info_bmp & FILL_INFO_VLAN:
-                    interface_fill_inf_vlanmbr_info(oc_inf, pc, vlan_output)
+                    interface_fill_inf_vlanmbr_info(oc_inf, pc, out_tbl["vlan_output"])
                 if fill_info_bmp & FILL_INFO_IP:
-                    interface_fill_inf_ip_info(oc_inf, pc)
+                    interface_fill_inf_ip_info(oc_inf, pc, out_tbl)
 
             if fill_info_bmp & FILL_INFO_PC:
                 exec_cmd = 'teamdctl %s state dump' % pc
@@ -230,17 +300,15 @@ def interface_get_pc_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output):
                                 return True
 
         # remove no existing pc
-        no_exist_pc = []
-        for oc_inf in oc_infs.interface:
-            if 'PortChannel' in oc_inf and oc_inf not in pc_lst:
-                no_exist_pc.append(oc_inf)
+        for pc in OLD_PC_INF_LST:
+            if pc not in new_pc_inf_lst and pc in oc_infs.interface:
+                oc_infs.interface.delete(pc)
 
-        for pc in no_exist_pc:
-            oc_infs.interface.delete(pc)
+        OLD_PC_INF_LST = new_pc_inf_lst
 
     return ret_val
 
-def interface_get_port_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output, is_dbg_test = False):
+def interface_get_port_inf_info(inf_yph, fill_info_bmp, key_ar, out_tbl, is_dbg_test = False):
     ret_val = False
     oc_infs = inf_yph.get("/interfaces")[0]
 
@@ -265,9 +333,9 @@ def interface_get_port_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output, is_
                 oc_inf._unset_state()
 
             if fill_info_bmp & FILL_INFO_VLAN:
-                interface_fill_inf_vlanmbr_info(oc_inf, ldata[0], vlan_output)
+                interface_fill_inf_vlanmbr_info(oc_inf, ldata[0], out_tbl["vlan_output"])
             if fill_info_bmp & FILL_INFO_IP:
-                interface_fill_inf_ip_info(oc_inf, ldata[0])
+                interface_fill_inf_ip_info(oc_inf, ldata[0], out_tbl)
             if fill_info_bmp & FILL_INFO_STATE:
                 key_map = {"admin_status": 6, "oper_status" :5, "mtu": 3,}
                 for k, v in key_map.items():
@@ -310,10 +378,13 @@ def interface_get_port_inf_info(inf_yph, fill_info_bmp, key_ar, vlan_output, is_
     return ret_val
 
 # get all vlan info
-def interface_get_vlan_inf_info(inf_yph, fill_info_bmp, key_ar):
+def interface_get_vlan_inf_info(inf_yph, fill_info_bmp, key_ar, out_tbl):
     if fill_info_bmp & (FILL_INFO_NAME | FILL_INFO_STATE | FILL_INFO_IP) == 0:
         return True
 
+    global OLD_VLAN_INF_LST
+
+    new_vlan_inf_lst = []
     ret_val = False
     exec_cmd = GET_VAR_LST_CMD_TMPL.format("VLAN")
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
@@ -331,23 +402,25 @@ def interface_get_vlan_inf_info(inf_yph, fill_info_bmp, key_ar):
                 oc_inf = oc_infs.interface[vname]
                 oc_inf._unset_state()
 
+            new_vlan_inf_lst.append(vname)
+
             if fill_info_bmp & FILL_INFO_STATE:
-                interface_fill_inf_admin_oper(oc_inf, vname)
+                interface_fill_inf_admin_oper(oc_inf, vname, out_tbl)
             if fill_info_bmp & FILL_INFO_IP:
-                interface_fill_inf_ip_info(oc_inf, vname)
+                interface_fill_inf_ip_info(oc_inf, vname, out_tbl)
 
-        # remove no existing vlan
-        no_exist_vlan = []
-        for oc_inf in oc_infs.interface:
-            if 'Vlan' in oc_inf and oc_inf not in vlan_cfg:
-                no_exist_vlan.append(oc_inf)
+            ret_val = True
 
-        for vlan in no_exist_vlan:
+    # remove no existing vlan
+    for vlan  in OLD_VLAN_INF_LST:
+        if vlan not in new_vlan_inf_lst and vlan in oc_infs.interface:
             oc_infs.interface.delete(vlan)
 
-        return True
+    OLD_VLAN_INF_LST = new_vlan_inf_lst
 
-def interface_get_mgmtport_info(inf_yph, fill_info_bmp, key_ar):
+    return ret_val
+
+def interface_get_mgmtport_info(inf_yph, fill_info_bmp, key_ar, out_tbl):
     ret_val = False
     (is_ok, output) = util_utl.utl_get_execute_cmd_output('ifconfig %s' % MGMT_PORT_NAME)
     if is_ok:
@@ -358,9 +431,9 @@ def interface_get_mgmtport_info(inf_yph, fill_info_bmp, key_ar):
             oc_inf = oc_infs.interface[MGMT_PORT_NAME]
 
         if fill_info_bmp & FILL_INFO_STATE:
-            interface_fill_inf_admin_oper(oc_inf, MGMT_PORT_NAME, output)
+            interface_fill_inf_admin_oper(oc_inf, MGMT_PORT_NAME, out_tbl)
         if fill_info_bmp & FILL_INFO_IP:
-            interface_fill_inf_ip_info(oc_inf, MGMT_PORT_NAME)
+            interface_fill_inf_ip_info(oc_inf, MGMT_PORT_NAME, out_tbl)
 
         ret_val = True
 
@@ -372,8 +445,6 @@ def interface_get_mgmtport_info(inf_yph, fill_info_bmp, key_ar):
 #
 # fill DUT's interface info into inf_yph
 def interface_get_info(inf_yph, path_ar, key_ar):
-    #pdb.set_trace()
-
     if path_ar == ['interfaces', 'interface', 'config', 'name']: return True
 
     # update needed info according to the specified path.
@@ -387,11 +458,11 @@ def interface_get_info(inf_yph, path_ar, key_ar):
     #   pc          -> get_port_info + get_pc_info
     #   vlan        -> get_port_info + get_pc_info
 
-    fill_type_tbl = { "state"           : FILL_INFO_STATE,
-                      "config"          : FILL_INFO_PC,
-                      "switched-vlan"   : FILL_INFO_VLAN,
-                      "routed-vlan"     : FILL_INFO_IP
-                    }
+    fill_type_tbl = { "state"         : FILL_INFO_STATE,
+                      "config"        : FILL_INFO_PC,
+                      "switched-vlan" : FILL_INFO_VLAN,
+                      "routed-vlan"   : FILL_INFO_IP
+    }
 
     try:
         fill_info_type = fill_type_tbl[path_ar[-1]]
@@ -406,9 +477,25 @@ def interface_get_info(inf_yph, path_ar, key_ar):
     #        # only need mgmt port info
     #        is_done = True
 
+    out_tbl = { "vlan_output"       : None,
+                "ip4_addr_output"   : None,
+                "ip4_nbr_output"    : None,
+                "ifcfg_output"      : None,
+    }
+
+    if fill_info_type & FILL_INFO_IP:
+        out_tbl["ip4_addr_output"] = interface_get_ip4_addr_output()
+        out_tbl["ip4_nbr_output"]  = interface_get_ip4_nbr_output()
+
+    if fill_info_type & FILL_INFO_VLAN:
+        out_tbl["vlan_output"] = interface_get_vlan_output()
+
+    if fill_info_type & FILL_INFO_STATE:
+        out_tbl["ifcfg_output"] = interface_get_ifcfg_output()
+
     if not is_done and (not key_ar or "Vlan" in key_ar[0]):
         # 0. fill vlan info
-        ret_val = interface_get_vlan_inf_info(inf_yph, fill_info_type, key_ar)
+        ret_val = interface_get_vlan_inf_info(inf_yph, fill_info_type, key_ar, out_tbl)
         if key_ar and "Vlan" in key_ar[0]:
             # only need vlan info
             is_done = True
@@ -417,7 +504,7 @@ def interface_get_info(inf_yph, path_ar, key_ar):
         vlan_output = interface_get_vlan_output()
         # 1. fill port channel info
         #    also fill member port's aggregate-id
-        ret_val = interface_get_pc_inf_info(inf_yph, fill_info_type, key_ar, vlan_output) or ret_val
+        ret_val = interface_get_pc_inf_info(inf_yph, fill_info_type, key_ar, out_tbl) or ret_val
 
         if key_ar and "PortChannel" in key_ar[0]:
             # only need port channel info
@@ -425,7 +512,7 @@ def interface_get_info(inf_yph, path_ar, key_ar):
 
     if not is_done:
         # 2. fill port info
-        ret_val = interface_get_port_inf_info(inf_yph, fill_info_type, key_ar, vlan_output) or ret_val
+        ret_val = interface_get_port_inf_info(inf_yph, fill_info_type, key_ar, out_tbl) or ret_val
 
     return ret_val
 
@@ -441,11 +528,11 @@ def interface_create_all_infs(inf_yph, is_dbg_test):
     interface_get_my_mac()
 
     #ret_val = interface_get_mgmtport_info(inf_yph, False, None) or ret_val
-    ret_val = interface_get_port_inf_info(inf_yph, FILL_INFO_NAME, None, None, True)
+    ret_val = interface_get_port_inf_info(inf_yph, FILL_INFO_NAME, None, None, is_dbg_test)
 
     ret_val = interface_get_pc_inf_info(inf_yph, FILL_INFO_NAME, None, None) or ret_val
 
-    ret_val = interface_get_vlan_inf_info(inf_yph, FILL_INFO_NAME, None) or ret_val
+    ret_val = interface_get_vlan_inf_info(inf_yph, FILL_INFO_NAME, None, None) or ret_val
 
     return ret_val
 
