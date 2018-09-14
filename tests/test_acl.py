@@ -4,9 +4,6 @@ import argparse
 import test_inc
 import json
 
-PATH_GET_ALL_INF_NAME  = '/interfaces/interface/config/name'
-PATH_INF_CFG_NAME_TMPL = '/interfaces/interface[name={0}]/config/name'
-
 PATH_SET_ACL_TMPL    = '/acl/acl-sets/acl-set[name={0}][type={1}]/config'
 PATH_GET_ACL_TMPL    = '/acl/acl-sets/acl-set'
 

@@ -10,6 +10,7 @@ from oc_binding.oc_platform_binding import openconfig_platform
 from oc_binding.oc_nwi_binding import openconfig_network_instance
 from oc_binding.oc_lr_binding import openconfig_local_routing
 from oc_binding.oc_acl_binding import openconfig_acl
+from oc_binding.oc_sys_binding import openconfig_system
 
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
@@ -21,6 +22,7 @@ from util import util_utl
 from util import util_nwi
 from util import util_lr
 from util import util_acl
+from util import util_sys
 
 import re
 import pdb
@@ -40,6 +42,8 @@ ocTable = {
                      "info_f": "util_lr.lr_get_info"                },
     "acl"          : { "cls" : openconfig_acl,
                      "info_f": "util_acl.acl_get_info"              },
+    "system"       : { "cls" : openconfig_system,
+                     "info_f": "util_sys.sys_get_info"              },
 }
 
 # Dispatch table for registered path and set function
@@ -67,6 +71,8 @@ setPathTable = {
             "util_acl.acl_set_acl_entry",
     '/acl/interfaces/interface[id]/ingress-acl-sets/ingress-acl-set[set-name][type]/config' :
             "util_acl.acl_set_interface",
+    '/system/ntp/servers/server[address]/config' :
+            "util_sys.sys_set_ntp_server"
 }
 
 class ocDispatcher:

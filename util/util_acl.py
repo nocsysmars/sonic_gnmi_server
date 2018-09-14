@@ -13,8 +13,8 @@ GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
 GET_ACL_TBL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
 GET_ACL_RUL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
 
-ACL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
-RUL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
+CFG_ACL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
+CFG_RUL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
 
 RULE_MAX_PRI = 10000 # refer to acl_loader
 RULE_MIN_PRI = 1
@@ -216,7 +216,7 @@ def acl_set_acl_set(root_yph, pkey_ar, val, is_create):
     except:
         return False
 
-    exec_cmd = ACL_CMD_TMPL % (pkey_ar[0], cfg_str)
+    exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[0], cfg_str)
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
     return ret_val
 
@@ -308,11 +308,11 @@ def acl_set_one_acl_entry(acl_name, rule_name, rule_cfg):
     rule_db_name = "{0}|{1}".format(acl_name, rule_name)
 
     # 1. delete old entry
-    exec_cmd = RUL_CMD_TMPL % (rule_db_name, "null")
+    exec_cmd = CFG_RUL_CMD_TMPL % (rule_db_name, "null")
     util_utl.utl_execute_cmd(exec_cmd)
 
     # 2. add new entry
-    exec_cmd = RUL_CMD_TMPL % (rule_db_name, rule_cfg)
+    exec_cmd = CFG_RUL_CMD_TMPL % (rule_db_name, rule_cfg)
     return util_utl.utl_execute_cmd(exec_cmd)
 
 # ex:    pkey_ar = [u'DATAACL', u'ACL_IPV4']
@@ -366,7 +366,7 @@ def acl_set_acl_entry(root_yph, pkey_ar, val, is_create):
 
 # ex:    pkey_ar = [u'Ethernet4', u'lll', u'ACL_IPV4']
 #   val for del  = '' or '{}'
-#   val for add  = '{"set-name"="lll", "type"="ACL_IPV4"}'
+#   val for add  = '{"set-name": "lll", "type": "ACL_IPV4"}'
 #
 # To bind/unbind an acl to an interface
 def acl_set_interface(root_yph, pkey_ar, val, is_create):
@@ -408,7 +408,7 @@ def acl_set_interface(root_yph, pkey_ar, val, is_create):
                 is_changed = True
 
         if is_changed:
-            exec_cmd = ACL_CMD_TMPL % (pkey_ar[1], json.dumps(acl_cfg))
+            exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[1], json.dumps(acl_cfg))
             ret_val = util_utl.utl_execute_cmd(exec_cmd)
         else:
             ret_val = True

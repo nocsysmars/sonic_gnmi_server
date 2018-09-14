@@ -11,6 +11,8 @@ import time
 import re
 import util_utl
 
+from util_utl import GET_VAR_LST_CMD_TMPL
+
 # inf list needed to clear the old agg id setting
 OLD_AGG_MBR_LST = []
 
@@ -24,7 +26,6 @@ VLAN_ID_MIN          = 1
 
 MGMT_PORT_NAME       = 'eth0'
 
-GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
 GET_LST_CMD_TMPL     = 'sonic-cfggen -d -v "{0}.keys() if {0}"'
 GET_VLAN_MBR_LST_CMD = GET_LST_CMD_TMPL.format("VLAN_MEMBER")
 GET_VLAN_LST_CMD     = GET_LST_CMD_TMPL.format("VLAN")

@@ -13,6 +13,8 @@ import os
 import time
 import functools
 
+GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
+
 DBG_MODE  = 1
 DBG_PERF  = 1
 
