@@ -11,6 +11,7 @@ from oc_binding.oc_nwi_binding import openconfig_network_instance
 from oc_binding.oc_lr_binding import openconfig_local_routing
 from oc_binding.oc_acl_binding import openconfig_acl
 from oc_binding.oc_sys_binding import openconfig_system
+from oc_binding.oc_qos_binding import openconfig_qos
 
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
@@ -23,6 +24,7 @@ from util import util_nwi
 from util import util_lr
 from util import util_acl
 from util import util_sys
+from util import util_qos
 
 import re
 import pdb
@@ -44,6 +46,8 @@ ocTable = {
                      "info_f": "util_acl.acl_get_info"              },
     "system"       : { "cls" : openconfig_system,
                      "info_f": "util_sys.sys_get_info"              },
+    "qos"          : { "cls" : openconfig_qos,
+                     "info_f": "util_qos.qos_get_info"              },
 }
 
 # Dispatch table for registered path and set function
@@ -72,7 +76,9 @@ setPathTable = {
     '/acl/interfaces/interface[id]/ingress-acl-sets/ingress-acl-set[set-name][type]/config' :
             "util_acl.acl_set_interface",
     '/system/ntp/servers/server[address]/config' :
-            "util_sys.sys_set_ntp_server"
+            "util_sys.sys_set_ntp_server",
+    '/qos/sonic' :
+            "util_qos.qos_set_sonic"
 }
 
 class ocDispatcher:
@@ -91,6 +97,8 @@ class ocDispatcher:
         # create default network instance
         util_nwi.nwi_create_dflt_nwi(self.oc_yph, is_dbg_test)
 
+        # create default objects
+        util_qos.qos_create_dflt_obj(self.oc_yph, is_dbg_test)
 
     #def CreateAllInterfaces(self, is_dbg_test):
     #    return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)

@@ -201,7 +201,7 @@ module openconfig-system {
         description
           "The current system date and time.";
     }
-/*
+/* squid, not used 
     leaf boot-time {
         type oc-types:timeticks64;
         description
@@ -700,7 +700,7 @@ module openconfig-system {
         attempt to synchronize the system clock with an NTP server
         from the servers defined in the 'ntp/server' list.";
     }
-/*
+/* squid, not used 
     leaf ntp-source-address {
       type oc-inet:ip-address;
       description
@@ -721,7 +721,7 @@ module openconfig-system {
   grouping system-ntp-state {
     description
       "Operational state data for system-wide NTP operation.";
-/*
+/* squid, not used 
     leaf auth-mismatch {
       type oc-yang:counter64;
       description
@@ -754,7 +754,7 @@ module openconfig-system {
         uses system-ntp-config;
         uses system-ntp-state;
       }
-      //uses system-ntp-auth-keys-top;
+      //squid, not used uses system-ntp-auth-keys-top;
       uses system-ntp-server-top;
     }
   }
@@ -935,7 +935,7 @@ module openconfig-system {
       description
         "Enclosing container for system-related configuration and
         operational state data";
-/*
+/* squid, not used 
       container config {
         description "Global configuration data for the system";
 
@@ -947,21 +947,21 @@ module openconfig-system {
         config false;
         description "Global operational state data for the system";
 
-        //uses system-global-config;
+        //squid, not used uses system-global-config;
         uses system-global-state;
       }
 
-      //uses system-clock-top;
-      //uses system-dns-top;
+      //squid, not used uses system-clock-top;
+      //squid, not used uses system-dns-top;
       uses system-ntp-top;
-      //uses oc-sys-term:system-ssh-server-top;
-      //uses oc-sys-term:system-telnet-server-top;
-      //uses oc-log:logging-top;
-      //uses oc-aaa:aaa-top;
-      //uses system-memory-top;
-      //uses system-cpu-top;
-      //uses oc-proc:procmon-processes-top;
-      //uses oc-alarms:alarms-top;
+      //squid, not used uses oc-sys-term:system-ssh-server-top;
+      //squid, not used uses oc-sys-term:system-telnet-server-top;
+      //squid, not used uses oc-log:logging-top;
+      //squid, not used uses oc-aaa:aaa-top;
+      //squid, not used uses system-memory-top;
+      //squid, not used uses system-cpu-top;
+      //squid, not used uses oc-proc:procmon-processes-top;
+      //squid, not used uses oc-alarms:alarms-top;
     }
   }
 

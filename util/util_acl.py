@@ -9,9 +9,8 @@ import json
 import pdb
 import util_utl
 
-GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
-GET_ACL_TBL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
-GET_ACL_RUL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
+GET_ACL_TBL_LST_CMD  = util_utl.GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
+GET_ACL_RUL_LST_CMD  = util_utl.GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
 
 CFG_ACL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
 CFG_RUL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
