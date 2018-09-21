@@ -78,7 +78,9 @@ setPathTable = {
     '/system/ntp/servers/server[address]/config' :
             "util_sys.sys_set_ntp_server",
     '/qos/sonic' :
-            "util_qos.qos_set_sonic"
+            "util_qos.qos_set_sonic",
+    '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
+            "util_nwi.nwi_pf_set_interface"
 }
 
 class ocDispatcher:

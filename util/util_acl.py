@@ -9,14 +9,12 @@ import json
 import pdb
 import util_utl
 
-GET_ACL_TBL_LST_CMD  = util_utl.GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
-GET_ACL_RUL_LST_CMD  = util_utl.GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
-
-CFG_ACL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
-CFG_RUL_CMD_TMPL = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
-
-RULE_MAX_PRI = 10000 # refer to acl_loader
-RULE_MIN_PRI = 1
+from util_utl import GET_ACL_TBL_LST_CMD
+from util_utl import GET_ACL_RUL_LST_CMD
+from util_utl import CFG_ACL_CMD_TMPL
+from util_utl import CFG_RUL_CMD_TMPL
+from util_utl import RULE_MAX_PRI
+from util_utl import RULE_MIN_PRI
 
 # convert openconfig yang model to sonic
 SONIC_FLDMAP_TBL = {
@@ -59,8 +57,8 @@ OCYANG_ACTMAP_TBL = {
 
 OCYANG_ACLTYPEMAP_TBL = {
     'L3'        : 'ACL_IPV4',
-    'MIRROR'    : 'ACL_IPV4',
-    'CTRLPLANE' : 'ACL_IPV4',
+#    'MIRROR'    : 'ACL_IPV4',
+#    'CTRLPLANE' : 'ACL_IPV4',
     }
 
 TCPFLAG_MAP_TBL = {
@@ -73,6 +71,7 @@ TCPFLAG_MAP_TBL = {
     "TCP_ECE" : 0x40,
     "TCP_CWR" : 0x80
     }
+
 # convert sonic's acl type to openconfig's acl type
 def acl_cnv_to_oc_acl_type(in_acl_type):
     # todo ...
@@ -163,11 +162,13 @@ def acl_get_info(root_yph, path_ar, key_ar):
     oc_acl = root_yph.get("/acl")[0]
 
     # bcz _unset_acl_set will not remove old entries correctly.
-    for old_acl in oc_acl.acl_sets.acl_set:
+    old_acl_lst = [ x for x in oc_acl.acl_sets.acl_set ]
+    for old_acl in old_acl_lst:
         oc_acl.acl_sets.acl_set.delete(old_acl)
 
     # clear binding info
-    for old_inf in oc_acl.interfaces.interface:
+    old_inf_lst = [ x for x in oc_acl.interfaces.interface ]
+    for old_inf in old_inf_lst:
         oc_acl.interfaces.interface.delete(old_inf)
 
     ret_val = False

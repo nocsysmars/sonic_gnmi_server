@@ -14,6 +14,13 @@ import time
 import functools
 
 GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
+GET_ACL_TBL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
+GET_ACL_RUL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
+CFG_ACL_CMD_TMPL     = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
+CFG_RUL_CMD_TMPL     = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
+
+RULE_MAX_PRI         = 10000 # refer to acl_loader
+RULE_MIN_PRI         = 1
 
 DBG_MODE  = 1
 DBG_PERF  = 1

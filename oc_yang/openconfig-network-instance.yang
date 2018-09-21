@@ -12,7 +12,7 @@ module openconfig-network-instance {
   //squid, not used import ietf-yang-types { prefix "yang"; }
   import ietf-inet-types { prefix "inet"; }
   import openconfig-network-instance-types { prefix "oc-ni-types"; }
-  //squid, not used import openconfig-policy-types { prefix "oc-pol-types"; }
+  import openconfig-policy-types { prefix "oc-pol-types"; }
   //squid, not used import openconfig-routing-policy { prefix "oc-rpol"; }
   //squid, not used import openconfig-local-routing { prefix "oc-loc-rt"; }
   import openconfig-interfaces { prefix "oc-if"; }
@@ -23,10 +23,10 @@ module openconfig-network-instance {
   //squid, not used import openconfig-mpls { prefix "oc-mpls"; }
   import openconfig-vlan { prefix "oc-vlan"; }
   //squid, not used import openconfig-ospfv2 { prefix "oc-ospfv2"; }
-  //squid, not used import openconfig-policy-forwarding { prefix "oc-pf"; }
+  import openconfig-policy-forwarding { prefix "oc-pf"; }
   //squid, not used import openconfig-segment-routing { prefix "oc-sr"; }
   //squid, not used import openconfig-isis { prefix "oc-isis"; }
-  //squid, not used import openconfig-aft { prefix "oc-aft"; }
+  import openconfig-aft { prefix "oc-aft"; }
   //squid, not used import openconfig-pim { prefix "oc-pim"; }
   //squid, not used import openconfig-igmp { prefix "oc-igmp"; }
 
@@ -576,13 +576,12 @@ module openconfig-network-instance {
           }
         }
 */
-/* squid, not used 
-        uses oc-vlan:vlan-top;
+// squid, not used uses oc-vlan:vlan-top;
 
         uses oc-pf:policy-forwarding-top;
 
         uses oc-aft:aft-top;
-
+/* squid, not used 
         container protocols {
           description
             "The routing protocols that are enabled for this
