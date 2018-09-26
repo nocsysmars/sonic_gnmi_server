@@ -136,7 +136,7 @@ submodule openconfig-pf-forwarding-policies {
                   rule's action.";
                 uses pf-forwarding-policy-action-config;
               }
-
+/* squid, not used
               container state {
                 config false;
                 description
@@ -144,7 +144,7 @@ submodule openconfig-pf-forwarding-policies {
                   forwarding rule's action.";
                 uses pf-forwarding-policy-action-config;
               }
-
+*/
               uses pf-forwarding-policy-action-encapsulate-gre;
             }
           }
@@ -196,7 +196,7 @@ submodule openconfig-pf-forwarding-policies {
   grouping pf-forwarding-policy-action-config {
     description
       "Forwarding policy action configuration parameters.";
-/* squid, not used 
+/* squid, not used
     leaf discard {
       type boolean;
       default false;
@@ -282,7 +282,7 @@ submodule openconfig-pf-forwarding-policies {
           "Configuration parameters for the GRE encapsulation rules action.";
         uses pf-forwarding-policy-action-gre-config;
       }
-
+/* squid, not used
       container state {
         description
           "Operational state parameters for the GRE encapsulation rule
@@ -290,7 +290,7 @@ submodule openconfig-pf-forwarding-policies {
         config false;
         uses pf-forwarding-policy-action-gre-config;
       }
-
+*/
       container targets {
         description
           "Surrounding container for the list of GRE tunnel targets that
@@ -320,13 +320,14 @@ submodule openconfig-pf-forwarding-policies {
               "Configuration parameters for the GRE target.";
             uses pf-forwarding-policy-action-gre-target-config;
           }
-
+/* squid, not used
           container state {
             description
               "Operational state parameters for the GRE target.";
             config false;
             uses pf-forwarding-policy-action-gre-target-config;
           }
+*/
         }
       }
     }

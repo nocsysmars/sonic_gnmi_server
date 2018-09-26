@@ -42,11 +42,11 @@ ocTable = {
                      "info_f": "util_nwi.nwi_get_info"              },
     "local-routes" : { "cls" : openconfig_local_routing,
                      "info_f": "util_lr.lr_get_info"                },
-    "acl"          : { "cls" : openconfig_acl,
+    "acl"        : { "cls" : openconfig_acl,
                      "info_f": "util_acl.acl_get_info"              },
-    "system"       : { "cls" : openconfig_system,
+    "system"     : { "cls" : openconfig_system,
                      "info_f": "util_sys.sys_get_info"              },
-    "qos"          : { "cls" : openconfig_qos,
+    "qos"        : { "cls" : openconfig_qos,
                      "info_f": "util_qos.qos_get_info"              },
 }
 
@@ -80,7 +80,11 @@ setPathTable = {
     '/qos/sonic' :
             "util_qos.qos_set_sonic",
     '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
-            "util_nwi.nwi_pf_set_interface"
+            "util_nwi.nwi_pf_set_interface",
+    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config' :
+            "util_nwi.nwi_pf_set_policy",
+    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
+            "util_nwi.nwi_pf_set_rule"
 }
 
 class ocDispatcher:

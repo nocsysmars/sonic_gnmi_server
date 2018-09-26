@@ -12,11 +12,22 @@ import util_utl
 from util_utl import GET_ACL_TBL_LST_CMD
 from util_utl import GET_ACL_RUL_LST_CMD
 from util_utl import CFG_ACL_CMD_TMPL
-from util_utl import CFG_RUL_CMD_TMPL
+from util_utl import CFG_MSESS_CMD_TMPL
 from util_utl import RULE_MAX_PRI
 from util_utl import RULE_MIN_PRI
 
+from util_acl import acl_rule_yang2sonic
+from util_acl import acl_set_one_acl_entry
+from util_acl import acl_cnv_to_oc_tcp_flags
+from util_acl import OCYANG_FLDMAP_TBL
+from util_acl import INT_TYPE
+from util_acl import STR_TYPE
+from util_acl import HEX_TYPE
+from util_acl import NON_TYPE
+
+
 DEFAULT_NWI_NAME = 'DEFAULT'
+MIRROR_POLICY_PFX= 'EVERFLOW'
 
 GET_MSESS_LST_CMD    = util_utl.GET_VAR_LST_CMD_TMPL.format("MIRROR_SESSION")
 
@@ -25,24 +36,6 @@ FILL_INFO_FDB   = 0x01  # fill fdb info
 FILL_INFO_PF    = 0x02  # fill policy-forwarding info
 FILL_INFO_INTFS = 0x04  # fill interface info
 FILL_INFO_ALL   = 0xff  # fill all info
-
-# convert sonic to openconfig yang model
-INT_TYPE = 1
-STR_TYPE = 2
-HEX_TYPE = 3
-NON_TYPE = 4
-OCYANG_FLDMAP_TBL_PF = {
-    'IP_PROTOCOL' : {'str':'ipv4.config.protocol',             'type': INT_TYPE }, # 5
-    'SRC_IP'      : {'str':'ipv4.config.source_address',       'type': STR_TYPE }, # '1.1.1.1/24'
-    'DST_IP'      : {'str':'ipv4.config.destination_address',  'type': STR_TYPE },
-    'DSCP'        : {'str':'ipv4.config.dscp',                 'type': INT_TYPE }, # 5
-    'ETHER_TYPE'  : {'str':'l2.config.ethertype',              'type': INT_TYPE }, # 5
-    'L4_SRC_PORT' : {'str':'transport.config.source_port',     'type': INT_TYPE },
-    'L4_DST_PORT' : {'str':'transport.config.destination_port','type': INT_TYPE },
-    'TCP_FLAGS'   : {'str':'transport.config.tcp_flags',       'type': INT_TYPE },
-    'MIRROR_ACTION':{'str':'not_used',                         'type': STR_TYPE },
-    'PRIORITY'    : {'str':'not_used',                         'type': NON_TYPE },
-    }
 
 @util_utl.utl_timeit
 def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
@@ -102,17 +95,20 @@ def nwi_get_fdb_info(oc_nwis, path_ar, key_ar):
         return True
 
 # ex: act_data = 'session1'
-#     mess_lst = '{}'
+#     msess_lst = '{}'
 # add a action to oc_rule with act_data and msess_lst
 def nwi_pf_add_one_mirror_action(oc_rule, act_data, msess_lst):
     if act_data in oc_rule.action.encapsulate_gre.targets.target:
-        oc_target = oc_rule.action.encapsulate_gre.targets.target['act_data']
+        oc_target = oc_rule.action.encapsulate_gre.targets.target[act_data]
     else:
         oc_target = oc_rule.action.encapsulate_gre.targets.target.add(act_data)
 
     if act_data in msess_lst:
+        dst_ip_str = msess_lst[act_data]['dst_ip']
+        if '/' not in dst_ip_str: dst_ip_str = dst_ip_str + '/32'
+
         oc_target.config.source      = msess_lst[act_data]['src_ip']
-        oc_target.config.destination = msess_lst[act_data]['dst_ip'] + '/32'
+        oc_target.config.destination = dst_ip_str
         oc_target.config.ip_ttl      = msess_lst[act_data]['ttl']
 
 # add a rule to oc_pol with rule_name and rule_data
@@ -120,14 +116,14 @@ def nwi_pf_add_one_rule(oc_pol, rule_name, rule_data, msess_lst):
     # {0} : entry name
     # {1} : field
     # {2} : value
-    pdb.set_trace()
+    #pdb.set_trace()
     EXEC_STR_TMPL = '{0}.{1} = {2}'
     seq_id = RULE_MAX_PRI - int(rule_data['PRIORITY'])
     oc_rule = oc_pol.rules.rule.add(seq_id)
 
     for d_key in rule_data.keys():
-        if d_key in OCYANG_FLDMAP_TBL_PF:
-            if OCYANG_FLDMAP_TBL_PF[d_key]['type'] == NON_TYPE: continue
+        if d_key in OCYANG_FLDMAP_TBL:
+            if OCYANG_FLDMAP_TBL[d_key]['type'] == NON_TYPE: continue
 
             value_str = rule_data[d_key]
 
@@ -136,16 +132,17 @@ def nwi_pf_add_one_rule(oc_pol, rule_name, rule_data, msess_lst):
             if d_key == 'MIRROR_ACTION':
                 nwi_pf_add_one_mirror_action(oc_rule, value_str, msess_lst)
                 value_str = None
-
+            elif d_key == 'PACKET_ACTION':
+                util_utl.utl_err("Unsupported action for PF (%s:%s)" % (d_key, value_str))
+                value_str = None
             elif d_key == 'TCP_FLAGS':
-                pass
-                #TODO: value_str = acl_cnv_to_oc_tcp_flags(value_str)
+                value_str = acl_cnv_to_oc_tcp_flags(value_str)
 
             if value_str:
-                if OCYANG_FLDMAP_TBL_PF[d_key]['type'] == STR_TYPE:
+                if OCYANG_FLDMAP_TBL[d_key]['type'] == STR_TYPE:
                     value_str = '"{0}"'.format(value_str)
 
-                exec_str = EXEC_STR_TMPL.format("oc_rule", OCYANG_FLDMAP_TBL_PF[d_key]['str'], value_str)
+                exec_str = EXEC_STR_TMPL.format("oc_rule", OCYANG_FLDMAP_TBL[d_key]['str'], value_str)
                 exec(exec_str)
         else:
             util_utl.utl_err("field(%s) is not supported !" % d_key)
@@ -166,6 +163,7 @@ def nwi_pf_fill_binding_info(oc_pf, acl_name, acl_info):
 def nwi_get_pf_info(oc_nwis, path_ar, key_ar):
     oc_pf = oc_nwis.network_instance[DEFAULT_NWI_NAME].policy_forwarding
 
+    # remove old policies
     old_pol_lst = [ x for x in oc_pf.policies.policy ]
     for old_pol in old_pol_lst:
         oc_pf.policies.policy.delete(old_pol)
@@ -235,7 +233,7 @@ def nwi_get_info(root_yph, path_ar, key_ar):
 #
 # To bind/unbind a policy to an interface
 def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
-    pdb.set_trace()
+    #pdb.set_trace()
 
     ret_val = False
 
@@ -247,25 +245,20 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
 
     # acl must be created b4 binding to interface
     if acl_lst:
-        acl_name = None
-        if val == "" or val == "{}":
-            is_add = False
+        tmp_cfg = {} if val == "" or val == "{}" else eval(val)
+        acl_name = tmp_cfg.get('apply-forwarding-policy')
+
+        is_add = True if acl_name else False
+
+        # find old acl_name for binding port
+        if not is_add:
             for acl in acl_lst:
                 if pkey_ar[1] in acl_lst[acl]['ports']:
                     acl_name = acl
-                    acl_cfg  = acl_lst[acl]
                     break
 
-            if not acl_name: return False
-        else:
-            try:
-                tmp_cfg = eval(val)
-                acl_name = tmp_cfg['apply-forwarding-policy']
-                acl_cfg  = acl_lst[acl_name]
-            except:
-                return False
-
-            is_add = True
+        acl_cfg  = acl_lst.get(acl_name)
+        if not acl_cfg: return False
 
         if acl_cfg['type'] != 'MIRROR': return False
 
@@ -288,5 +281,104 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
             ret_val = util_utl.utl_execute_cmd(exec_cmd)
         else:
             ret_val = True
+
+    return ret_val
+
+# ex:    pkey_ar = [u'DEFAULT', u'EVERFLOW']
+#   val for del  = '' or '{}'
+#   val for add  = '{"policy-id": "EVERFLOW"}'
+#
+# To add/remove a policy (no checking for existence)
+def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create):
+    try:
+        pf_cfg = {"policy-id":""} if val == "" else eval(val)
+
+        if pf_cfg["policy-id"] == "":
+            cfg_str = "null"
+        else:
+            if pf_cfg["policy-id"] != pkey_ar[1]: return False
+
+            pf_type = 'MIRROR' if pkey_ar[1].find(MIRROR_POLICY_PFX) == 0 else 'L3'
+            cfg_str = '{"type": "%s", "policy_desc": "%s", "ports":[]}' % (pf_type, pkey_ar[1])
+
+    except:
+        return False
+
+    exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[1], cfg_str)
+    ret_val = util_utl.utl_execute_cmd(exec_cmd)
+    return ret_val
+
+# try to remove mirror sessions not used by any rule
+def nwi_pf_clear_mirror_session():
+    ret_val = False
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_MSESS_LST_CMD)
+    if is_ok:
+        msess_lst = {} if output.strip('\n') =='' else eval(output)
+
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_RUL_LST_CMD)
+    if is_ok:
+        acl_rlst = {} if output.strip('\n') =='' else eval(output)
+        for acl_rule_key in acl_rlst.keys():
+            if 'MIRROR_ACTION' in acl_rlst[acl_rule_key]:
+                sess_name = acl_rlst[acl_rule_key]['MIRROR_ACTION']
+
+            if sess_name in msess_lst:
+                del msess_lst[sess_name]
+
+    for msess in msess_lst:
+        exec_cmd = CFG_MSESS_CMD_TMPL % (msess, "null")
+        util_utl.utl_execute_cmd(exec_cmd)
+
+# ex:    pkey_ar = [u'DEFAULT', u'EVERFLOW']
+#   val for del  = '' or '{}'
+#   val for add  = '{"policy-id": "EVERFLOW"}'
+#
+# To add/remove a rule of pf
+def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create):
+    #pdb.set_trace()
+    #
+    # priority    => RULE_MAX_PRI - sequence-id
+    #
+    """ example:
+    {
+      "9999": {
+        "sequence-id": 9999,
+        "config": {
+          "sequence-id": 9999,
+        },
+        "ipv4": {
+          "config": {
+            "protocol": 17,
+            "source-address": "10.0.0.0/8"
+          }
+        },
+        "action": {
+          "config": {
+            "next-hop": "10.0.0.0"
+          }
+        }
+      }
+    }
+    """
+    # TODO: check policy type and action ???
+    rule_cfg = {} if val == "" else eval(val)
+    msess_tbl = []
+    is_del = False
+    # only one entry
+    if 'sequence-id' in rule_cfg.keys():
+        rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg, msess_tbl)
+        if rule_cfg == "null": is_del = True
+        ret_val = acl_set_one_acl_entry(pkey_ar[1], rule_name, rule_cfg)
+    else:
+        ret_val = True
+        for seq_id in rule_cfg.keys():
+            rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id], msess_tbl)
+            if rule_cfg == "null": is_del = True
+            ret_val = acl_set_one_acl_entry(pkey_ar[1], rule_name, rule_cfg)
+            if not ret_val:
+                break
+
+    if is_del:
+        nwi_pf_clear_mirror_session()
 
     return ret_val
