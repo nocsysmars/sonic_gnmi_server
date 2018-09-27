@@ -10,10 +10,6 @@ import pdb
 import re
 import util_utl
 
-GET_TC2Q_LST_CMD     = util_utl.GET_VAR_LST_CMD_TMPL.format("TC_TO_QUEUE_MAP")
-GET_DSCP2TC_LST_CMD  = util_utl.GET_VAR_LST_CMD_TMPL.format("DSCP_TO_TC_MAP")
-GET_QUEUE_LST_CMD    = util_utl.GET_VAR_LST_CMD_TMPL.format("QUEUE")
-GET_SCHEDULER_LST_CMD= util_utl.GET_VAR_LST_CMD_TMPL.format("SCHEDULER")
 
 #TODO: convert "PORT_QOS_MAP" to interfaces object
 
@@ -44,52 +40,43 @@ def qos_create_dflt_obj(root_yph, is_dbg_test):
     # default scheduler policy
     oc_qos.scheduler_policies.scheduler_policy.add('DEFAULT_EGRESS')
 
-def qos_get_fwdgrp_info(oc_qos):
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_TC2Q_LST_CMD)
-    if is_ok:
-        tc2q_lst = {} if output.strip('\n') =='' else eval(output)
+def qos_get_fwdgrp_info(oc_qos, disp_args):
+    tc2q_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_TC2Q_MAP)
+    for tc2q in tc2q_lst:
+        for tc in tc2q_lst[tc2q]:
+            fwdgrp_name = FWDGRP_NAME_FMT.format(tc2q, tc)
+            if fwdgrp_name not in oc_qos.forwarding_groups.forwarding_group:
+                oc_fwd = oc_qos.forwarding_groups.forwarding_group.add(fwdgrp_name)
+            else:
+                oc_fwd = oc_qos.forwarding_groups.forwarding_group[fwdgrp_name]
 
-        for tc2q in tc2q_lst:
-            for tc in tc2q_lst[tc2q]:
-                fwdgrp_name = FWDGRP_NAME_FMT.format(tc2q, tc)
-                if fwdgrp_name not in oc_qos.forwarding_groups.forwarding_group:
-                    oc_fwd = oc_qos.forwarding_groups.forwarding_group.add(fwdgrp_name)
-                else:
-                    oc_fwd = oc_qos.forwarding_groups.forwarding_group[fwdgrp_name]
+            oc_fwd.config.fabric_priority = int(tc)
+            q_name = tc2q_lst[tc2q][tc]
+            if q_name in oc_qos.queues.queue:
+                oc_fwd.config.output_queue = q_name
+            else:
+                util_utl.utl_err("queue (%d) does not exist !" % q_name)
 
-                oc_fwd.config.fabric_priority = int(tc)
-                q_name = tc2q_lst[tc2q][tc]
-                if q_name in oc_qos.queues.queue:
-                    oc_fwd.config.output_queue = q_name
-                else:
-                    util_utl.utl_err("queue (%d) does not exist !" % q_name)
+def qos_get_clfr_info(oc_qos, disp_args):
+    dscp2tc_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_DSCP2TC_MAP)
+    for dscp2tc in dscp2tc_lst:
+        for dscp in dscp2tc_lst[dscp2tc]:
+            clfr_name = CLFR_NAME_FMT.format(dscp2tc, 'DSCP', dscp)
+            if clfr_name not in oc_qos.classifiers.classifier:
+                oc_clfr = oc_qos.classifiers.classifier.add(clfr_name)
+                oc_clfr.config.type='IPV4'
+            else:
+                oc_clfr = oc_qos.classifiers.classifier[clfr_name]
 
-def qos_get_clfr_info(oc_qos):
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_DSCP2TC_LST_CMD)
-    if is_ok:
-        dscp2tc_lst = {} if output.strip('\n') =='' else eval(output)
+            term_name = TERM_NAME_FMT.format('DSCP', dscp)
+            if term_name not in oc_clfr.terms.term:
+                oc_term = oc_clfr.terms.term.add(term_name)
+                oc_term.conditions.ipv4.config.dscp = int(dscp)
+                oc_term.actions.config.target_group = FWDGRP_NAME_FMT.format(dscp2tc, dscp2tc_lst[dscp2tc][dscp])
 
-        for dscp2tc in dscp2tc_lst:
-            for dscp in dscp2tc_lst[dscp2tc]:
-                clfr_name = CLFR_NAME_FMT.format(dscp2tc, 'DSCP', dscp)
-                if clfr_name not in oc_qos.classifiers.classifier:
-                    oc_clfr = oc_qos.classifiers.classifier.add(clfr_name)
-                    oc_clfr.config.type='IPV4'
-                else:
-                    oc_clfr = oc_qos.classifiers.classifier[clfr_name]
-
-                term_name = TERM_NAME_FMT.format('DSCP', dscp)
-                if term_name not in oc_clfr.terms.term:
-                    oc_term = oc_clfr.terms.term.add(term_name)
-                    oc_term.conditions.ipv4.config.dscp = int(dscp)
-                    oc_term.actions.config.target_group = FWDGRP_NAME_FMT.format(dscp2tc, dscp2tc_lst[dscp2tc][dscp])
-
-def qos_get_schdlr_info(oc_qos):
-    ret_val = True
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_SCHEDULER_LST_CMD)
-    if is_ok:
-        schdlr_lst = {} if output.strip('\n') =='' else eval(output)
-
+def qos_get_schdlr_info(oc_qos, disp_args):
+    schdlr_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_SCHDLR)
+    if schdlr_lst:
         # default WRR, seq 1 (0 reserved for strict priority)
         oc_schd_policy = oc_qos.scheduler_policies.scheduler_policy['DEFAULT_EGRESS']
         if 1 not in oc_schd_policy.schedulers.scheduler:
@@ -110,34 +97,30 @@ def qos_get_schdlr_info(oc_qos):
             oc_inp.config.input_type = 'QUEUE'
             oc_inp.config.weight = int(schdlr_lst[schdlr]['weight'])
 
-        pdb.set_trace()
+        queue_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_QUEUE)
+        for inf_q in queue_lst:
+            inf, qid = inf_q
+            # TODO multi q mapped to one scheduler
+            if '-' in qid:
+                util_utl.utl_err("extract qid (%s) failed !" % qid)
+                continue
 
-        (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_QUEUE_LST_CMD)
-        if is_ok:
-            queue_lst = {} if output.strip('\n') =='' else eval(output)
-            for inf_q in queue_lst:
-                inf, qid = inf_q
-                # TODO multi q mapped to one scheduler
-                if '-' in qid:
-                    util_utl.utl_err("extract qid (%s) failed !" % qid)
-                    continue
-
-                sched_key = queue_lst[inf_q]['scheduler']
-                m = re.match(r'\[SCHEDULER\|(.*)\]', sched_key)
-                if m:
-                    if m.group(1) in oc_schdlr.inputs.input:
-                        oc_inp = oc_schdlr.inputs.input[m.group(1)]
-                        oc_inp.config.queue = qid
-                    else:
-                        util_utl.utl_err("scheduler (%s) does not exist !" % m.group(1))
+            sched_key = queue_lst[inf_q]['scheduler']
+            m = re.match(r'\[SCHEDULER\|(.*)\]', sched_key)
+            if m:
+                if m.group(1) in oc_schdlr.inputs.input:
+                    oc_inp = oc_schdlr.inputs.input[m.group(1)]
+                    oc_inp.config.queue = qid
                 else:
-                    util_utl.utl_err("extract scheduler (%s) from QUEUE failed !" % sched_key)
+                    util_utl.utl_err("scheduler (%s) does not exist !" % m.group(1))
+            else:
+                util_utl.utl_err("extract scheduler (%s) from QUEUE failed !" % sched_key)
 
 
 # fill DUT's current qos info into root_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
-def qos_get_info(root_yph, path_ar, key_ar):
+def qos_get_info(root_yph, path_ar, key_ar, disp_args):
     #pdb.set_trace()
     fill_type_tbl = { "classifiers"         : FILL_INFO_CLSFR,
                       "forwarding-groups"   : FILL_INFO_FWDGP,
@@ -159,13 +142,13 @@ def qos_get_info(root_yph, path_ar, key_ar):
     oc_qos = root_yph.get("/qos")[0]
     for func_fld in func_tbl:
         if func_fld['type'] & fill_info_type:
-            func_fld['func'](oc_qos)
+            func_fld['func'](oc_qos, disp_args)
 
     return True
 
 #
 # To set sonic qos settings
-def qos_set_sonic(root_yph, pkey_ar, val, is_create):
+def qos_set_sonic(root_yph, pkey_ar, val, is_create, disp_args):
 
     exec_cmd = 'sonic-cfggen -a \'%s\' --write-to-db' % val
     ret_val = util_utl.utl_execute_cmd(exec_cmd)

@@ -9,7 +9,8 @@ import json
 import pdb
 import util_utl
 
-GET_NTP_SVR_LST_CMD = util_utl.GET_VAR_LST_CMD_TMPL.format("NTP_SERVER")
+# ConfigDBConnector.get_table, can not get NTP_SERVER correctly
+#GET_NTP_SVR_LST_CMD = util_utl.GET_VAR_LST_CMD_TMPL.format("NTP_SERVER")
 GET_CUR_DATE_CMD    = 'date +"%Y-%m-%dT%H:%M:%SZ%:z"'
 GET_NTPQ_STAUS_CMD  = 'ntpq -pn'
 
@@ -26,7 +27,7 @@ def fill_ntpq_info(oc_svr, svr, ntpq_output):
             oc_svr.state._set_poll_interval(int(ldata[5]))
             oc_svr.state._set_offset(abs(int((float(ldata[8])))))
 
-def sys_get_info(root_yph, path_ar, key_ar):
+def sys_get_info(root_yph, path_ar, key_ar, disp_args):
     global OLD_NTP_SVR_LST
     new_ntp_svr_lst = []
     #pdb.set_trace()
@@ -41,19 +42,21 @@ def sys_get_info(root_yph, path_ar, key_ar):
         ntpq_output = ntpq_output.splitlines()[2:]
         ntpq_output = [ oline.split() for oline in ntpq_output if oline ]
 
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_NTP_SVR_LST_CMD)
-    if is_ok:
-        oc_sys = root_yph.get("/system")[0]
-        ntp_lst = [] if output.strip('\n') =='' else eval(output)
-        for svr in ntp_lst:
-            if svr not in oc_sys.ntp.servers.server:
-                oc_svr = oc_sys.ntp.servers.server.add(svr)
-                oc_svr.config.iburst = True
-            else:
-                oc_svr = oc_sys.ntp.servers.server[svr]
+#    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_NTP_SVR_LST_CMD)
+#    if is_ok:
+#        oc_sys = root_yph.get("/system")[0]
+#        ntp_lst = [] if output.strip('\n') =='' else eval(output)
+    oc_sys = root_yph.get("/system")[0]
+    ntp_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_NTP)
+    for svr in ntp_lst:
+        if svr not in oc_sys.ntp.servers.server:
+            oc_svr = oc_sys.ntp.servers.server.add(svr)
+            oc_svr.config.iburst = True
+        else:
+            oc_svr = oc_sys.ntp.servers.server[svr]
 
-            fill_ntpq_info(oc_svr, svr, ntpq_output)
-            new_ntp_svr_lst.append(svr)
+        fill_ntpq_info(oc_svr, svr, ntpq_output)
+        new_ntp_svr_lst.append(svr)
 
     # remove no existing entry
     for svr in OLD_NTP_SVR_LST:
@@ -72,7 +75,7 @@ def sys_get_info(root_yph, path_ar, key_ar):
 #   val for add  = '{"address":"103.18.128.60"}'
 #
 # To add/remove a ntp server
-def sys_set_ntp_server(root_yph, pkey_ar, val, is_create):
+def sys_set_ntp_server(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
     try:
         ntp_cfg = {"address":""} if val == "" else eval(val)

@@ -28,6 +28,7 @@ from util import util_qos
 
 import re
 import pdb
+import swsssdk
 
 # Dispatch table for openconfig class and info function
 ocTable = {
@@ -87,10 +88,17 @@ setPathTable = {
             "util_nwi.nwi_pf_set_rule"
 }
 
+class dispArgs: pass
+
+
 class ocDispatcher:
     """ Open Config Dispatcher that dispatch requests to
         other openconfig binding modules """
     def __init__(self, is_dbg_test):
+        self.my_args = dispArgs()
+        self.my_args.cfgdb = swsssdk.ConfigDBConnector()
+        self.my_args.cfgdb.connect()
+
         # create the full yang tree
         # for performance, only update the tree node requested
         self.oc_yph = YANGPathHelper()
@@ -98,7 +106,7 @@ class ocDispatcher:
             ocTable[k]["cls"](path_helper= self.oc_yph)
 
         # create all interfaces to speed up processing request for interfaces later
-        util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)
+        util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test, self.my_args)
 
         # create default network instance
         util_nwi.nwi_create_dflt_nwi(self.oc_yph, is_dbg_test)
@@ -123,7 +131,7 @@ class ocDispatcher:
             oc_yph = self.oc_yph
 
             # suppose key_ar [0] is interface name e.g. "eth0"
-            ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, path_ar, key_ar)
+            ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, path_ar, key_ar, self.my_args)
             if not ret_val: oc_yph = StatusCode.INTERNAL
 
         return oc_yph
@@ -136,7 +144,7 @@ class ocDispatcher:
         # replace key [xxx=yyy] with [xxx]
         reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
 
-        ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0) \
+        ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0, self.my_args) \
                     if reg_path in setPathTable else False
 
         return ret_val

@@ -9,8 +9,6 @@ import json
 import pdb
 import util_utl
 
-from util_utl import GET_ACL_TBL_LST_CMD
-from util_utl import GET_ACL_RUL_LST_CMD
 from util_utl import CFG_ACL_CMD_TMPL
 from util_utl import CFG_MSESS_CMD_TMPL
 from util_utl import RULE_MAX_PRI
@@ -29,8 +27,6 @@ from util_acl import NON_TYPE
 DEFAULT_NWI_NAME = 'DEFAULT'
 MIRROR_POLICY_PFX= 'EVERFLOW'
 
-GET_MSESS_LST_CMD    = util_utl.GET_VAR_LST_CMD_TMPL.format("MIRROR_SESSION")
-
 FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_FDB   = 0x01  # fill fdb info
 FILL_INFO_PF    = 0x02  # fill policy-forwarding info
@@ -47,7 +43,7 @@ def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
 # key_ar[0] : 'DEFAULT' (instance name)
 # key_ar[1] : mac
 # key_ar[2] : vlan
-def nwi_get_fdb_info(oc_nwis, path_ar, key_ar):
+def nwi_get_fdb_info(oc_nwis, path_ar, key_ar, disp_args):
     """
     fdbshow example:
     No.    Vlan  MacAddress         Port
@@ -160,7 +156,7 @@ def nwi_pf_fill_binding_info(oc_pf, acl_name, acl_info):
         oc_pf_inf.config.apply_forwarding_policy = acl_name
 
 # key_ar[0] : 'DEFAULT' (instance name)
-def nwi_get_pf_info(oc_nwis, path_ar, key_ar):
+def nwi_get_pf_info(oc_nwis, path_ar, key_ar, disp_args):
     oc_pf = oc_nwis.network_instance[DEFAULT_NWI_NAME].policy_forwarding
 
     # remove old policies
@@ -173,20 +169,12 @@ def nwi_get_pf_info(oc_nwis, path_ar, key_ar):
     for old_inf in old_inf_lst:
         oc_pf.interfaces.interface.delete(old_inf)
 
-    ret_val = False
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_MSESS_LST_CMD)
-    if is_ok:
-        msess_lst = {} if output.strip('\n') =='' else eval(output)
-
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_TBL_LST_CMD)
-    if is_ok:
-        acl_tlst = {} if output.strip('\n') =='' else eval(output)
-        ret_val = True
+    msess_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION)
+    acl_tlst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
+    ret_val = True
 
     if acl_tlst:
-        (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_RUL_LST_CMD)
-        if is_ok:
-            acl_rlst = {} if output.strip('\n') =='' else eval(output)
+        acl_rlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
 
         for acl_name in acl_tlst.keys():
             if acl_tlst[acl_name]['type'] == 'MIRROR':
@@ -205,7 +193,7 @@ def nwi_get_pf_info(oc_nwis, path_ar, key_ar):
     return ret_val
 
 # key_ar[0] : 'DEFAULT' (instance name)
-def nwi_get_info(root_yph, path_ar, key_ar):
+def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
     fill_type_tbl = { "fdb"                 : FILL_INFO_FDB,
                       "policy-forwarding"   : FILL_INFO_PF,
                     #  "interfaces"          : FILL_INFO_INTFS,
@@ -223,7 +211,7 @@ def nwi_get_info(root_yph, path_ar, key_ar):
     oc_nwis = root_yph.get("/network-instances")[0]
     for func_fld in func_tbl:
         if func_fld['type'] & fill_info_type:
-            func_fld['func'](oc_nwis, path_ar, key_ar)
+            func_fld['func'](oc_nwis, path_ar, key_ar, disp_args)
 
     return True
 
@@ -232,16 +220,14 @@ def nwi_get_info(root_yph, path_ar, key_ar):
 #   val for add  = '{"apply-forwarding-policy": "lll"}'
 #
 # To bind/unbind a policy to an interface
-def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
+def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
 
     ret_val = False
 
     # 1. get old port list
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_TBL_LST_CMD)
-    if is_ok:
-        # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
-        acl_lst = {} if output.strip('\n') =='' else eval(output)
+    # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
+    acl_lst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
 
     # acl must be created b4 binding to interface
     if acl_lst:
@@ -258,6 +244,7 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
                     break
 
         acl_cfg  = acl_lst.get(acl_name)
+        # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
         if not acl_cfg: return False
 
         if acl_cfg['type'] != 'MIRROR': return False
@@ -289,7 +276,7 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create):
 #   val for add  = '{"policy-id": "EVERFLOW"}'
 #
 # To add/remove a policy (no checking for existence)
-def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create):
+def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
     try:
         pf_cfg = {"policy-id":""} if val == "" else eval(val)
 
@@ -309,15 +296,11 @@ def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create):
     return ret_val
 
 # try to remove mirror sessions not used by any rule
-def nwi_pf_clear_mirror_session():
-    ret_val = False
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_MSESS_LST_CMD)
-    if is_ok:
-        msess_lst = {} if output.strip('\n') =='' else eval(output)
+def nwi_pf_clear_mirror_session(disp_args):
+    msess_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION)
 
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_RUL_LST_CMD)
-    if is_ok:
-        acl_rlst = {} if output.strip('\n') =='' else eval(output)
+    acl_rlst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
+    if acl_rlst:
         for acl_rule_key in acl_rlst.keys():
             if 'MIRROR_ACTION' in acl_rlst[acl_rule_key]:
                 sess_name = acl_rlst[acl_rule_key]['MIRROR_ACTION']
@@ -334,7 +317,7 @@ def nwi_pf_clear_mirror_session():
 #   val for add  = '{"policy-id": "EVERFLOW"}'
 #
 # To add/remove a rule of pf
-def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create):
+def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
     #
     # priority    => RULE_MAX_PRI - sequence-id
@@ -379,6 +362,6 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create):
                 break
 
     if is_del:
-        nwi_pf_clear_mirror_session()
+        nwi_pf_clear_mirror_session(disp_args)
 
     return ret_val

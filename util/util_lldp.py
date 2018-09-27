@@ -89,7 +89,7 @@ def lldp_del_all_inf_neighbors(lldp_yph, inf):
 # fill DUT's current lldp info into lldp_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
-def lldp_get_info(lldp_yph, path_ar, key_ar):
+def lldp_get_info(lldp_yph, path_ar, key_ar, disp_args):
     """
     use 'lldpctl -f xml' command to gather local lldp detailed information
     """

@@ -13,12 +13,24 @@ import os
 import time
 import functools
 
+CFGDB_TABLE_NAME_ACL            = 'ACL_TABLE'
+CFGDB_TABLE_NAME_RULE           = 'ACL_RULE'
+CFGDB_TABLE_NAME_VLAN           = 'VLAN'
+CFGDB_TABLE_NAME_MIRROR_SESSION = 'MIRROR_SESSION'
+CFGDB_TABLE_NAME_PC             = 'PORTCHANNEL'
+CFGDB_TABLE_NAME_NTP            = 'NTP_SERVER'
+
+CFGDB_TABLE_NAME_TC2Q_MAP       = 'TC_TO_QUEUE_MAP'
+CFGDB_TABLE_NAME_DSCP2TC_MAP    = 'DSCP_TO_TC_MAP'
+CFGDB_TABLE_NAME_QUEUE          = 'QUEUE'
+CFGDB_TABLE_NAME_SCHDLR         = 'SCHEDULER'
+
 GET_VAR_LST_CMD_TMPL = 'sonic-cfggen -d -v "{0}"'
-GET_ACL_TBL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_TABLE")
-GET_ACL_RUL_LST_CMD  = GET_VAR_LST_CMD_TMPL.format("ACL_RULE")
-CFG_ACL_CMD_TMPL     = 'sonic-cfggen -a \'{"ACL_TABLE": {"%s" : %s}}\' --write-to-db'
-CFG_RUL_CMD_TMPL     = 'sonic-cfggen -a \'{"ACL_RULE": {"%s" : %s}}\' --write-to-db'
-CFG_MSESS_CMD_TMPL   = 'sonic-cfggen -a \'{"MIRROR_SESSION": {"%s" : %s}}\' --write-to-db'
+CFG_WRITE_DB_CMD_TMPL= 'sonic-cfggen -a \'{{"{0}": {{"%s" : %s}}}}\' --write-to-db'
+CFG_ACL_CMD_TMPL     = CFG_WRITE_DB_CMD_TMPL.format(CFGDB_TABLE_NAME_ACL)
+CFG_RUL_CMD_TMPL     = CFG_WRITE_DB_CMD_TMPL.format(CFGDB_TABLE_NAME_RULE)
+CFG_MSESS_CMD_TMPL   = CFG_WRITE_DB_CMD_TMPL.format(CFGDB_TABLE_NAME_MIRROR_SESSION)
+CFG_PC_CMD_TMPL      = CFG_WRITE_DB_CMD_TMPL.format(CFGDB_TABLE_NAME_PC)
 
 RULE_MAX_PRI         = 10000 # refer to acl_loader
 RULE_MIN_PRI         = 1

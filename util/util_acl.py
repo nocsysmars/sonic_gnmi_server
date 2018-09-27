@@ -8,9 +8,8 @@ import subprocess
 import json
 import pdb
 import util_utl
+import swsssdk
 
-from util_utl import GET_ACL_TBL_LST_CMD
-from util_utl import GET_ACL_RUL_LST_CMD
 from util_utl import CFG_ACL_CMD_TMPL
 from util_utl import CFG_RUL_CMD_TMPL
 from util_utl import CFG_MSESS_CMD_TMPL
@@ -156,7 +155,7 @@ def acl_fill_binding_info(oc_acl, acl_name, acl_type, acl_info):
 # fill DUT's current acl info into root_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
-def acl_get_info(root_yph, path_ar, key_ar):
+def acl_get_info(root_yph, path_ar, key_ar, disp_args):
     #pdb.set_trace()
     oc_acl = root_yph.get("/acl")[0]
 
@@ -170,16 +169,10 @@ def acl_get_info(root_yph, path_ar, key_ar):
     for old_inf in old_inf_lst:
         oc_acl.interfaces.interface.delete(old_inf)
 
-    ret_val = False
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_TBL_LST_CMD)
-    if is_ok:
-        acl_tlst = {} if output.strip('\n') =='' else eval(output)
-        ret_val = True
-
+    ret_val = True
+    acl_tlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
     if acl_tlst:
-        (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_ACL_RUL_LST_CMD)
-        if is_ok:
-            acl_rlst = {} if output.strip('\n') =='' else eval(output)
+        acl_rlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
 
         # acl_set must be created b4 filling binding info
         for acl_name in acl_tlst.keys():
@@ -203,7 +196,7 @@ def acl_get_info(root_yph, path_ar, key_ar):
 #   val for add  = '{"type":"ACL_IPV4", "name":"DATAACL"}'
 #
 # To create/remove an acl (no checking for existence)
-def acl_set_acl_set(root_yph, pkey_ar, val, is_create):
+def acl_set_acl_set(root_yph, pkey_ar, val, is_create, disp_args):
     try:
         acl_cfg = {"name":""} if val == "" else eval(val)
 
@@ -378,7 +371,7 @@ def acl_set_one_acl_entry(acl_name, rule_name, rule_cfg):
 #   val for add  = '{"type":"ACL_IPV4", "name":"DATAACL"}'
 #
 # To create/remove an acl entry
-def acl_set_acl_entry(root_yph, pkey_ar, val, is_create):
+def acl_set_acl_entry(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
     #
     # priority    => RULE_MAX_PRI - sequence-id
@@ -427,7 +420,7 @@ def acl_set_acl_entry(root_yph, pkey_ar, val, is_create):
 #   val for add  = '{"set-name": "lll", "type": "ACL_IPV4"}'
 #
 # To bind/unbind an acl to an interface
-def acl_set_interface(root_yph, pkey_ar, val, is_create):
+def acl_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     ret_val = False
 
     # 1. get old port list

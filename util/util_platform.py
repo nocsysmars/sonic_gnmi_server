@@ -20,7 +20,7 @@ def platform_get_syseeprom_output_val(sys_output, tag_str, pos):
 
     return ret_val
 
-def platform_get_info(pf_yph, path_ar, key_ar):
+def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     # show platform syseeprom
     #  ex:  Command: sudo decode-syseeprom
     #       TlvInfo Header:

@@ -29,7 +29,7 @@ def lr_add_nexthop(lr_yph, sr_obj, idx, nh_str, inf):
 
 # fill DUT's route info into lr_yph
 # key_ar [0] : e.g. ""
-def lr_get_info(lr_yph, path_ar, key_ar):
+def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
     """
     use 'ip route show' command to gather information
     """
@@ -73,7 +73,7 @@ def lr_get_info(lr_yph, path_ar, key_ar):
 #   val for add     = '{'1': {'interface-ref': {'config': {'interface': 'Ethernet71'}},
 #                             'config': {'next-hop': '10.0.0.142'}}}'
 # To set static route (v4)
-def lr_set_route_v4(oc_yph, pkey_ar, val, is_create):
+def lr_set_route_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     try:
         rt_cfg  = {} if val == "" else eval(val)
 
