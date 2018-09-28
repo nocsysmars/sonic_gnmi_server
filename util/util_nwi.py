@@ -9,8 +9,6 @@ import json
 import pdb
 import util_utl
 
-from util_utl import CFG_ACL_CMD_TMPL
-from util_utl import CFG_MSESS_CMD_TMPL
 from util_utl import RULE_MAX_PRI
 from util_utl import RULE_MIN_PRI
 
@@ -263,11 +261,9 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
                 acl_cfg['ports'].remove(pkey_ar[1])
                 is_changed = True
 
+        ret_val = True
         if is_changed:
-            exec_cmd = CFG_ACL_CMD_TMPL % (acl_name, json.dumps(acl_cfg))
-            ret_val = util_utl.utl_execute_cmd(exec_cmd)
-        else:
-            ret_val = True
+            disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, acl_name, acl_cfg)
 
     return ret_val
 
@@ -281,22 +277,25 @@ def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
         pf_cfg = {"policy-id":""} if val == "" else eval(val)
 
         if pf_cfg["policy-id"] == "":
-            cfg_str = "null"
+            acl_cfg = None
         else:
             if pf_cfg["policy-id"] != pkey_ar[1]: return False
 
             pf_type = 'MIRROR' if pkey_ar[1].find(MIRROR_POLICY_PFX) == 0 else 'L3'
-            cfg_str = '{"type": "%s", "policy_desc": "%s", "ports":[]}' % (pf_type, pkey_ar[1])
+            acl_cfg = {
+                "type"       : pf_type,
+                "policy_desc": pkey_ar[1],
+                "ports"      :[]
+                }
 
     except:
         return False
 
-    exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[1], cfg_str)
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
-    return ret_val
+    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, pkey_ar[1], acl_cfg)
+    return True
 
 # try to remove mirror sessions not used by any rule
-def nwi_pf_clear_mirror_session(disp_args):
+def nwi_pf_clear_mirror_sessions(disp_args):
     msess_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION)
 
     acl_rlst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
@@ -309,8 +308,25 @@ def nwi_pf_clear_mirror_session(disp_args):
                 del msess_lst[sess_name]
 
     for msess in msess_lst:
-        exec_cmd = CFG_MSESS_CMD_TMPL % (msess, "null")
-        util_utl.utl_execute_cmd(exec_cmd)
+        disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION, msess, None)
+
+# add one mirror session used by rule of pf (EVERFLOW)
+def nwi_pf_add_one_mirror_session(disp_args, sess_name, target_yang):
+    target_sonic = {
+        "gre_type"  : "25944",  # 0x6558
+        "dscp"      : "0",      # TODO: default
+        "queue"     : "0",      # TODO: default
+    }
+    target_sonic["src_ip"] = target_yang["config"]["source"]
+    target_sonic["dst_ip"] = target_yang["config"]["destination"]
+    target_sonic["ttl"]    = str(target_yang["config"]["ip-ttl"])
+
+    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION, sess_name, target_sonic)
+
+# add one mirror session used by rule of pf (EVERFLOW)
+def nwi_pf_add_mirror_sessions(disp_args, msess_tbl):
+    for key, val in msess_tbl.items():
+        nwi_pf_add_one_mirror_session(disp_args, key, val)
 
 # ex:    pkey_ar = [u'DEFAULT', u'EVERFLOW']
 #   val for del  = '' or '{}'
@@ -344,24 +360,29 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
     }
     """
     # TODO: check policy type and action ???
-    rule_cfg = {} if val == "" else eval(val)
-    msess_tbl = []
+    rule_cfg  = {} if val == "" else eval(val)
+    msess_tbl = {}
+    rule_tbl  = {}
     is_del = False
     # only one entry
     if 'sequence-id' in rule_cfg.keys():
         rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg, msess_tbl)
-        if rule_cfg == "null": is_del = True
-        ret_val = acl_set_one_acl_entry(pkey_ar[1], rule_name, rule_cfg)
+        if rule_name == None: return False
+        rule_tbl[rule_name] = rule_cfg
     else:
-        ret_val = True
         for seq_id in rule_cfg.keys():
             rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id], msess_tbl)
-            if rule_cfg == "null": is_del = True
-            ret_val = acl_set_one_acl_entry(pkey_ar[1], rule_name, rule_cfg)
-            if not ret_val:
-                break
+            if rule_name == None: return False
+            rule_tbl[rule_name] = rule_cfg
+
+    nwi_pf_add_mirror_sessions(disp_args, msess_tbl)
+
+    for rule in rule_tbl.keys():
+        if rule_tbl [rule] == None: is_del = True
+        ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[1], rule, rule_tbl[rule])
+        if not ret_val: break
 
     if is_del:
-        nwi_pf_clear_mirror_session(disp_args)
+        nwi_pf_clear_mirror_sessions(disp_args)
 
     return ret_val

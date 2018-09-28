@@ -9,12 +9,8 @@ import json
 import pdb
 import util_utl
 
-# ConfigDBConnector.get_table, can not get NTP_SERVER correctly
-#GET_NTP_SVR_LST_CMD = util_utl.GET_VAR_LST_CMD_TMPL.format("NTP_SERVER")
 GET_CUR_DATE_CMD    = 'date +"%Y-%m-%dT%H:%M:%SZ%:z"'
 GET_NTPQ_STAUS_CMD  = 'ntpq -pn'
-
-CFG_NTP_SVR_CMD_TMPL = 'sonic-cfggen -a \'{"NTP_SERVER": {"%s" : %s}}\' --write-to-db'
 
 # ntp server list needed to check existence
 OLD_NTP_SVR_LST = []
@@ -42,10 +38,6 @@ def sys_get_info(root_yph, path_ar, key_ar, disp_args):
         ntpq_output = ntpq_output.splitlines()[2:]
         ntpq_output = [ oline.split() for oline in ntpq_output if oline ]
 
-#    (is_ok, output) = util_utl.utl_get_execute_cmd_output(GET_NTP_SVR_LST_CMD)
-#    if is_ok:
-#        oc_sys = root_yph.get("/system")[0]
-#        ntp_lst = [] if output.strip('\n') =='' else eval(output)
     oc_sys = root_yph.get("/system")[0]
     ntp_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_NTP)
     for svr in ntp_lst:
@@ -78,17 +70,16 @@ def sys_get_info(root_yph, path_ar, key_ar, disp_args):
 def sys_set_ntp_server(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
     try:
-        ntp_cfg = {"address":""} if val == "" else eval(val)
+        cfg_info = {"address":""} if val == "" else eval(val)
 
-        if ntp_cfg["address"] == "":
-            cfg_str = "null"
+        if cfg_info["address"] == "":
+            ntp_cfg = None
         else:
-            cfg_str = "{}"
+            ntp_cfg = {}
 
     except:
         return False
 
-    exec_cmd = CFG_NTP_SVR_CMD_TMPL % (pkey_ar[0], cfg_str)
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
+    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_NTP, pkey_ar[0], ntp_cfg)
 
-    return ret_val
+    return True

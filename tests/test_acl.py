@@ -45,7 +45,7 @@ class TestAcl(test_inc.MyTestCase):
         output = self.run_script(['get', PATH_GET_ACL_TMPL, ''])
         self.assertNotIn(TEST_ACL_NAME, output)
 
-    def create_rule_cfg(self, seq_id, rule_name, is_del = False):
+    def create_rule_cfg(self, seq_id, rule_name, rule_flds, is_del = False):
         rule_cfg = {
             seq_id : {
                 "sequence-id": seq_id,
@@ -63,7 +63,7 @@ class TestAcl(test_inc.MyTestCase):
             rule_cfg [seq_id]['actions'  ] = {"config" : {} }
 
             exec_str_tmpl = "rule_cfg['{0}']{1} = {2}"
-            for fld in TEST_RUL_FLD_TBL.keys():
+            for fld in rule_flds:
                 exec_str = exec_str_tmpl.format(seq_id, TEST_RUL_FLD_TBL[fld]['str'], TEST_RUL_FLD_TBL[fld]['val'])
                 exec(exec_str)
 
@@ -71,32 +71,61 @@ class TestAcl(test_inc.MyTestCase):
 
         return ret_val
 
+    def chk_rule_output(self, seq_id, input_dict, output, chk_tbl, is_assert_in):
+        for chk_key in chk_tbl:
+            tmp_cfg = input_dict[seq_id][chk_key]
+
+            for fld in tmp_cfg['config'].keys():
+                tmp_val = input_dict[seq_id][chk_key]['config'][fld]
+                tmp_str = json.dumps(tmp_val,  separators=(',', ':'))
+                chk_str = '"%s":%s' % (fld, tmp_str)
+                if is_assert_in:
+                    self.assertIn(chk_str, output)
+                else:
+                    self.assertNotIn(chk_str, output)
+
+    def test_mod_rule(self):
+        TEST_SEQ_ID   = "2"
+        TEST_RUL_NAME = "RULE_2"
+        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, ['SRC_IP'])
+        output = self.run_script(['update', PATH_SET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(rule_cfg)])
+        output = self.run_script(['get', PATH_GET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), ''])
+        output = "".join(output.replace('\n', '').split())
+        input_dict = eval(rule_cfg)
+
+        self.chk_rule_output(TEST_SEQ_ID, input_dict, output, ["ipv4"], True)
+
+        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, ['DST_IP'])
+        output = self.run_script(['update', PATH_SET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(rule_cfg)])
+        output = self.run_script(['get', PATH_GET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), ''])
+        output = "".join(output.replace('\n', '').split())
+
+        self.chk_rule_output(TEST_SEQ_ID, input_dict, output, ["ipv4"], False)
+
+        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, None, True)
+        output = self.run_script(['update', PATH_SET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(rule_cfg)])
+        output = self.run_script(['get', PATH_GET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), ''])
+        output = "".join(output.replace('\n', '').split())
+        self.assertNotIn(TEST_SEQ_ID, output)
+
     def test_add_rule_to_acl(self):
         #pdb.set_trace()
         TEST_SEQ_ID   = "1"
         TEST_RUL_NAME = "RULE_1"
-        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME)
+        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, TEST_RUL_FLD_TBL.keys())
 
         output = self.run_script(['update', PATH_SET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(rule_cfg)])
         output = self.run_script(['get', PATH_GET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), ''])
         output = "".join(output.replace('\n', '').split())
         input_dict = eval(rule_cfg)
         chk_tbl = [ "ipv4", "l2", "transport", "actions" ]
-
-        for chk_key in chk_tbl:
-            tmp_cfg = input_dict[TEST_SEQ_ID][chk_key]
-
-            for fld in tmp_cfg['config'].keys():
-                tmp_val = input_dict[TEST_SEQ_ID][chk_key]['config'][fld]
-                tmp_str = json.dumps(tmp_val,  separators=(',', ':'))
-                chk_str = '"%s":%s' % (fld, tmp_str)
-                self.assertIn(chk_str, output)
+        self.chk_rule_output(TEST_SEQ_ID, input_dict, output, chk_tbl, True)
 
     def test_del_rule_from_acl(self):
         #pdb.set_trace()
         TEST_SEQ_ID   = "1"
         TEST_RUL_NAME = "RULE_1"
-        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, True)
+        rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, None, True)
 
         output = self.run_script(['update', PATH_SET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(rule_cfg)])
         output = self.run_script(['get', PATH_GET_RUL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), ''])
@@ -118,6 +147,7 @@ class TestAcl(test_inc.MyTestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestAcl('test_create_acl'))
+    suite.addTest(TestAcl('test_mod_rule'))
     suite.addTest(TestAcl('test_add_rule_to_acl'))
     suite.addTest(TestAcl('test_bind_acl_to_port'))
     suite.addTest(TestAcl('test_unbind_acl_from_port'))

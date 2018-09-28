@@ -350,22 +350,25 @@ def interface_get_port_inf_info(inf_yph, fill_info_bmp, key_ar, out_tbl, is_dbg_
         # use 'portstat -j' command to gather interface counters information
         (is_ok, output) = util_utl.utl_get_execute_cmd_output('portstat -j')
         if is_ok:
-            dir_dict = {"in" : "RX", "out" : "TX"}
-            cnt_dict = {"octets": "OK", "discards" : "DRP", "errors" : "ERR"}
-
+            fld_tbl = [
+                ["in_octets",    "RX_OK"],
+                ["in_discards",  "RX_DRP"],
+                ["in_errors",    "RX_ERR"],
+                ["out_octets",   "TX_OK"],
+                ["out_discards", "TX_DRP"],
+                ["out_errors",   "TX_ERR"],
+            ]
             pstat_info = json.loads(output)
             for inf, val in pstat_info.items():
                 if key_ar and inf != key_ar[0]: continue
 
-                oc_inf = inf_yph.get_unique("/interfaces/interface[name=%s]" % inf)
-
-                if oc_inf:
+                if inf in oc_infs.interface:
+                    oc_inf = oc_infs.interface[inf]
                     oc_inf.state._set_type('ift:ethernetCsmacd')
 
-                    for d, dv in dir_dict.items():
-                        for c, cv in cnt_dict.items():
-                            set_fun = getattr(oc_inf.state.counters, "_set_%s_%s" % (d, c))
-                            if set_fun: set_fun(val["%s_%s" % (dv, cv)])
+                    for fld in fld_tbl:
+                        set_fun = getattr(oc_inf.state.counters, "_set_%s" % fld[0])
+                        if set_fun: set_fun(val[fld[1]])
 
             ret_val = True
 
@@ -387,7 +390,7 @@ def interface_get_vlan_inf_info(inf_yph, fill_info_bmp, key_ar, out_tbl, disp_ar
 
         # vlan_cfg ex : "{'Vlan1113': {'vlanid': '1113'},
         #                 'Vlan1111': {'members': ['Ethernet2', 'Ethernet5'], 'vlanid': '1111'}}"
-        for vname, vdata in  vlan_cfg.items():
+        for vname, vdata in vlan_cfg.items():
             if vname not in oc_infs.interface:
                 oc_inf = oc_infs.interface.add(vname)
             else:

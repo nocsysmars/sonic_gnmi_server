@@ -10,9 +10,6 @@ import pdb
 import util_utl
 import swsssdk
 
-from util_utl import CFG_ACL_CMD_TMPL
-from util_utl import CFG_RUL_CMD_TMPL
-from util_utl import CFG_MSESS_CMD_TMPL
 from util_utl import RULE_MAX_PRI
 from util_utl import RULE_MIN_PRI
 
@@ -198,36 +195,24 @@ def acl_get_info(root_yph, path_ar, key_ar, disp_args):
 # To create/remove an acl (no checking for existence)
 def acl_set_acl_set(root_yph, pkey_ar, val, is_create, disp_args):
     try:
-        acl_cfg = {"name":""} if val == "" else eval(val)
+        cfg_info = {"name":""} if val == "" else eval(val)
 
-        if acl_cfg["name"] == "":
-            cfg_str = "null"
+        if cfg_info["name"] == "":
+            acl_cfg = None
         else:
-            if acl_cfg["name"] != pkey_ar[0]: return False
+            if cfg_info["name"] != pkey_ar[0]: return False
 
-            cfg_str = '{"type": "L3", "policy_desc": "%s", "ports":[]}' % (pkey_ar[0])
+            acl_cfg = {
+                "type"        : "L3",
+                "policy_desc" : pkey_ar[0],
+                "ports"       :[]
+                }
 
     except:
         return False
 
-    exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[0], cfg_str)
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
-    return ret_val
-
-# add one mirror session used by rule of pf (EVERFLOW)
-def acl_add_one_mirror_session(sess_name, target_yang):
-    target_sonic = {
-        "gre_type"  : "25944",  # 0x6558
-        "dscp"      : "0",      # TODO: default
-        "queue"     : "0",      # TODO: default
-    }
-    target_sonic["src_ip"] = target_yang["config"]["source"]
-    target_sonic["dst_ip"] = target_yang["config"]["destination"]
-    target_sonic["ttl"]    = str(target_yang["config"]["ip-ttl"])
-
-    exec_cmd = CFG_MSESS_CMD_TMPL % (sess_name, json.dumps(target_sonic))
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
-    return ret_val
+    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, pkey_ar[0], acl_cfg)
+    return True
 
 # copy action info from rule_yang to rule_sonic
 def acl_rule_copy_action(rule_yang, rule_sonic, msess_tbl):
@@ -238,31 +223,39 @@ def acl_rule_copy_action(rule_yang, rule_sonic, msess_tbl):
         if "actions" in rule_yang:
             act_tbl = {'ACCEPT' : 'FORWARD',
                        'DROP'   : 'DROP'    }
-            val = rule_yang["actions"]["config"]["forwarding-action"]
-            if val in act_tbl:
-                val = act_tbl[val]
-                rule_sonic["PACKET_ACTION"] = val
-                ret_val = True
-
+            try:
+                val = rule_yang["actions"]["config"]["forwarding-action"]
+                if val in act_tbl:
+                    val = act_tbl[val]
+                    rule_sonic["PACKET_ACTION"] = val
+                    ret_val = True
+            except:
+                pass
     else:
         # for pf: action.config.next-hop
         #         action.encapsulate-gre.targets
         if "action" in rule_yang:
             if "config" in rule_yang["action"]:
                 # "REDIRECT:ip"
-                val = rule_yang["action"]["config"]["next-hop"]
-                rule_sonic["PACKET_ACTION"] = "REDIRECT:%s" % val
-                ret_val = True
-
+                try:
+                    val = rule_yang["action"]["config"]["next-hop"]
+                    rule_sonic["PACKET_ACTION"] = "REDIRECT:%s" % val
+                    ret_val = True
+                except:
+                    pass
             elif 'encapsulate-gre' in rule_yang['action']:
-                trg_cfgs = rule_yang["action"]["encapsulate-gre"]["targets"]["target"]
-                for trg in trg_cfgs:
-                    rule_sonic["MIRROR_ACTION"] = trg
-                    if trg in msess_tbl: break
+                try:
+                    trg_cfgs = rule_yang["action"]["encapsulate-gre"]["targets"]["target"]
+                    for trg in trg_cfgs:
+                        rule_sonic["MIRROR_ACTION"] = trg
+                        if trg in msess_tbl: break
 
-                    ret_val = acl_add_one_mirror_session(trg, trg_cfgs[trg])
-                    msess_tbl.append(trg)
-                    break # support only one session ???
+                        #ret_val = acl_add_one_mirror_session(trg, trg_cfgs[trg])
+                        msess_tbl[trg] = trg_cfgs[trg]
+                        break # support only one session ???
+                    ret_val = True
+                except:
+                    pass
 
     if not ret_val:
         util_utl.utl_err("No action for %s rule !!!" % ["pf", "acl"][msess_tbl==None])
@@ -324,7 +317,6 @@ def acl_rule_get_name_and_pri(rule_yang, rule_sonic):
 def acl_rule_yang2sonic(rule_yang, msess_tbl = None):
     rule_sonic  = {}
     rule_name   = acl_rule_get_name_and_pri (rule_yang, rule_sonic)
-    rule_sonic_str = "null"
 
     if rule_name:
         is_copy = False
@@ -338,12 +330,12 @@ def acl_rule_yang2sonic(rule_yang, msess_tbl = None):
             elif key not in ["sequence-id", "config"]:
                 util_utl.utl_err("Unrecognized key (%s:%s)!!!" % (key, rule_yang[key]))
 
-        if is_copy:
-            rule_sonic_str = json.dumps(rule_sonic)
+        if not is_copy:
+            rule_sonic = None
     else:
         util_utl.utl_err("Failed to get rule name (%s)!!!" % rule_yang)
 
-    return rule_name, rule_sonic_str
+    return rule_name, rule_sonic
 
 # ex:
 #   acl_name = "kkk"
@@ -351,20 +343,18 @@ def acl_rule_yang2sonic(rule_yang, msess_tbl = None):
 #   rule_cfg = '{"PRIORITY": "9999","PACKET_ACTION": "FORWARD","SRC_IP": "10.0.0.0/8"}'
 #
 #   To write the rule config into sonic db
-def acl_set_one_acl_entry(acl_name, rule_name, rule_cfg):
+def acl_set_one_acl_entry(disp_args, acl_name, rule_name, rule_cfg):
     if not rule_name: return False
     rule_db_name = "{0}|{1}".format(acl_name, rule_name)
 
     # 1. delete old entry
-    exec_cmd = CFG_RUL_CMD_TMPL % (rule_db_name, "null")
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
+    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_RULE, rule_db_name, None)
 
-    if rule_cfg != "null":
-        # 2. add new entry
-        exec_cmd = CFG_RUL_CMD_TMPL % (rule_db_name, rule_cfg)
-        ret_val = util_utl.utl_execute_cmd(exec_cmd)
+    # 2. add new entry
+    if rule_cfg != None:
+        disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_RULE, rule_db_name, rule_cfg)
 
-    return ret_val
+    return True
 
 # ex:    pkey_ar = [u'DATAACL', u'ACL_IPV4']
 #   val for del  = '{"type":"ACL_IPV4", "name":""}'
@@ -404,12 +394,12 @@ def acl_set_acl_entry(root_yph, pkey_ar, val, is_create, disp_args):
     # only one entry
     if 'sequence-id' in rule_cfg.keys():
         rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg)
-        ret_val = acl_set_one_acl_entry(pkey_ar[0], rule_name, rule_cfg)
+        ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, rule_cfg)
     else:
         ret_val = True
         for seq_id in rule_cfg.keys():
             rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id])
-            ret_val = acl_set_one_acl_entry(pkey_ar[0], rule_name, rule_cfg)
+            ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, rule_cfg)
             if not ret_val:
                 break
 
@@ -458,10 +448,8 @@ def acl_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
                 acl_cfg['ports'].remove(pkey_ar[0])
                 is_changed = True
 
+        ret_val = True
         if is_changed:
-            exec_cmd = CFG_ACL_CMD_TMPL % (pkey_ar[1], json.dumps(acl_cfg))
-            ret_val = util_utl.utl_execute_cmd(exec_cmd)
-        else:
-            ret_val = True
+            disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, pkey_ar[1], acl_cfg)
 
     return ret_val
