@@ -269,10 +269,12 @@ def acl_rule_copy_cfg(rule_yang, rule_sonic, key, msess_tbl):
         return acl_rule_copy_action(rule_yang, rule_sonic, msess_tbl)
 
     is_copy = False
+    is_empty = True
     if key in rule_yang and 'config' in rule_yang[key] and key in SONIC_FLDMAP_TBL:
         fld_tbl = SONIC_FLDMAP_TBL[key]
 
         for fld in rule_yang[key]['config'].keys():
+            is_empty = False
             if fld in fld_tbl:
                 val = rule_yang[key]['config'][fld]
 
@@ -285,7 +287,7 @@ def acl_rule_copy_cfg(rule_yang, rule_sonic, key, msess_tbl):
             else:
                 util_utl.utl_err("field(%s) is not supported !" % fld)
 
-    return is_copy
+    return is_empty or is_copy
 
 # get rule name and copy pri info from rule_yang to rule_sonic
 def acl_rule_get_name_and_pri(rule_yang, rule_sonic):

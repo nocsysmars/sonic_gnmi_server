@@ -560,7 +560,6 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB - ifHCInOctets";
       }
 
-/* squid: not used
       leaf in-unicast-pkts {
         type oc-yang:counter64;
         description
@@ -576,6 +575,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB - ifHCInUcastPkts";
       }
 
+/* squid: not used
       leaf in-broadcast-pkts {
         type oc-yang:counter64;
         description
@@ -591,6 +591,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB -
                      ifHCInBroadcastPkts";
       }
+*/
 
       leaf in-multicast-pkts {
         type oc-yang:counter64;
@@ -608,7 +609,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB -
                      ifHCInMulticastPkts";
       }
-*/
+
       leaf in-discards {
         type oc-yang:counter64;
         description
@@ -692,7 +693,7 @@ module openconfig-interfaces {
         reference
           "RFC 2863: The Interfaces Group MIB - ifHCOutOctets";
       }
-/* squid: not used
+
       leaf out-unicast-pkts {
         type oc-yang:counter64;
         description
@@ -709,6 +710,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB - ifHCOutUcastPkts";
       }
 
+/* squid: not used
       leaf out-broadcast-pkts {
         type oc-yang:counter64;
         description
@@ -725,7 +727,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB -
                      ifHCOutBroadcastPkts";
       }
-
+*/
 
       leaf out-multicast-pkts {
         type oc-yang:counter64;
@@ -745,7 +747,7 @@ module openconfig-interfaces {
           "RFC 2863: The Interfaces Group MIB -
                      ifHCOutMulticastPkts";
       }
-*/
+
       leaf out-discards {
         type oc-yang:counter64;
         description

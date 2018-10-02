@@ -490,7 +490,7 @@ class yc_counters_openconfig_interfaces__interfaces_interface_state_counters(Pyb
 
   YANG Description: A collection of interface-related statistics objects.
   """
-  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__in_octets','__in_discards','__in_errors','__out_octets','__out_discards','__out_errors',)
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__in_octets','__in_unicast_pkts','__in_multicast_pkts','__in_discards','__in_errors','__out_octets','__out_unicast_pkts','__out_multicast_pkts','__out_discards','__out_errors',)
 
   _yang_name = 'counters'
 
@@ -512,9 +512,13 @@ class yc_counters_openconfig_interfaces__interfaces_interface_state_counters(Pyb
     self._extmethods = False
     self.__in_octets = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-octets", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
     self.__in_discards = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-discards", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
-    self.__in_errors = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-errors", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
-    self.__out_discards = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-discards", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
     self.__out_errors = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-errors", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__in_unicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__in_errors = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-errors", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__out_unicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__in_multicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__out_discards = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-discards", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    self.__out_multicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
     self.__out_octets = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-octets", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
 
     load = kwargs.pop("load", None)
@@ -591,6 +595,110 @@ other times as indicated by the value of
 
   def _unset_in_octets(self):
     self.__in_octets = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-octets", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+
+
+  def _get_in_unicast_pkts(self):
+    """
+    Getter method for in_unicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/in_unicast_pkts (oc-yang:counter64)
+
+    YANG Description: The number of packets, delivered by this sub-layer to a
+higher (sub-)layer, that were not addressed to a
+multicast or broadcast address at this sub-layer.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    return self.__in_unicast_pkts
+      
+  def _set_in_unicast_pkts(self, v, load=False):
+    """
+    Setter method for in_unicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/in_unicast_pkts (oc-yang:counter64)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_in_unicast_pkts is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_in_unicast_pkts() directly.
+
+    YANG Description: The number of packets, delivered by this sub-layer to a
+higher (sub-)layer, that were not addressed to a
+multicast or broadcast address at this sub-layer.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """in_unicast_pkts must be of a type compatible with oc-yang:counter64""",
+          'defined-type': "oc-yang:counter64",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)""",
+        })
+
+    self.__in_unicast_pkts = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_in_unicast_pkts(self):
+    self.__in_unicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+
+
+  def _get_in_multicast_pkts(self):
+    """
+    Getter method for in_multicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/in_multicast_pkts (oc-yang:counter64)
+
+    YANG Description: The number of packets, delivered by this sub-layer to a
+higher (sub-)layer, that were addressed to a multicast
+address at this sub-layer.  For a MAC-layer protocol,
+this includes both Group and Functional addresses.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    return self.__in_multicast_pkts
+      
+  def _set_in_multicast_pkts(self, v, load=False):
+    """
+    Setter method for in_multicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/in_multicast_pkts (oc-yang:counter64)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_in_multicast_pkts is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_in_multicast_pkts() directly.
+
+    YANG Description: The number of packets, delivered by this sub-layer to a
+higher (sub-)layer, that were addressed to a multicast
+address at this sub-layer.  For a MAC-layer protocol,
+this includes both Group and Functional addresses.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """in_multicast_pkts must be of a type compatible with oc-yang:counter64""",
+          'defined-type': "oc-yang:counter64",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)""",
+        })
+
+    self.__in_multicast_pkts = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_in_multicast_pkts(self):
+    self.__in_multicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="in-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
 
 
   def _get_in_discards(self):
@@ -756,6 +864,116 @@ other times as indicated by the value of
     self.__out_octets = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-octets", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
 
 
+  def _get_out_unicast_pkts(self):
+    """
+    Getter method for out_unicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/out_unicast_pkts (oc-yang:counter64)
+
+    YANG Description: The total number of packets that higher-level protocols
+requested be transmitted, and that were not addressed
+to a multicast or broadcast address at this sub-layer,
+including those that were discarded or not sent.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    return self.__out_unicast_pkts
+      
+  def _set_out_unicast_pkts(self, v, load=False):
+    """
+    Setter method for out_unicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/out_unicast_pkts (oc-yang:counter64)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_out_unicast_pkts is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_out_unicast_pkts() directly.
+
+    YANG Description: The total number of packets that higher-level protocols
+requested be transmitted, and that were not addressed
+to a multicast or broadcast address at this sub-layer,
+including those that were discarded or not sent.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """out_unicast_pkts must be of a type compatible with oc-yang:counter64""",
+          'defined-type': "oc-yang:counter64",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)""",
+        })
+
+    self.__out_unicast_pkts = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_out_unicast_pkts(self):
+    self.__out_unicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-unicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+
+
+  def _get_out_multicast_pkts(self):
+    """
+    Getter method for out_multicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/out_multicast_pkts (oc-yang:counter64)
+
+    YANG Description: The total number of packets that higher-level protocols
+requested be transmitted, and that were addressed to a
+multicast address at this sub-layer, including those
+that were discarded or not sent.  For a MAC-layer
+protocol, this includes both Group and Functional
+addresses.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    return self.__out_multicast_pkts
+      
+  def _set_out_multicast_pkts(self, v, load=False):
+    """
+    Setter method for out_multicast_pkts, mapped from YANG variable /interfaces/interface/state/counters/out_multicast_pkts (oc-yang:counter64)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_out_multicast_pkts is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_out_multicast_pkts() directly.
+
+    YANG Description: The total number of packets that higher-level protocols
+requested be transmitted, and that were addressed to a
+multicast address at this sub-layer, including those
+that were discarded or not sent.  For a MAC-layer
+protocol, this includes both Group and Functional
+addresses.
+
+Discontinuities in the value of this counter can occur
+at re-initialization of the management system, and at
+other times as indicated by the value of
+'last-clear'.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """out_multicast_pkts must be of a type compatible with oc-yang:counter64""",
+          'defined-type': "oc-yang:counter64",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)""",
+        })
+
+    self.__out_multicast_pkts = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_out_multicast_pkts(self):
+    self.__out_multicast_pkts = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-multicast-pkts", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
+
+
   def _get_out_discards(self):
     """
     Getter method for out_discards, mapped from YANG variable /interfaces/interface/state/counters/out_discards (oc-yang:counter64)
@@ -866,14 +1084,18 @@ other times as indicated by the value of
     self.__out_errors = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="out-errors", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/interfaces', defining_module='openconfig-interfaces', yang_type='oc-yang:counter64', is_config=False)
 
   in_octets = __builtin__.property(_get_in_octets)
+  in_unicast_pkts = __builtin__.property(_get_in_unicast_pkts)
+  in_multicast_pkts = __builtin__.property(_get_in_multicast_pkts)
   in_discards = __builtin__.property(_get_in_discards)
   in_errors = __builtin__.property(_get_in_errors)
   out_octets = __builtin__.property(_get_out_octets)
+  out_unicast_pkts = __builtin__.property(_get_out_unicast_pkts)
+  out_multicast_pkts = __builtin__.property(_get_out_multicast_pkts)
   out_discards = __builtin__.property(_get_out_discards)
   out_errors = __builtin__.property(_get_out_errors)
 
 
-  _pyangbind_elements = {'in_octets': in_octets, 'in_discards': in_discards, 'in_errors': in_errors, 'out_octets': out_octets, 'out_discards': out_discards, 'out_errors': out_errors, }
+  _pyangbind_elements = {'in_octets': in_octets, 'in_unicast_pkts': in_unicast_pkts, 'in_multicast_pkts': in_multicast_pkts, 'in_discards': in_discards, 'in_errors': in_errors, 'out_octets': out_octets, 'out_unicast_pkts': out_unicast_pkts, 'out_multicast_pkts': out_multicast_pkts, 'out_discards': out_discards, 'out_errors': out_errors, }
 
 
 class yc_state_openconfig_interfaces__interfaces_interface_state(PybindBase):
