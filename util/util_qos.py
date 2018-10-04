@@ -30,6 +30,8 @@ FILL_INFO_CLSFR = 0x08  # fill classifier info
 FILL_INFO_INTFS = 0x10  # fill interface info
 FILL_INFO_ALL   = 0xff  # fill all info
 
+SONIC_ROOT_PATH = 'sonic'
+
 @util_utl.utl_timeit
 def qos_create_dflt_obj(root_yph, is_dbg_test):
     oc_qos = root_yph.get("/qos")[0]
@@ -116,7 +118,6 @@ def qos_get_schdlr_info(oc_qos, disp_args):
             else:
                 util_utl.utl_err("extract scheduler (%s) from QUEUE failed !" % sched_key)
 
-
 # fill DUT's current qos info into root_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
@@ -127,7 +128,7 @@ def qos_get_info(root_yph, path_ar, key_ar, disp_args):
                       "queues"              : FILL_INFO_QUEUE,
                       "scheduler-policies"  : FILL_INFO_SCHED,
                       "interfaces"          : FILL_INFO_INTFS,
-    }
+        }
     try:
         fill_info_type = fill_type_tbl[path_ar[-1]]
     except:
@@ -137,12 +138,79 @@ def qos_get_info(root_yph, path_ar, key_ar, disp_args):
     func_tbl = [ {'func': qos_get_fwdgrp_info, 'type' : FILL_INFO_FWDGP | FILL_INFO_CLSFR },
                  {'func': qos_get_clfr_info,   'type' : FILL_INFO_CLSFR },
                  {'func': qos_get_schdlr_info, 'type' : FILL_INFO_SCHED },
-    ]
+        ]
 
     oc_qos = root_yph.get("/qos")[0]
     for func_fld in func_tbl:
         if func_fld['type'] & fill_info_type:
             func_fld['func'](oc_qos, disp_args)
+
+    return True
+
+class oc_custom_subobj(object):
+    def __init__(self, path):
+        self.path = path
+        self.data = {}
+
+    def get(self, filter = True):
+        new_data = {}
+        is_convert = False
+
+        for key in self.data:
+            if isinstance(key, tuple):
+                is_convert = True
+                fld_str = ""
+                for i in range(0, len(key)):
+                    if i == 0:
+                        fld_str = key[i]
+                    else:
+                        fld_str = fld_str + '|' + key[i]
+
+                new_data[fld_str] = self.data[key]
+            else:
+                new_data[key] = self.data[key]
+
+        return self.data if not is_convert else new_data
+
+class openconfig_custom(object):
+    def __init__(self, path_helper):
+        path_helper.register([SONIC_ROOT_PATH], self)
+        self.dispatch_tbl = {}
+        reg_path = {
+            util_utl.CFGDB_TABLE_NAME_TC2Q_MAP,
+            util_utl.CFGDB_TABLE_NAME_DSCP2TC_MAP,
+            util_utl.CFGDB_TABLE_NAME_QUEUE,
+            util_utl.CFGDB_TABLE_NAME_SCHDLR,
+            util_utl.CFGDB_TABLE_NAME_TC2PG_MAP,
+            util_utl.CFGDB_TABLE_NAME_MAP_PFC_P2Q,
+            util_utl.CFGDB_TABLE_NAME_PORT_QOS_MAP,
+            util_utl.CFGDB_TABLE_NAME_WRED_PROFILE,
+            }
+
+        for path in reg_path:
+            self.dispatch_tbl[path] = oc_custom_subobj(path)
+            path_helper.register([SONIC_ROOT_PATH, path], self.dispatch_tbl[path])
+
+    def get(self, filter = True):
+        data = {}
+        for key in self.dispatch_tbl:
+            data[key] = self.dispatch_tbl[key].get()
+        return data
+
+# ex: path_ar = [u'sonic', u'SCHEDULER']
+# To get sonic qos settings
+def qos_get_sonic(root_yph, path_ar, key_ar , disp_args):
+    oc_sonic = root_yph.get('/sonic')[0]
+    if len (path_ar) == 1:
+        disp_tbl = oc_sonic.dispatch_tbl
+    else:
+        if path_ar[1] in oc_sonic.dispatch_tbl:
+            disp_tbl = {path_ar[1]}
+        else:
+            disp_tbl = {}
+
+    for key in disp_tbl:
+        oc_sonic.dispatch_tbl[key].data = disp_args.cfgdb.get_table(key)
 
     return True
 

@@ -43,13 +43,15 @@ ocTable = {
                      "info_f": "util_nwi.nwi_get_info"              },
     "local-routes" : { "cls" : openconfig_local_routing,
                      "info_f": "util_lr.lr_get_info"                },
-    "acl"        : { "cls" : openconfig_acl,
+    "acl"        : { "cls"   : openconfig_acl,
                      "info_f": "util_acl.acl_get_info"              },
-    "system"     : { "cls" : openconfig_system,
+    "system"     : { "cls"   : openconfig_system,
                      "info_f": "util_sys.sys_get_info"              },
-    "qos"        : { "cls" : openconfig_qos,
+    "qos"        : { "cls"   : openconfig_qos,
                      "info_f": "util_qos.qos_get_info"              },
-}
+    "sonic"      : { "cls"   : util_qos.openconfig_custom,
+                     "info_f": "util_qos.qos_get_sonic"             },
+    }
 
 # Dispatch table for registered path and set function
 setPathTable = {
@@ -78,7 +80,7 @@ setPathTable = {
             "util_acl.acl_set_interface",
     '/system/ntp/servers/server[address]/config' :
             "util_sys.sys_set_ntp_server",
-    '/qos/sonic' :
+    '/sonic' :
             "util_qos.qos_set_sonic",
     '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
             "util_nwi.nwi_pf_set_interface",
@@ -86,7 +88,7 @@ setPathTable = {
             "util_nwi.nwi_pf_set_policy",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
             "util_nwi.nwi_pf_set_rule"
-}
+    }
 
 class dispArgs: pass
 
@@ -107,7 +109,8 @@ class ocDispatcher:
         # for performance, only update the tree node requested
         self.oc_yph = YANGPathHelper()
         for k in ocTable.keys():
-            ocTable[k]["cls"](path_helper= self.oc_yph)
+            if ocTable[k]["cls"]:
+                ocTable[k]["cls"](path_helper = self.oc_yph)
 
         # create all interfaces to speed up processing request for interfaces later
         util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test, self.my_args)

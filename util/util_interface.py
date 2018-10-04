@@ -494,7 +494,7 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
                       "config"        : FILL_INFO_PC,
                       "switched-vlan" : FILL_INFO_VLAN,
                       "routed-vlan"   : FILL_INFO_IP
-    }
+        }
 
     try:
         fill_info_type = fill_type_tbl[path_ar[-1]]
@@ -843,7 +843,7 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return True
 
-# ex:    pkey_ar = [u'Vlan3000', u'100.100.100.100']
+# ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
 #   val for del = '{"ip" : "0",   "prefix-length" : 24 }'
 #   val for add = '{"ip" : "xxx", "prefix-length" : 24 }'
 # To set inf's ip address (v4)

@@ -72,9 +72,10 @@ class MyTestCase(unittest.TestCase):
             output = subprocess.check_output(exec_cmd, shell=True)
 
         if self.dbg_print:
-            linecount = output.strip().count('\n')
-            if linecount <= 0:
-                print '    Output: ' + output.strip()
-            else:
-                print '    Output: ({0} lines, {1} bytes)'.format(linecount + 1, len(output))
+            print '    Output:\n' + output.strip()
+#            linecount = output.strip().count('\n')
+#            if linecount <= 0:
+#                print '    Output: ' + output.strip()
+#            else:
+#                print '    Output: ({0} lines, {1} bytes)'.format(linecount + 1, len(output))
         return output
