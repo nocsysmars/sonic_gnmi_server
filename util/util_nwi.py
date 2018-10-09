@@ -7,6 +7,7 @@
 import subprocess
 import json
 import pdb
+from swsssdk import port_util
 import util_utl
 
 from util_utl import RULE_MAX_PRI
@@ -29,7 +30,11 @@ FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_FDB   = 0x01  # fill fdb info
 FILL_INFO_PF    = 0x02  # fill policy-forwarding info
 FILL_INFO_INTFS = 0x04  # fill interface info
+FILL_INFO_POL   = 0x08  # fill policy info
 FILL_INFO_ALL   = 0xff  # fill all info
+
+# mac list needed to check existence
+OLD_MAC_LST = []
 
 @util_utl.utl_timeit
 def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
@@ -38,55 +43,84 @@ def nwi_create_dflt_nwi(nwi_yph, is_dbg_test):
     oc_nwi_dflt.config.enabled = True
     oc_nwi_dflt.config.type = 'DEFAULT_INSTANCE'
 
-# key_ar[0] : 'DEFAULT' (instance name)
-# key_ar[1] : mac
-# key_ar[2] : vlan
-def nwi_get_fdb_info(oc_nwis, path_ar, key_ar, disp_args):
-    """
-    fdbshow example:
-    No.    Vlan  MacAddress         Port
-    -----  ------  -----------------  ---------
-        1    1111  CC:37:AB:EC:D9:B2  Ethernet2
-        2    2001  00:00:00:00:00:01  Ethernet5
-        3    3001  00:00:00:00:00:01  Ethernet5
-    Total number of entries 3
-    """
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output('fdbshow')
-    if is_ok:
-        key_mac  = None
-        key_vlan = None
-        if key_ar:
-            if key_ar[0] in oc_nwis.network_instance:
-                oc_nwi = oc_nwis.network_instance[key_ar[0]]
+# ex: key_ar = [u'DEFAULT', u'00:00:00:00:00:01', u'10', u'name', u'mac-address', u'vlan']
+def nwi_get_fdb_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
+    # refer to /usr/bin/fdbshow
+    key_mac  = None
+    key_vlan = None
+    oc_nwi   = None
+
+    len_key_ar = len(key_ar) // 2
+    if len_key_ar > 3: return False
+
+    for i in range(len_key_ar):
+        if key_ar[i+len_key_ar] == 'name':
+            if key_ar[i] in oc_nwis.network_instance:
+                oc_nwi = oc_nwis.network_instance[key_ar[i]]
             else:
                 return False
-
-            if len(key_ar) > 3: return False
-
-            for key in key_ar[1:]:
-                if ':' in key:
-                    if key_mac != None: return False
-                    key_mac = key
-                else:
-                    if key_vlan != None: return False
-                    key_vlan = key
+        elif key_ar[i+len_key_ar] == 'mac-address':
+            key_mac  = key_ar[i]
+        elif key_ar[i+len_key_ar] == 'vlan':
+            key_vlan = key_ar[i]
         else:
-            # only support default network instance
-            oc_nwi = oc_nwis.network_instance[DEFAULT_NWI_NAME]
+            return False
 
-        oc_nwi.fdb.mac_table._unset_entries()
-        output = output.splitlines()
-        # skip element 0/1, refer to output of fdbshow
-        for idx in range(2, len(output)-1):
-            ldata = output[idx].split()
-            if key_mac  and key_mac  != ldata[2]: continue
-            if key_vlan and key_vlan != ldata[1]: continue
+    # instance name is omitted
+    if not oc_nwi:
+        oc_nwi = oc_nwis.network_instance[DEFAULT_NWI_NAME]
 
-            mac_entry = oc_nwi.fdb.mac_table.entries.entry.add(mac_address=ldata[2], vlan=int(ldata[1]))
-            mac_entry.interface.interface_ref.config.interface = ldata[3]
+    if_name_map, \
+    if_oid_map = port_util.get_interface_oid_map(disp_args.appdb)
+    if_br_oid_map = port_util.get_bridge_port_map(disp_args.appdb)
+
+    NEW_MAC_LST = []
+    global OLD_MAC_LST
+
+    fdb_str = disp_args.appdb.keys(disp_args.appdb.ASIC_DB, "ASIC_STATE:SAI_OBJECT_TYPE_FDB_ENTRY:*")
+    if fdb_str and if_br_oid_map:
+        oid_pfx = len("oid:0x")
+        for s in fdb_str:
+            fdb_entry = s.decode()
+            fdb = json.loads(fdb_entry .split(":", 2)[-1])
+            if not fdb: continue
+
+            ent = disp_args.appdb.get_all('ASIC_DB', s, blocking=True)
+            br_port_id = ent[b"SAI_FDB_ENTRY_ATTR_BRIDGE_PORT_ID"][oid_pfx:]
+            if br_port_id not in if_br_oid_map: continue
+
+            port_id = if_br_oid_map[br_port_id]
+            if_name = if_oid_map[port_id]
+
+            #pdb.set_trace()
+
+            # ex:
+            #   fdb["vlan"] : u'10'
+            #   fdb["mac"]  : u'00:00:00:00:00:01'
+            #   if_name     : 'Ethernet4'
+            #   oc_nwi.fdb.mac_table.entries.entry['00:00:00:00:00:01 10']
+            if key_mac  and key_mac  != fdb["mac"]: continue
+            if key_vlan and key_vlan != fdb["vlan"]: continue
+
+            mac_key = "%s %s" % (fdb["mac"], fdb["vlan"])
+            if mac_key in OLD_MAC_LST:
+                OLD_MAC_LST.remove(mac_key)
+                mac_entry = oc_nwi.fdb.mac_table.entries.entry[mac_key]
+            else:
+                mac_entry = oc_nwi.fdb.mac_table.entries.entry.add(mac_key)
+
+            mac_entry.interface.interface_ref.config.interface = if_name
             mac_entry.state._set_entry_type('DYNAMIC')
 
-        return True
+            NEW_MAC_LST.append(mac_key)
+
+    # remove old mac entries not used
+    for mac_key in OLD_MAC_LST:
+        oc_nwi.fdb.mac_table.entries.entry.delete(mac_key)
+
+    OLD_MAC_LST = NEW_MAC_LST
+
+    return True
 
 # ex: act_data = 'session1'
 #     msess_lst = '{}'
@@ -153,65 +187,104 @@ def nwi_pf_fill_binding_info(oc_pf, acl_name, acl_info):
 
         oc_pf_inf.config.apply_forwarding_policy = acl_name
 
-# key_ar[0] : 'DEFAULT' (instance name)
-def nwi_get_pf_info(oc_nwis, path_ar, key_ar, disp_args):
-    oc_pf = oc_nwis.network_instance[DEFAULT_NWI_NAME].policy_forwarding
+# ex: pkey_ar = [u'DEFAULT', u'EVERFLOW_2', u'1', u'name', u'policy-id', u'sequence-id']
+# ex: pkey_ar = [u'DEFAULT', u'Ethernet2',  u'name', u'interface-id']
+def nwi_get_pf_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
+    #pdb.set_trace()
+    key_pol = None
+    key_seq = None
+    key_inf = None
+    oc_nwi  = None
 
-    # remove old policies
-    old_pol_lst = [ x for x in oc_pf.policies.policy ]
-    for old_pol in old_pol_lst:
-        oc_pf.policies.policy.delete(old_pol)
+    len_key_ar = len(key_ar) // 2
+    if len_key_ar > 3: return False
+
+    for i in range(len_key_ar):
+        if key_ar[i+len_key_ar] == 'name':
+            if key_ar[i] in oc_nwis.network_instance:
+                oc_nwi = oc_nwis.network_instance[key_ar[i]]
+            else:
+                return False
+        elif key_ar[i+len_key_ar] == 'policy-id':
+            key_pol = key_ar[i]
+        elif key_ar[i+len_key_ar] == 'sequence-id':
+            key_seq = key_ar[i]
+        elif key_ar[i+len_key_ar] == 'interface-id':
+            key_inf = key_ar[i]
+        else:
+            return False
+
+    # instance name is omitted
+    if not oc_nwi:
+        oc_nwi = oc_nwis.network_instance[DEFAULT_NWI_NAME]
+
+    oc_pf = oc_nwi.policy_forwarding
 
     # clear binding info
     old_inf_lst = [ x for x in oc_pf.interfaces.interface ]
     for old_inf in old_inf_lst:
         oc_pf.interfaces.interface.delete(old_inf)
 
+    # remove old policies
+    old_pol_lst = [ x for x in oc_pf.policies.policy ]
+    for old_pol in old_pol_lst:
+        oc_pf.policies.policy.delete(old_pol)
+
     msess_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_MIRROR_SESSION)
     acl_tlst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
     ret_val = True
 
     if acl_tlst:
-        acl_rlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
+        if FILL_INFO_POL & fill_info_bmp:
+            acl_rlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
 
         for acl_name in acl_tlst.keys():
             if acl_tlst[acl_name]['type'] == 'MIRROR':
                 oc_pol = oc_pf.policies.policy.add(acl_name)
 
-                for acl_rule_key in acl_rlst.keys():
-                    if acl_name in acl_rule_key:
-                        oc_acl_rule = nwi_pf_add_one_rule(oc_pol, acl_rule_key[1], acl_rlst[acl_rule_key], msess_lst)
+                if key_pol and key_pol != acl_name: continue
+
+                if FILL_INFO_POL & fill_info_bmp:
+                    for acl_rule_key in acl_rlst.keys():
+                        if acl_name in acl_rule_key:
+                            oc_acl_rule = nwi_pf_add_one_rule(oc_pol, acl_rule_key[1], acl_rlst[acl_rule_key], msess_lst)
 
         # all policies should be created first before being used by interfaces
         # otherwise the reference relationship will be corrupted.
-        for acl_name in acl_tlst.keys():
-            if acl_tlst[acl_name]['type'] == 'MIRROR':
-                nwi_pf_fill_binding_info(oc_pf, acl_name, acl_tlst[acl_name])
+        if FILL_INFO_INTFS & fill_info_bmp:
+            for acl_name in acl_tlst.keys():
+                if acl_tlst[acl_name]['type'] == 'MIRROR':
+                    nwi_pf_fill_binding_info(oc_pf, acl_name, acl_tlst[acl_name])
 
     return ret_val
 
 # key_ar[0] : 'DEFAULT' (instance name)
 def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
     fill_type_tbl = { "fdb"                 : FILL_INFO_FDB,
-                      "policy-forwarding"   : FILL_INFO_PF,
-                    #  "interfaces"          : FILL_INFO_INTFS,
-    }
+                      "policy-forwarding"   : FILL_INFO_POL | FILL_INFO_INTFS,
+                      "policies"            : FILL_INFO_POL,
+                      "interfaces"          : FILL_INFO_INTFS,
+        }
+
+    fill_path_key = path_ar[2] if len(path_ar) > 2 else "not_exist"
+
     try:
-        fill_info_type = fill_type_tbl[path_ar[-1]]
+        fill_info_type = fill_type_tbl[fill_path_key]
     except:
         fill_info_type = FILL_INFO_ALL
 
     func_tbl = [ {'func': nwi_get_fdb_info,  'type' : FILL_INFO_FDB   },
-                 {'func': nwi_get_pf_info,   'type' : FILL_INFO_PF    },
-#                 {'func': nwi_get_intfs_info,'type' : FILL_INFO_INTFS },
-    ]
+                 {'func': nwi_get_pf_info,   'type' : FILL_INFO_POL | \
+                                                      FILL_INFO_INTFS }
+        ]
 
     oc_nwis = root_yph.get("/network-instances")[0]
+    ret_val = False
     for func_fld in func_tbl:
         if func_fld['type'] & fill_info_type:
-            func_fld['func'](oc_nwis, path_ar, key_ar, disp_args)
+            ret_val = func_fld['func'](oc_nwis, fill_info_type, key_ar, disp_args) or ret_val
 
-    return True
+    return ret_val
 
 # ex:    pkey_ar = [u'DEFAULT', u'Ethernet10']
 #   val for del  = '' or '{}'
@@ -313,10 +386,10 @@ def nwi_pf_clear_mirror_sessions(disp_args):
 # add one mirror session used by rule of pf (EVERFLOW)
 def nwi_pf_add_one_mirror_session(disp_args, sess_name, target_yang):
     target_sonic = {
-        "gre_type"  : "25944",  # 0x6558
+        "gre_type"  : str(int(0x6558)),
         "dscp"      : "0",      # TODO: default
         "queue"     : "0",      # TODO: default
-    }
+        }
     target_sonic["src_ip"] = target_yang["config"]["source"]
     target_sonic["dst_ip"] = target_yang["config"]["destination"]
     target_sonic["ttl"]    = str(target_yang["config"]["ip-ttl"])

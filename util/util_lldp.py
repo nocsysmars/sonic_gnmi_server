@@ -73,18 +73,31 @@ def lldp_get_info_interface(lldp_yph, inf, val):
         lldp_inf = lldp_infs.interface[inf]
 
     # val key: ppvid, via, age, vlan, chassis, rid, pi, port
-    #pdb.set_trace()
+    old_nbrs = [ x for x in lldp_inf.neighbors.neighbor ]
 
-    nbr = lldp_inf.neighbors.neighbor.add(val["rid"])
+    # TODO: more than one neighbor ???
+    if val["rid"] in lldp_inf.neighbors.neighbor:
+        nbr = lldp_inf.neighbors.neighbor[val["rid"]]
+        old_nbrs.remove(val["rid"])
+    else:
+        nbr = lldp_inf.neighbors.neighbor.add(val["rid"])
+
     nbr.state._set_age(lldp_cnv_age_to_secs(val["age"]))
     lldp_set_id_field(nbr.state, "chassis", val)
     lldp_set_id_field(nbr.state, "port", val)
 
-def lldp_del_all_inf_neighbors(lldp_yph, inf):
-    lldp_infs = lldp_yph.get("/lldp")[0].interfaces
-    if inf in lldp_infs.interface:
-        lldp_inf = lldp_infs.interface[inf]
-        lldp_inf._unset_neighbors()
+    # remove neighbours not used
+    for old_nbr in old_nbrs:
+        lldp_inf.neighbors.neighbor.delete(old_nbr)
+
+def lldp_add_one_inf(lldp_yph, key_ar, lldp_info, old_infs):
+    for inf, val in lldp_info.items():
+        if key_ar and inf != key_ar[0]:
+            continue
+
+        if inf in old_infs: old_infs.remove(inf)
+
+        lldp_get_info_interface(lldp_yph, inf, val)
 
 # fill DUT's current lldp info into lldp_yph
 # key_ar [0] : interface name e.g. "eth0"
@@ -103,6 +116,8 @@ def lldp_get_info(lldp_yph, path_ar, key_ar, disp_args):
     returncode = p.wait()
 
     lldp_root = lldp_yph.get("/lldp")[0]
+    old_infs = [ x for x in lldp_root.interfaces.interface ]
+
     if returncode == 0:
         lldp_root.config.enabled = True
         lldp_root.config.enabled._mchanged = True
@@ -112,26 +127,20 @@ def lldp_get_info(lldp_yph, path_ar, key_ar, disp_args):
         if "interface" in lldp_info["lldp"]:
             if isinstance(lldp_info["lldp"]["interface"], list):
                 for k in lldp_info["lldp"]["interface"]:
-                    for inf, val in k.items():
-                        if key_ar and inf != key_ar[0]:
-                            continue
-                        lldp_del_all_inf_neighbors(lldp_yph, inf)
-                        # TODO: more than one neighbor ???
-                        lldp_get_info_interface(lldp_yph, inf, val)
+                    lldp_add_one_inf(lldp_yph, key_ar, k, old_infs)
 
             if isinstance(lldp_info["lldp"]["interface"], dict):
-                for inf, val in lldp_info["lldp"]["interface"].items():
-                    if key_ar and inf != key_ar[0]:
-                        continue
-                    lldp_del_all_inf_neighbors(lldp_yph, inf)
-                    lldp_get_info_interface(lldp_yph, inf, val)
+                lldp_add_one_inf(lldp_yph, key_ar, lldp_info["lldp"]["interface"], old_infs)
 
         ret_val = True
     else:
         if 'Error response from daemon' in err:
             lldp_root.config.enabled = False
-            lldp_root._unset_interfaces()
             ret_val = True
+
+    # remove interfaces not used
+    for inf in old_infs:
+        lldp_root.interfaces.interface.delete(inf)
 
     return ret_val
 

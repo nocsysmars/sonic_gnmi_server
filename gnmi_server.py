@@ -40,11 +40,13 @@ def EncodePath(path):
 # example of ret : [ 'eth0', 'kkk' ]
 def EncodePathKey(path):
     key_strs = []
+    key_tags = []
     for pe in path:
         if pe.key:
              for k, v in sorted(pe.key.iteritems()):
                   key_strs += [v]
-    return key_strs
+                  key_tags += [k]
+    return key_strs + key_tags
 
 # example of input : [ 'interfaces', 'interface' ]
 # example of ret   : "/interfaces/interface"
@@ -84,6 +86,7 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         self.myDispatcher = ocDispatcher(isDbgTest)
         self.Timer_Q = []
         self.is_stopped = False
+        self.lock = threading.Lock()
 
     def __getCapabilitiesResponseObj(self):
         capResp = gnmi_pb2.CapabilityResponse()
@@ -112,14 +115,13 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             util_utl.utl_log("get req path :" + yp_str)
 
+            self.lock.acquire()
+            tmp_json = None
             oc_yph = self.myDispatcher.GetRequestYph(path_ar, pkey_ar)
             if isinstance(oc_yph, grpc.StatusCode):
                 er_code = oc_yph
             else:
                 tmp_obj = oc_yph.get(yp_str) if oc_yph else []
-                tmp_json = None
-
-                #pdb.set_trace()
 
                 # TODO: if got more than one obj ?
                 if len(tmp_obj) > 1:
@@ -135,18 +137,19 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
                 elif len(tmp_obj) == 1:
                     tmp_json = ExtractJson(tmp_obj[0], None)
+            self.lock.release()
 
-                if tmp_json:
-                    notif = getResp.notification.add()
-                    notif.timestamp = int(time.time())
-                    notif.prefix.CopyFrom(reqGetObj.prefix)
-                    update = notif.update.add()
-                    update.path.CopyFrom(reqGetObj.path[0])
+            if tmp_json:
+                notif = getResp.notification.add()
+                notif.timestamp = int(time.time())
+                notif.prefix.CopyFrom(reqGetObj.prefix)
+                update = notif.update.add()
+                update.path.CopyFrom(reqGetObj.path[0])
 
-                    util_utl.utl_log("get req json :" + json.dumps(tmp_json))
+                util_utl.utl_log("get req json :" + json.dumps(tmp_json))
 
-                    update.val.json_val = json.dumps(tmp_json)
-                    er_code = grpc.StatusCode.OK
+                update.val.json_val = json.dumps(tmp_json)
+                er_code = grpc.StatusCode.OK
 
             util_utl.utl_log("get req code :" + str(er_code))
 
@@ -154,7 +157,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                 getResp.error.code    = er_code.value[0]
                 getResp.error.message = er_code.value[1]
                 break
-
 
         return getResp
 
@@ -217,7 +219,9 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             set_val = getattr(update.val, update.val.WhichOneof("value"))
             yp_str  = EncodeYangPath(updPath)
 
+            self.lock.acquire()
             ret_set = self.myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
+            self.lock.release()
 
             if ret_set:
                 ret_set = grpc.StatusCode.OK

@@ -104,6 +104,7 @@ class ocDispatcher:
         self.my_args.appdb = swsssdk.SonicV2Connector(host='127.0.0.1')
         self.my_args.appdb.connect(self.my_args.appdb.APPL_DB)
         self.my_args.appdb.connect(self.my_args.appdb.COUNTERS_DB)
+        self.my_args.appdb.connect(self.my_args.appdb.ASIC_DB)
 
         # create the full yang tree
         # for performance, only update the tree node requested

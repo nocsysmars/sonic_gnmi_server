@@ -306,7 +306,7 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
 
                             # case 2, key: EthernetX
                             if is_key_et and key_ar[0] == port:
-                                return True
+                                break
 
         # remove no existing pc
         for pc in OLD_PC_INF_LST:

@@ -149,28 +149,34 @@ def qos_get_info(root_yph, path_ar, key_ar, disp_args):
 
 class oc_custom_subobj(object):
     def __init__(self, path):
-        self.path = path
-        self.data = {}
+        #self.path = path, not used now
+        self._data = {}
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        if isinstance(value, dict):
+            self._data = {}
+            for key in value:
+                if isinstance(key, tuple):
+                    fld_str = ""
+                    for i in range(0, len(key)):
+                        if i == 0:
+                            fld_str = key[i]
+                        else:
+                            fld_str = fld_str + '|' + key[i]
+
+                    self._data[fld_str] = value[key]
+                else:
+                    self._data[key] = value[key]
+        else:
+            self._data = value
 
     def get(self, filter = True):
-        new_data = {}
-        is_convert = False
-
-        for key in self.data:
-            if isinstance(key, tuple):
-                is_convert = True
-                fld_str = ""
-                for i in range(0, len(key)):
-                    if i == 0:
-                        fld_str = key[i]
-                    else:
-                        fld_str = fld_str + '|' + key[i]
-
-                new_data[fld_str] = self.data[key]
-            else:
-                new_data[key] = self.data[key]
-
-        return self.data if not is_convert else new_data
+        return self.data
 
 class openconfig_custom(object):
     def __init__(self, path_helper):
@@ -199,7 +205,7 @@ class openconfig_custom(object):
 
 # ex: path_ar = [u'sonic', u'SCHEDULER']
 # To get sonic qos settings
-def qos_get_sonic(root_yph, path_ar, key_ar , disp_args):
+def qos_get_sonic(root_yph, path_ar, key_ar, disp_args):
     oc_sonic = root_yph.get('/sonic')[0]
     if len (path_ar) == 1:
         disp_tbl = oc_sonic.dispatch_tbl
