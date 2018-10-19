@@ -9,11 +9,16 @@ import json
 import pdb
 import util_utl
 
-def lr_add_static_route(lr_obj, pfx_str):
-    if pfx_str == 'default':
-        pfx_str = '0.0.0.0/0'
+# sr list needed to check existence
+OLD_SR_LST = []
 
-    return lr_obj.static_routes.static.add(pfx_str)
+def lr_get_pfx_str(pfx_str):
+    return '0.0.0.0/0' if pfx_str == 'default' else pfx_str
+
+def lr_del_all_nhop(sr_obj):
+    old_nhop_lst = [ x for x in sr_obj.next_hops.next_hop ]
+    for old_nhop in old_nhop_lst:
+        sr_obj.next_hops.next_hop.delete(old_nhop)
 
 def lr_add_nexthop(lr_yph, sr_obj, idx, nh_str, inf):
     infs = lr_yph.get("/interfaces")[0]
@@ -21,22 +26,36 @@ def lr_add_nexthop(lr_yph, sr_obj, idx, nh_str, inf):
         # currently 'eth0' is not usable via gnmi service
         # so just return if inf does not exist
         # infs.interface.add(inf)
-        return
+        return False
 
     nh = sr_obj.next_hops.next_hop.add(idx)
     nh.config.next_hop = nh_str
     nh.interface_ref.config._set_interface(inf)
+    return True
+
+def lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, old_sr_lst):
+    oc_sr = None
+    if pfx_str in oc_lr.static_routes.static:
+        oc_sr = oc_lr.static_routes.static[pfx_str]
+        old_sr_lst.remove(pfx_str)
+        lr_del_all_nhop(oc_sr)
+    else:
+        oc_sr = oc_lr.static_routes.static.add(pfx_str)
+    new_sr_lst.append(pfx_str)
+
+    return oc_sr
 
 # fill DUT's route info into lr_yph
-# key_ar [0] : e.g. ""
+# ex: key_ar = [u'0.0.0.0/0', u'prefix']
 def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
     """
     use 'ip route show' command to gather information
     """
     ret_val = False
     oc_lr = lr_yph.get("/local-routes")[0]
-    oc_lr.static_routes._unset_static()
 
+    global OLD_SR_LST
+    new_sr_lst = []
     (is_ok, output) = util_utl.utl_get_execute_cmd_output('ip -4 route show')
     if is_ok:
         output = output.splitlines()
@@ -48,23 +67,41 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
         idx = 0
         while idx < len(output):
             ldata = output[idx].split()
+            nh_id = 0
+            oc_sr = None
+            pfx_str = lr_get_pfx_str(ldata[0])
+
             if len(ldata) == 1:
                 # ecmp
-                nh_id = 0
-                sr = lr_add_static_route(oc_lr, ldata[0])
+                oc_sr = lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, OLD_SR_LST)
                 idx += 1
                 while 'nexthop' in output[idx]:
                     nh_data = output[idx].split()
-                    lr_add_nexthop(lr_yph, sr, nh_id, nh_data[2], nh_data[4])
-                    nh_id += 1
+                    if lr_add_nexthop(lr_yph, oc_sr, nh_id, nh_data[2], nh_data[4]):
+                        nh_id += 1
                     idx += 1
             else:
                 if ldata [1] == 'via':
-                    sr = lr_add_static_route(oc_lr, ldata[0])
-                    lr_add_nexthop(lr_yph, sr, 0, ldata[2], ldata[4])
+                    oc_sr = lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, OLD_SR_LST)
+                    if lr_add_nexthop(lr_yph, oc_sr, 0, ldata[2], ldata[4]):
+                        nh_id += 1
                 idx += 1
 
+            if oc_sr and nh_id == 0:
+                oc_lr.static_routes.static.delete(pfx_str)
+
+            if key_ar and key_ar[0] == pfx_str:
+                break
+
         ret_val = True
+
+    # remote old sr
+    for old_sr in OLD_SR_LST:
+        oc_sr = oc_lr.static_routes.static[old_sr]
+        lr_del_all_nhop(oc_sr)
+        oc_lr.static_routes.static.delete(old_sr)
+
+    OLD_SR_LST = new_sr_lst
 
     return ret_val
 

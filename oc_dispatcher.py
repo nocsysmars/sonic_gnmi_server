@@ -26,6 +26,7 @@ from util import util_acl
 from util import util_sys
 from util import util_qos
 
+import logging
 import re
 import pdb
 import swsssdk
@@ -139,8 +140,12 @@ class ocDispatcher:
             oc_yph = self.oc_yph
 
             # suppose key_ar [0] is interface name e.g. "eth0"
-            ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, path_ar, key_ar, self.my_args)
-            if not ret_val: oc_yph = StatusCode.INTERNAL
+            try:
+                ret_val = eval(ocTable[path_ar[0]]["info_f"])(oc_yph, path_ar, key_ar, self.my_args)
+                if not ret_val: oc_yph = StatusCode.INTERNAL
+            except Exception as e:
+                logging.fatal(e, exc_info=True)
+                oc_yph = StatusCode.INTERNAL
 
         return oc_yph
 
@@ -152,8 +157,12 @@ class ocDispatcher:
         # replace key [xxx=yyy] with [xxx]
         reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
 
-        ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0, self.my_args) \
+        try:
+            ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0, self.my_args) \
                     if reg_path in setPathTable else False
+        except Exception as e:
+            logging.fatal(e, exc_info=True)
+            ret_val = False
 
         return ret_val
 
