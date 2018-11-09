@@ -455,6 +455,10 @@ def main():
                      logging.ERROR, logging.CRITICAL]
     log_fmt  = '%(asctime)s.%(msecs)03d %(levelname)-5s [%(filename)s %(lineno)d %(funcName)s] %(message)s'
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
+
+    # remove any log handlers created automatically
+    logging.getLogger().handlers = []
+
     logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path, datefmt='%y-%m-%d %H:%M:%S')
 
     util_utl.utl_log(args)

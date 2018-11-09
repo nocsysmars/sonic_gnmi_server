@@ -164,7 +164,7 @@ to just supply the instant value
     self.__min_time = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range':  ['0..18446744073709551615']}, int_size=64), is_leaf=True, yang_name="min-time", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='oc-types:timeticks64', is_config=False)
     self.__alarm_threshold = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range': ['0..4294967295']}, int_size=32), is_leaf=True, yang_name="alarm-threshold", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='uint32', is_config=False)
     self.__avg = YANGDynClass(base=RestrictedPrecisionDecimalType(precision=1), is_leaf=True, yang_name="avg", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='decimal64', is_config=False)
-    self.__alarm_severity = YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
+    self.__alarm_severity = YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
 
     load = kwargs.pop("load", None)
     if args:
@@ -569,12 +569,12 @@ cleared.
     if hasattr(v, "_utype"):
       v = v._utype(v)
     try:
-      t = YANGDynClass(v,base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
     except (TypeError, ValueError):
       raise ValueError({
           'error-string': """alarm_severity must be of a type compatible with identityref""",
           'defined-type': "openconfig-platform:identityref",
-          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)""",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)""",
         })
 
     self.__alarm_severity = t
@@ -582,7 +582,7 @@ cleared.
       self._set()
 
   def _unset_alarm_severity(self):
-    self.__alarm_severity = YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
+    self.__alarm_severity = YANGDynClass(base=RestrictedClassType(base_type=unicode, restriction_type="dict_key", restriction_arg={u'MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MAJOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'UNKNOWN': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:WARNING': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:CRITICAL': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}, u'oc-alarm-types:MINOR': {'@namespace': u'http://openconfig.net/yang/alarms/types', '@module': u'openconfig-alarm-types'}},), is_leaf=True, yang_name="alarm-severity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='identityref', is_config=False)
 
   instant = __builtin__.property(_get_instant)
   avg = __builtin__.property(_get_avg)
@@ -2626,6 +2626,444 @@ class yc_port_openconfig_platform__components_component_port(PybindBase):
 
   
 
+class yc_config_openconfig_platform__components_component_power_supply_config(PybindBase):
+  """
+  This class was auto-generated by the PythonClass plugin for PYANG
+  from YANG module openconfig-platform - based on the path /components/component/power-supply/config. Each member element of
+  the container is represented as a class variable - with a specific
+  YANG type.
+
+  YANG Description: Configuration data for power supply components
+  """
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__enabled',)
+
+  _yang_name = 'config'
+
+  _pybind_generated_by = 'container'
+
+  def __init__(self, *args, **kwargs):
+
+    helper = kwargs.pop("path_helper", None)
+    if helper is False:
+      self._path_helper = False
+    elif helper is not None and isinstance(helper, xpathhelper.YANGPathHelper):
+      self._path_helper = helper
+    elif hasattr(self, "_parent"):
+      helper = getattr(self._parent, "_path_helper", False)
+      self._path_helper = helper
+    else:
+      self._path_helper = False
+
+    self._extmethods = False
+    self.__enabled = YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=True)
+
+    load = kwargs.pop("load", None)
+    if args:
+      if len(args) > 1:
+        raise TypeError("cannot create a YANG container with >1 argument")
+      all_attr = True
+      for e in self._pyangbind_elements:
+        if not hasattr(args[0], e):
+          all_attr = False
+          break
+      if not all_attr:
+        raise ValueError("Supplied object did not have the correct attributes")
+      for e in self._pyangbind_elements:
+        nobj = getattr(args[0], e)
+        if nobj._changed() is False:
+          continue
+        setmethod = getattr(self, "_set_%s" % e)
+        if load is None:
+          setmethod(getattr(args[0], e))
+        else:
+          setmethod(getattr(args[0], e), load=load)
+
+  def _path(self):
+    if hasattr(self, "_parent"):
+      return self._parent._path()+[self._yang_name]
+    else:
+      return [u'components', u'component', u'power-supply', u'config']
+
+  def _get_enabled(self):
+    """
+    Getter method for enabled, mapped from YANG variable /components/component/power_supply/config/enabled (boolean)
+
+    YANG Description: Adminsitrative control on the on/off state of the power
+supply unit.
+    """
+    return self.__enabled
+      
+  def _set_enabled(self, v, load=False):
+    """
+    Setter method for enabled, mapped from YANG variable /components/component/power_supply/config/enabled (boolean)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_enabled is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_enabled() directly.
+
+    YANG Description: Adminsitrative control on the on/off state of the power
+supply unit.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=True)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """enabled must be of a type compatible with boolean""",
+          'defined-type': "boolean",
+          'generated-type': """YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=True)""",
+        })
+
+    self.__enabled = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_enabled(self):
+    self.__enabled = YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=True)
+
+  enabled = __builtin__.property(_get_enabled, _set_enabled)
+
+
+  _pyangbind_elements = {'enabled': enabled, }
+
+
+class yc_state_openconfig_platform__components_component_power_supply_state(PybindBase):
+  """
+  This class was auto-generated by the PythonClass plugin for PYANG
+  from YANG module openconfig-platform - based on the path /components/component/power-supply/state. Each member element of
+  the container is represented as a class variable - with a specific
+  YANG type.
+
+  YANG Description: Operational state data for power supply components
+  """
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__enabled','__capacity','__input_current','__input_voltage','__output_current','__output_voltage','__output_power',)
+
+  _yang_name = 'state'
+
+  _pybind_generated_by = 'container'
+
+  def __init__(self, *args, **kwargs):
+
+    helper = kwargs.pop("path_helper", None)
+    if helper is False:
+      self._path_helper = False
+    elif helper is not None and isinstance(helper, xpathhelper.YANGPathHelper):
+      self._path_helper = helper
+    elif hasattr(self, "_parent"):
+      helper = getattr(self._parent, "_path_helper", False)
+      self._path_helper = helper
+    else:
+      self._path_helper = False
+
+    self._extmethods = False
+    self.__output_power = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-power", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    self.__capacity = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="capacity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    self.__enabled = YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=False)
+    self.__input_current = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    self.__output_voltage = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    self.__output_current = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    self.__input_voltage = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+    load = kwargs.pop("load", None)
+    if args:
+      if len(args) > 1:
+        raise TypeError("cannot create a YANG container with >1 argument")
+      all_attr = True
+      for e in self._pyangbind_elements:
+        if not hasattr(args[0], e):
+          all_attr = False
+          break
+      if not all_attr:
+        raise ValueError("Supplied object did not have the correct attributes")
+      for e in self._pyangbind_elements:
+        nobj = getattr(args[0], e)
+        if nobj._changed() is False:
+          continue
+        setmethod = getattr(self, "_set_%s" % e)
+        if load is None:
+          setmethod(getattr(args[0], e))
+        else:
+          setmethod(getattr(args[0], e), load=load)
+
+  def _path(self):
+    if hasattr(self, "_parent"):
+      return self._parent._path()+[self._yang_name]
+    else:
+      return [u'components', u'component', u'power-supply', u'state']
+
+  def _get_enabled(self):
+    """
+    Getter method for enabled, mapped from YANG variable /components/component/power_supply/state/enabled (boolean)
+
+    YANG Description: Adminsitrative control on the on/off state of the power
+supply unit.
+    """
+    return self.__enabled
+      
+  def _set_enabled(self, v, load=False):
+    """
+    Setter method for enabled, mapped from YANG variable /components/component/power_supply/state/enabled (boolean)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_enabled is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_enabled() directly.
+
+    YANG Description: Adminsitrative control on the on/off state of the power
+supply unit.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """enabled must be of a type compatible with boolean""",
+          'defined-type': "boolean",
+          'generated-type': """YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=False)""",
+        })
+
+    self.__enabled = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_enabled(self):
+    self.__enabled = YANGDynClass(base=YANGBool, default=YANGBool("true"), is_leaf=True, yang_name="enabled", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='boolean', is_config=False)
+
+
+  def _get_capacity(self):
+    """
+    Getter method for capacity, mapped from YANG variable /components/component/power_supply/state/capacity (oc-types:ieeefloat32)
+
+    YANG Description: Maximum power capacity of the power supply.
+    """
+    return self.__capacity
+      
+  def _set_capacity(self, v, load=False):
+    """
+    Setter method for capacity, mapped from YANG variable /components/component/power_supply/state/capacity (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_capacity is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_capacity() directly.
+
+    YANG Description: Maximum power capacity of the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="capacity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """capacity must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="capacity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__capacity = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_capacity(self):
+    self.__capacity = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="capacity", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+
+  def _get_input_current(self):
+    """
+    Getter method for input_current, mapped from YANG variable /components/component/power_supply/state/input_current (oc-types:ieeefloat32)
+
+    YANG Description: The input current draw of the power supply.
+    """
+    return self.__input_current
+      
+  def _set_input_current(self, v, load=False):
+    """
+    Setter method for input_current, mapped from YANG variable /components/component/power_supply/state/input_current (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_input_current is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_input_current() directly.
+
+    YANG Description: The input current draw of the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """input_current must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__input_current = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_input_current(self):
+    self.__input_current = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+
+  def _get_input_voltage(self):
+    """
+    Getter method for input_voltage, mapped from YANG variable /components/component/power_supply/state/input_voltage (oc-types:ieeefloat32)
+
+    YANG Description: Input voltage to the power supply.
+    """
+    return self.__input_voltage
+      
+  def _set_input_voltage(self, v, load=False):
+    """
+    Setter method for input_voltage, mapped from YANG variable /components/component/power_supply/state/input_voltage (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_input_voltage is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_input_voltage() directly.
+
+    YANG Description: Input voltage to the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """input_voltage must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__input_voltage = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_input_voltage(self):
+    self.__input_voltage = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="input-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+
+  def _get_output_current(self):
+    """
+    Getter method for output_current, mapped from YANG variable /components/component/power_supply/state/output_current (oc-types:ieeefloat32)
+
+    YANG Description: The output current supplied by the power supply.
+    """
+    return self.__output_current
+      
+  def _set_output_current(self, v, load=False):
+    """
+    Setter method for output_current, mapped from YANG variable /components/component/power_supply/state/output_current (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_output_current is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_output_current() directly.
+
+    YANG Description: The output current supplied by the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """output_current must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__output_current = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_output_current(self):
+    self.__output_current = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-current", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+
+  def _get_output_voltage(self):
+    """
+    Getter method for output_voltage, mapped from YANG variable /components/component/power_supply/state/output_voltage (oc-types:ieeefloat32)
+
+    YANG Description: Output voltage supplied by the power supply.
+    """
+    return self.__output_voltage
+      
+  def _set_output_voltage(self, v, load=False):
+    """
+    Setter method for output_voltage, mapped from YANG variable /components/component/power_supply/state/output_voltage (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_output_voltage is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_output_voltage() directly.
+
+    YANG Description: Output voltage supplied by the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """output_voltage must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__output_voltage = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_output_voltage(self):
+    self.__output_voltage = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-voltage", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+
+  def _get_output_power(self):
+    """
+    Getter method for output_power, mapped from YANG variable /components/component/power_supply/state/output_power (oc-types:ieeefloat32)
+
+    YANG Description: Output power supplied by the power supply.
+    """
+    return self.__output_power
+      
+  def _set_output_power(self, v, load=False):
+    """
+    Setter method for output_power, mapped from YANG variable /components/component/power_supply/state/output_power (oc-types:ieeefloat32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_output_power is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_output_power() directly.
+
+    YANG Description: Output power supplied by the power supply.
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-power", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """output_power must be of a type compatible with oc-types:ieeefloat32""",
+          'defined-type': "oc-types:ieeefloat32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-power", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)""",
+        })
+
+    self.__output_power = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_output_power(self):
+    self.__output_power = YANGDynClass(base=RestrictedClassType(base_type=bitarray, restriction_dict={'length': [u'4']}), is_leaf=True, yang_name="output-power", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/psu', defining_module='openconfig-platform-psu', yang_type='oc-types:ieeefloat32', is_config=False)
+
+  enabled = __builtin__.property(_get_enabled)
+  capacity = __builtin__.property(_get_capacity)
+  input_current = __builtin__.property(_get_input_current)
+  input_voltage = __builtin__.property(_get_input_voltage)
+  output_current = __builtin__.property(_get_output_current)
+  output_voltage = __builtin__.property(_get_output_voltage)
+  output_power = __builtin__.property(_get_output_power)
+
+
+  _pyangbind_elements = {'enabled': enabled, 'capacity': capacity, 'input_current': input_current, 'input_voltage': input_voltage, 'output_current': output_current, 'output_voltage': output_voltage, 'output_power': output_power, }
+
+
 class yc_power_supply_openconfig_platform__components_component_power_supply(PybindBase):
   """
   This class was auto-generated by the PythonClass plugin for PYANG
@@ -2635,9 +3073,235 @@ class yc_power_supply_openconfig_platform__components_component_power_supply(Pyb
 
   YANG Description: Data for power supply components
   """
-  _pyangbind_elements = {}
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__config','__state',)
 
-  
+  _yang_name = 'power-supply'
+
+  _pybind_generated_by = 'container'
+
+  def __init__(self, *args, **kwargs):
+
+    helper = kwargs.pop("path_helper", None)
+    if helper is False:
+      self._path_helper = False
+    elif helper is not None and isinstance(helper, xpathhelper.YANGPathHelper):
+      self._path_helper = helper
+    elif hasattr(self, "_parent"):
+      helper = getattr(self._parent, "_path_helper", False)
+      self._path_helper = helper
+    else:
+      self._path_helper = False
+
+    self._extmethods = False
+    self.__state = YANGDynClass(base=yc_state_openconfig_platform__components_component_power_supply_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+    self.__config = YANGDynClass(base=yc_config_openconfig_platform__components_component_power_supply_config, is_container='container', yang_name="config", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+
+    load = kwargs.pop("load", None)
+    if args:
+      if len(args) > 1:
+        raise TypeError("cannot create a YANG container with >1 argument")
+      all_attr = True
+      for e in self._pyangbind_elements:
+        if not hasattr(args[0], e):
+          all_attr = False
+          break
+      if not all_attr:
+        raise ValueError("Supplied object did not have the correct attributes")
+      for e in self._pyangbind_elements:
+        nobj = getattr(args[0], e)
+        if nobj._changed() is False:
+          continue
+        setmethod = getattr(self, "_set_%s" % e)
+        if load is None:
+          setmethod(getattr(args[0], e))
+        else:
+          setmethod(getattr(args[0], e), load=load)
+
+  def _path(self):
+    if hasattr(self, "_parent"):
+      return self._parent._path()+[self._yang_name]
+    else:
+      return [u'components', u'component', u'power-supply']
+
+  def _get_config(self):
+    """
+    Getter method for config, mapped from YANG variable /components/component/power_supply/config (container)
+
+    YANG Description: Configuration data for power supply components
+    """
+    return self.__config
+      
+  def _set_config(self, v, load=False):
+    """
+    Setter method for config, mapped from YANG variable /components/component/power_supply/config (container)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_config is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_config() directly.
+
+    YANG Description: Configuration data for power supply components
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=yc_config_openconfig_platform__components_component_power_supply_config, is_container='container', yang_name="config", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """config must be of a type compatible with container""",
+          'defined-type': "container",
+          'generated-type': """YANGDynClass(base=yc_config_openconfig_platform__components_component_power_supply_config, is_container='container', yang_name="config", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)""",
+        })
+
+    self.__config = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_config(self):
+    self.__config = YANGDynClass(base=yc_config_openconfig_platform__components_component_power_supply_config, is_container='container', yang_name="config", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+
+
+  def _get_state(self):
+    """
+    Getter method for state, mapped from YANG variable /components/component/power_supply/state (container)
+
+    YANG Description: Operational state data for power supply components
+    """
+    return self.__state
+      
+  def _set_state(self, v, load=False):
+    """
+    Setter method for state, mapped from YANG variable /components/component/power_supply/state (container)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_state is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_state() directly.
+
+    YANG Description: Operational state data for power supply components
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=yc_state_openconfig_platform__components_component_power_supply_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """state must be of a type compatible with container""",
+          'defined-type': "container",
+          'generated-type': """YANGDynClass(base=yc_state_openconfig_platform__components_component_power_supply_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)""",
+        })
+
+    self.__state = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_state(self):
+    self.__state = YANGDynClass(base=yc_state_openconfig_platform__components_component_power_supply_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+
+  config = __builtin__.property(_get_config, _set_config)
+  state = __builtin__.property(_get_state, _set_state)
+
+
+  _pyangbind_elements = {'config': config, 'state': state, }
+
+
+class yc_state_openconfig_platform__components_component_fan_state(PybindBase):
+  """
+  This class was auto-generated by the PythonClass plugin for PYANG
+  from YANG module openconfig-platform - based on the path /components/component/fan/state. Each member element of
+  the container is represented as a class variable - with a specific
+  YANG type.
+
+  YANG Description: Operational state data for fan components
+  """
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__speed',)
+
+  _yang_name = 'state'
+
+  _pybind_generated_by = 'container'
+
+  def __init__(self, *args, **kwargs):
+
+    helper = kwargs.pop("path_helper", None)
+    if helper is False:
+      self._path_helper = False
+    elif helper is not None and isinstance(helper, xpathhelper.YANGPathHelper):
+      self._path_helper = helper
+    elif hasattr(self, "_parent"):
+      helper = getattr(self._parent, "_path_helper", False)
+      self._path_helper = helper
+    else:
+      self._path_helper = False
+
+    self._extmethods = False
+    self.__speed = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range': ['0..4294967295']}, int_size=32), is_leaf=True, yang_name="speed", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/fan', defining_module='openconfig-platform-fan', yang_type='uint32', is_config=False)
+
+    load = kwargs.pop("load", None)
+    if args:
+      if len(args) > 1:
+        raise TypeError("cannot create a YANG container with >1 argument")
+      all_attr = True
+      for e in self._pyangbind_elements:
+        if not hasattr(args[0], e):
+          all_attr = False
+          break
+      if not all_attr:
+        raise ValueError("Supplied object did not have the correct attributes")
+      for e in self._pyangbind_elements:
+        nobj = getattr(args[0], e)
+        if nobj._changed() is False:
+          continue
+        setmethod = getattr(self, "_set_%s" % e)
+        if load is None:
+          setmethod(getattr(args[0], e))
+        else:
+          setmethod(getattr(args[0], e), load=load)
+
+  def _path(self):
+    if hasattr(self, "_parent"):
+      return self._parent._path()+[self._yang_name]
+    else:
+      return [u'components', u'component', u'fan', u'state']
+
+  def _get_speed(self):
+    """
+    Getter method for speed, mapped from YANG variable /components/component/fan/state/speed (uint32)
+
+    YANG Description: Current (instantaneous) fan speed
+    """
+    return self.__speed
+      
+  def _set_speed(self, v, load=False):
+    """
+    Setter method for speed, mapped from YANG variable /components/component/fan/state/speed (uint32)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_speed is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_speed() directly.
+
+    YANG Description: Current (instantaneous) fan speed
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=RestrictedClassType(base_type=long, restriction_dict={'range': ['0..4294967295']}, int_size=32), is_leaf=True, yang_name="speed", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/fan', defining_module='openconfig-platform-fan', yang_type='uint32', is_config=False)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """speed must be of a type compatible with uint32""",
+          'defined-type': "uint32",
+          'generated-type': """YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range': ['0..4294967295']}, int_size=32), is_leaf=True, yang_name="speed", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/fan', defining_module='openconfig-platform-fan', yang_type='uint32', is_config=False)""",
+        })
+
+    self.__speed = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_speed(self):
+    self.__speed = YANGDynClass(base=RestrictedClassType(base_type=long, restriction_dict={'range': ['0..4294967295']}, int_size=32), is_leaf=True, yang_name="speed", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, namespace='http://openconfig.net/yang/platform/fan', defining_module='openconfig-platform-fan', yang_type='uint32', is_config=False)
+
+  speed = __builtin__.property(_get_speed)
+
+
+  _pyangbind_elements = {'speed': speed, }
+
 
 class yc_fan_openconfig_platform__components_component_fan(PybindBase):
   """
@@ -2648,9 +3312,96 @@ class yc_fan_openconfig_platform__components_component_fan(PybindBase):
 
   YANG Description: Data for fan components
   """
-  _pyangbind_elements = {}
+  __slots__ = ('_pybind_generated_by', '_path_helper', '_yang_name', '_extmethods', '__state',)
 
-  
+  _yang_name = 'fan'
+
+  _pybind_generated_by = 'container'
+
+  def __init__(self, *args, **kwargs):
+
+    helper = kwargs.pop("path_helper", None)
+    if helper is False:
+      self._path_helper = False
+    elif helper is not None and isinstance(helper, xpathhelper.YANGPathHelper):
+      self._path_helper = helper
+    elif hasattr(self, "_parent"):
+      helper = getattr(self._parent, "_path_helper", False)
+      self._path_helper = helper
+    else:
+      self._path_helper = False
+
+    self._extmethods = False
+    self.__state = YANGDynClass(base=yc_state_openconfig_platform__components_component_fan_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+
+    load = kwargs.pop("load", None)
+    if args:
+      if len(args) > 1:
+        raise TypeError("cannot create a YANG container with >1 argument")
+      all_attr = True
+      for e in self._pyangbind_elements:
+        if not hasattr(args[0], e):
+          all_attr = False
+          break
+      if not all_attr:
+        raise ValueError("Supplied object did not have the correct attributes")
+      for e in self._pyangbind_elements:
+        nobj = getattr(args[0], e)
+        if nobj._changed() is False:
+          continue
+        setmethod = getattr(self, "_set_%s" % e)
+        if load is None:
+          setmethod(getattr(args[0], e))
+        else:
+          setmethod(getattr(args[0], e), load=load)
+
+  def _path(self):
+    if hasattr(self, "_parent"):
+      return self._parent._path()+[self._yang_name]
+    else:
+      return [u'components', u'component', u'fan']
+
+  def _get_state(self):
+    """
+    Getter method for state, mapped from YANG variable /components/component/fan/state (container)
+
+    YANG Description: Operational state data for fan components
+    """
+    return self.__state
+      
+  def _set_state(self, v, load=False):
+    """
+    Setter method for state, mapped from YANG variable /components/component/fan/state (container)
+    If this variable is read-only (config: false) in the
+    source YANG file, then _set_state is considered as a private
+    method. Backends looking to populate this variable should
+    do so via calling thisObj._set_state() directly.
+
+    YANG Description: Operational state data for fan components
+    """
+    if hasattr(v, "_utype"):
+      v = v._utype(v)
+    try:
+      t = YANGDynClass(v,base=yc_state_openconfig_platform__components_component_fan_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+    except (TypeError, ValueError):
+      raise ValueError({
+          'error-string': """state must be of a type compatible with container""",
+          'defined-type': "container",
+          'generated-type': """YANGDynClass(base=yc_state_openconfig_platform__components_component_fan_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)""",
+        })
+
+    self.__state = t
+    if hasattr(self, '_set'):
+      self._set()
+
+  def _unset_state(self):
+    self.__state = YANGDynClass(base=yc_state_openconfig_platform__components_component_fan_state, is_container='container', yang_name="state", parent=self, path_helper=self._path_helper, extmethods=self._extmethods, register_paths=True, extensions=None, namespace='http://openconfig.net/yang/platform', defining_module='openconfig-platform', yang_type='container', is_config=True)
+
+  state = __builtin__.property(_get_state, _set_state)
+
+
+  _pyangbind_elements = {'state': state, }
+
 
 class yc_fabric_openconfig_platform__components_component_fabric(PybindBase):
   """
@@ -3568,4 +4319,32 @@ attributes or status).
 
   _pyangbind_elements = {'components': components, }
 
+
+class openconfig_platform_psu(PybindBase):
+  """
+  This class was auto-generated by the PythonClass plugin for PYANG
+  from YANG module openconfig-platform-psu - based on the path /openconfig-platform-psu. Each member element of
+  the container is represented as a class variable - with a specific
+  YANG type.
+
+  YANG Description: This module defines a schema for power supply components in
+the OpenConfig platform model.
+  """
+  _pyangbind_elements = {}
+
+  
+
+class openconfig_platform_fan(PybindBase):
+  """
+  This class was auto-generated by the PythonClass plugin for PYANG
+  from YANG module openconfig-platform-fan - based on the path /openconfig-platform-fan. Each member element of
+  the container is represented as a class variable - with a specific
+  YANG type.
+
+  YANG Description: This module defines data related to FAN components in the
+OpenConfig platform model.
+  """
+  _pyangbind_elements = {}
+
+  
 
