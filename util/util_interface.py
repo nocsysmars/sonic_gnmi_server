@@ -104,12 +104,12 @@ def interface_get_ip4_addr_output():
 
     blk_head = 0
     for idx in range(0, len(tmp_output)):
-        if ':' in tmp_output[idx]:
+        if ':' in tmp_output[idx] or idx == len(tmp_output) -1:
             # ex: 163: Ethernet0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 9100 qdisc pfifo_fast state DOWN group default qlen 1000
             head_line = tmp_output[blk_head].split(':')
             inf_name = head_line[1].strip()
             ret_output[inf_name] = []
-            for blk_idx in range(blk_head, idx-1):
+            for blk_idx in range(blk_head, idx):
                 ret_output[inf_name].append(tmp_output[blk_idx])
 
             blk_head = idx
@@ -150,7 +150,7 @@ def interface_get_ifcfg_output():
 
     blk_head = 0
     for idx in range(0, len(tmp_output)):
-        if '' == tmp_output[idx]:
+        if '' == tmp_output[idx] or idx == len(tmp_output)-1:
             # ex: Ethernet0 Link encap:Ethernet  HWaddr cc:37:ab:ec:d9:b
             head_line = tmp_output[blk_head].split()
             inf_name = head_line[0]
