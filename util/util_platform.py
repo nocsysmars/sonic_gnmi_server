@@ -137,6 +137,7 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     # remove old entries
     for old_comp in OLD_COMP_LST:
         oc_comps.component.delete(old_comp)
+    OLD_COMP_LST = []
 
     # get info for psu
     platform_get_info_psu(oc_comps)
