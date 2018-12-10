@@ -11,7 +11,7 @@ import time
 import json
 import Queue
 import threading
-import logging
+import logging, logging.handlers
 import pdb
 
 from concurrent import futures
@@ -363,9 +363,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 class gNMITarget:
     """gNMI Wrapper for the Server/Target"""
     def __init__(self, targetUrl, tlsEnabled, caCertPath, privKeyPath, isDbgTest):
-        if isDbgTest:
-            util_utl.DBG_MODE = 0
-
         self.is_stopped = False
         self.is_ready = False
         self.grpcServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -447,9 +444,13 @@ def main():
 
     #print args
     log_path = '/var/log/gnmi_server.log'
-    # clear log file
-    with open(log_path, 'w'):
-        pass
+
+    if args.log_level < 0:
+        # clear log file     
+        with open(log_path, 'w'):
+            pass
+    else:
+        util_utl.DBG_MODE = 0 
 
     log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
@@ -459,7 +460,10 @@ def main():
     # remove any log handlers created automatically
     logging.getLogger().handlers = []
 
-    logging.basicConfig(level = log_lvl, format = log_fmt, filename = log_path, datefmt='%y-%m-%d %H:%M:%S')
+    handler = logging.handlers.RotatingFileHandler(log_path, maxBytes=1024000, backupCount=2)
+    logging.getLogger().addHandler(handler)
+    logging.getLogger().setLevel(log_lvl)
+    logging.basicConfig(format = log_fmt, datefmt='%y-%m-%d %H:%M:%S')
 
     util_utl.utl_log(args)
 
