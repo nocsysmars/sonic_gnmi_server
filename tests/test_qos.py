@@ -1,8 +1,4 @@
-import unittest
-import pdb
-import argparse
-import test_inc
-import json
+import unittest, pdb, argparse, test_inc, types, json
 
 PATH_SET_SONIC_TMPL = '/sonic'
 PATH_GET_SONIC_TMPL = '/sonic'
@@ -207,38 +203,132 @@ class TestQos(test_inc.MyTestCase):
             else:
                 self.assertNotIn(chk_str, output)
 
-    def test_set_sonic_qos_cfg(self):
+    def test_1_set_sonic_qos_cfg(self):
         org_cfg = eval(TEST_CFG_QOS_JSON)
         output = self.run_script(['update', PATH_SET_SONIC_TMPL, "'{0}'".format(TEST_CFG_QOS_JSON)])
-        output = self.run_script(['get', PATH_GET_SONIC_TMPL, ''])
-        output = "".join(output.replace('\n', '').split())
-        self.chk_output(org_cfg, output)
 
-    def test_clear_sonic_qos_cfg(self):
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_SONIC_TMPL, ''])
+            output = "".join(output.replace('\n', '').split())
+            self.chk_output(org_cfg, output)
+
+    def test_2_clear_sonic_qos_cfg(self):
         org_cfg = eval(TEST_CFG_QOS_JSON)
         output = self.run_script(['update', PATH_SET_SONIC_TMPL, "'{0}'".format(TEST_CLR_QOS_JSON)])
-        output = self.run_script(['get', PATH_GET_SONIC_TMPL, ''])
-        output = "".join(output.replace('\n', '').split())
-        self.chk_output(org_cfg, output, False)
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestQos('test_set_sonic_qos_cfg'))
-    suite.addTest(TestQos('test_clear_sonic_qos_cfg'))
-    return suite
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_SONIC_TMPL, ''])
+            output = "".join(output.replace('\n', '').split())
+            self.chk_output(org_cfg, output, False)
+
+    def test_3_set_sonic_qos_cfg_dscp2tc(self):
+        test_dscp2tc_cfg_tmpl = """
+        {
+            "PORT_QOS_MAP": {
+                "Ethernet0|0": {
+                    "dscp_to_tc_map"  : "[DSCP_TO_TC_MAP|AZURE]"
+                }
+            }
+        }
+        """
+        output = self.run_script(['update', PATH_SET_SONIC_TMPL, "'{0}'".format(test_dscp2tc_cfg_tmpl)])
+
+        if self.chk_ret:
+            pass
+
+    def _set_sonic_qos_cfg_pfc_x(self, pfc_val):
+        test_pfc_cfg_tmpl = """
+        {
+            "PORT_QOS_MAP": {
+                "Ethernet0|0": {
+                    "dscp_to_tc_map"  : "[DSCP_TO_TC_MAP|AZURE]",
+                    "pfc_enable": "%d"
+                }
+            }
+        }
+        """
+        test_pfc_cfg = test_pfc_cfg_tmpl % pfc_val
+        output = self.run_script(['update', PATH_SET_SONIC_TMPL, "'{0}'".format(test_pfc_cfg)])
+
+        if self.chk_ret:
+            pass
+
+    def test_4_set_sonic_qos_cfg_pfc_1(self):
+        self._set_sonic_qos_cfg_pfc_x(1)
+
+    def test_5_set_sonic_qos_cfg_pfc_3(self):
+        self._set_sonic_qos_cfg_pfc_x(3)
+
+    def _set_sonic_qos_cfg_tc2q(self, val):
+        test_tc2q_cfg_tmpl = """
+        {
+            "TC_TO_QUEUE_MAP": {
+                "AZURE": {
+                    "%d": "%d"
+                }
+            }
+        }
+        """
+        test_tc2q_cfg = test_tc2q_cfg_tmpl % (val, val)
+        output = self.run_script(['update', PATH_SET_SONIC_TMPL, "'{0}'".format(test_tc2q_cfg)])
+
+        if self.chk_ret:
+            pass
+
+    def test_6_set_sonic_qos_cfg_tc2q_1(self):
+        self._set_sonic_qos_cfg_tc2q(1)
+
+    def test_7_set_sonic_qos_cfg_tc2q_3(self):
+        self._set_sonic_qos_cfg_tc2q(3)
+
+def suite(t_case, t_cls):
+    test_inc.gen_test_op_lst(t_cls)
+
+    test_case = {}
+
+    # basic test
+    test_case[0] = [1,2]
+    # set dscp2tc, pfc 1
+    test_case[1] = [3,4]
+    # set dscp2tc, pfc 1/3
+    test_case[2] = [3,4,5]
+
+    if t_case:
+        t_sel = eval (t_case)
+    else:
+        t_sel = 0
+
+    if type(t_sel) == types.ListType:
+        print 'Running Custom Test Case, %s' % (t_sel)
+        test_flst = map(lambda x: test_inc.TEST_OP_LST[x], t_sel)
+    elif t_sel in test_case:
+        test_flst = map(lambda x: test_inc.TEST_OP_LST[x], test_case[t_sel])
+        print 'Running Test Case %d, %s' % (t_sel, test_case[t_sel])
+    else:
+        test_flst = ['test_case_not_found']
+        t_cls.t_case = test_case
+        t_cls.t_sel  = t_sel
+
+    return unittest.TestSuite(map(t_cls, test_flst))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--target', help="target url, typically localhost:<port>")
     parser.add_argument('--dbg', action="store_true", help="print debug messages")
+    parser.add_argument('--case', action="store", type=str, default=None,
+                           help="ex: 1 (pre-defined test case) / \
+                                     [1,2,3] (custom test case)")
+    parser.add_argument('--chk', action="store_true", help="check result")
     args = parser.parse_args()
 
+    TestCls = TestQos
     if args.target:
-        TestQos.use_internal_svr = False
+        TestCls.use_internal_svr = False
         test_inc.TEST_URL = args.target
 
-    TestQos.dbg_print = args.dbg
+    TestCls.dbg_print = args.dbg
+    TestCls.chk_ret   = args.chk
 
     runner = unittest.TextTestRunner(verbosity=2, failfast=True)
-    runner.run(suite())
+    runner.run(suite(args.case, TestCls))
 

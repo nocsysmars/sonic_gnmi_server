@@ -1,9 +1,4 @@
-import unittest
-import time
-import logging
-import subprocess
-import threading
-import sys
+import unittest, time, logging, subprocess, threading, sys, types
 
 sys.path.append("../")
 from gnmi_server import gNMITarget
@@ -19,6 +14,28 @@ GNMI_URL_CMD_TMPL      = '/home/admin/gocode/bin/gnmi -addr {0} {{0}} {{1}} {{2}
 # url of gnmi server to test
 TEST_URL               = 'localhost:5001'
 
+TEST_OP_LST = {}
+
+def gen_test_op_lst(cls):
+    global TEST_OP_LST
+
+    # test function name format: test_NN_xxx
+    # NN: index of function in TEST_OP_LST
+    for x, y in cls.__dict__.items():
+        if type(y) == types.FunctionType:
+            tmp_name = x.split('_')
+            if tmp_name[1].isdigit():
+                op_num = int(tmp_name[1])
+                TEST_OP_LST[op_num] = x
+
+def print_test_op_lst():
+    global TEST_OP_LST
+
+    print "\n"
+    for x, y in TEST_OP_LST.items():
+        print "OP %d : %s" % (x, y)
+
+
 class MyTestCase(unittest.TestCase):
     # if set to False, need to start the server manually first
     # ex: ./gnmi_server.py localhost:5001 --log-level 5
@@ -32,6 +49,15 @@ class MyTestCase(unittest.TestCase):
 
     def tearDown(self):
         print "Time spent : %s" % (time.time() - self.time_beg)
+
+    def test_case_not_found(self):
+        print_test_op_lst()
+
+        print "=" * 40
+        for x, y in self.t_case.items():
+            print "CASE %d : %s" % (x, y)
+
+        self.assertIn(self.t_sel, self.t_case.keys())
 
     @classmethod
     def setUpClass(cls):
