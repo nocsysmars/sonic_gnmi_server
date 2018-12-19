@@ -342,7 +342,7 @@ def interface_fill_inf_state(oc_inf, inf_name, db):
     for fld in fld_tbl:
         val = interface_db_port_status_get(db, inf_name, fld_tbl[fld])
         if val and val != "N/A":
-            val = int(val) if fld == "mtu" else val.upper()
+            val = int(val) if fld in ["mtu", "port_speed"] else val.upper()
             if fld == "port_speed":
                 set_fun = getattr(oc_inf.ethernet.config, "_set_%s" % (fld))
                 val = interface_convert_speed(val)

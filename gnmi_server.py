@@ -446,13 +446,13 @@ def main():
     log_path = '/var/log/gnmi_server.log'
 
     if args.log_level < 0:
-        # clear log file     
+        # clear log file
         with open(log_path, 'w'):
             pass
     else:
-        util_utl.DBG_MODE = 0 
+        util_utl.DBG_MODE = 0
 
-    log_level_map = [logging.DEBUG, logging.INFO, logging.WARNING,
+    log_level_map = [logging.NOTSET, logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
     log_fmt  = '%(asctime)s.%(msecs)03d %(levelname)-5s [%(filename)s %(lineno)d %(funcName)s] %(message)s'
     log_lvl  = log_level_map [args.log_level] if args.log_level < len(log_level_map) else logging.CRITICAL
@@ -461,9 +461,9 @@ def main():
     logging.getLogger().handlers = []
 
     handler = logging.handlers.RotatingFileHandler(log_path, maxBytes=1024000, backupCount=2)
+    handler.setFormatter(logging.Formatter(fmt = log_fmt, datefmt='%y-%m-%d %H:%M:%S'))
     logging.getLogger().addHandler(handler)
     logging.getLogger().setLevel(log_lvl)
-    logging.basicConfig(format = log_fmt, datefmt='%y-%m-%d %H:%M:%S')
 
     util_utl.utl_log(args)
 
