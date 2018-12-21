@@ -395,13 +395,13 @@ def acl_set_acl_entry(root_yph, pkey_ar, val, is_create, disp_args):
 
     # only one entry
     if 'sequence-id' in rule_cfg.keys():
-        rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg)
-        ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, rule_cfg)
+        rule_name, tmp_rule_cfg = acl_rule_yang2sonic(rule_cfg)
+        ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, tmp_rule_cfg)
     else:
         ret_val = True
         for seq_id in rule_cfg.keys():
-            rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id])
-            ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, rule_cfg)
+            rule_name, tmp_rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id])
+            ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[0], rule_name, tmp_rule_cfg)
             if not ret_val:
                 break
 
