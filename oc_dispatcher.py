@@ -16,20 +16,11 @@ from oc_binding.oc_qos_binding import openconfig_qos
 from pyangbind.lib.xpathhelper import YANGPathHelper
 from grpc import StatusCode
 
-from util import util_lldp
-from util import util_interface
-from util import util_platform
-from util import util_utl
-from util import util_nwi
-from util import util_lr
-from util import util_acl
-from util import util_sys
-from util import util_qos
+from util import util_lldp, util_interface, util_platform, util_utl, \
+                 util_nwi, util_lr, util_acl, util_sys, util_qos, util_bcm, \
+                 util_sonic
 
-import logging
-import re
-import pdb
-import swsssdk
+import logging, re, pdb, swsssdk
 
 # Dispatch table for openconfig class and info function
 ocTable = {
@@ -50,8 +41,8 @@ ocTable = {
                      "info_f": "util_sys.sys_get_info"              },
     "qos"        : { "cls"   : openconfig_qos,
                      "info_f": "util_qos.qos_get_info"              },
-    "sonic"      : { "cls"   : util_qos.openconfig_custom,
-                     "info_f": "util_qos.qos_get_sonic"             },
+    "sonic"      : { "cls"   : util_sonic.openconfig_custom,
+                     "info_f": "util_sonic.sonic_get_sonic"             },
     }
 
 # Dispatch table for registered path and set function
@@ -82,13 +73,15 @@ setPathTable = {
     '/system/ntp/servers/server[address]/config' :
             "util_sys.sys_set_ntp_server",
     '/sonic' :
-            "util_qos.qos_set_sonic",
+            "util_sonic.sonic_set_sonic",
     '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
             "util_nwi.nwi_pf_set_interface",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config' :
             "util_nwi.nwi_pf_set_policy",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
-            "util_nwi.nwi_pf_set_rule"
+            "util_nwi.nwi_pf_set_rule",
+    '/vesta/mirror' :
+            "util_bcm.bcm_set_vesta_mirror",
     }
 
 class dispArgs: pass
