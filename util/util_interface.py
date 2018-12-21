@@ -843,6 +843,36 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return True
 
+# get intf table name in db from intf name
+def interface_db_get_intf_table_name(intf_name):
+    db_tbl_map = {
+        'Vlan'        : util_utl.CFGDB_TABLE_NAME_VLAN_INTF,
+        'Ethernet'    : util_utl.CFGDB_TABLE_NAME_INTF,
+        'PortChannel' : util_utl.CFGDB_TABLE_NAME_PC_INTF,
+        'Loopback'    : util_utl.CFGDB_TABLE_NAME_LBK_INTF
+    }
+
+    ret_tbl_name = None
+    for key in db_tbl_map.keys():
+        if intf_name.startswith(key):
+            ret_tbl_name = db_tbl_map[key]
+            break
+
+    return ret_tbl_name
+
+# add/remove ip of interface in config db
+def interface_db_set_ip(db, is_add, intf_name, ip):
+    ret_val = False
+
+    intf_tbl_name = interface_db_get_intf_table_name(intf_name)
+
+    if intf_tbl_name:
+        val = {} if is_add else None
+        db.set_entry(intf_tbl_name, (intf_name, ip), val)
+        ret_val = True
+
+    return ret_val
+
 # ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
 #   val for del = '{"ip" : "0",   "prefix-length" : 24 }'
 #   val for add = '{"ip" : "xxx", "prefix-length" : 24 }'
@@ -855,7 +885,18 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     except:
         return False
 
-    op_str = 'del' if ip_new == "0" or ip_new == "" else 'add'
-    exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(op_str, pkey_ar[1], ip_pfx, pkey_ar[0])
+    is_del = True if ip_new == "0" or ip_new == "" else False
 
-    return util_utl.utl_execute_cmd(exec_cmd)
+    ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0], pkey_ar[1]+'/'+ str(ip_pfx))
+
+    # only ip on vlan interface can take effect immediately
+    if pkey_ar[0].startswith('Vlan'):
+        return ret_val
+
+    if ret_val:
+        exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(
+            ['add', 'del'][is_del], pkey_ar[1], ip_pfx, pkey_ar[0])
+
+        util_utl.utl_execute_cmd(exec_cmd)
+
+    return ret_val
