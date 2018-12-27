@@ -107,13 +107,16 @@ def bcm_get_diag_mirror_mode(in_mode):
 
 # ex: src_port: 'Ethernet0'
 #     dst_port: 'Ethernet3' (None to delete)
-#       mode  : 'Both'      (None or 'OFF' to delete)
-#   pm_cfg = '{"src-port": "Ethernet0","dst-port": "Ethernet3","mode": "Both"}'
+#         mode: 'Both'      (None or 'OFF' to delete)
+#         vlan: 4000        (None to ignore)
+#   pm_cfg = '{"src-port": "Ethernet0","dst-port": "Ethernet3",
+#              "mode": "Both","vlan": 4000}'
 def bcm_set_one_port_mirror(pm_cfg):
     try:
         src_port = pm_cfg['src-port']
         dst_port = None if 'dst-port' not in pm_cfg else pm_cfg['dst-port']
         m_mode   = 'OFF' if 'mode' not in pm_cfg else pm_cfg['mode'].upper()
+        vlan     = None if 'vlan' not in pm_cfg else int (pm_cfg['vlan'])
     except:
         return False
 
@@ -125,7 +128,8 @@ def bcm_set_one_port_mirror(pm_cfg):
     dp_cmd = "" if not bcm_dst_port else "dp=%s" % bcm_dst_port
     if m_mode == 'off' or dp_cmd != "":
         mode_cmd= "mode=%s" % m_mode
-        tmp_cmd = "dmirror %s %s %s" % (bcm_src_port, mode_cmd, dp_cmd)
+        vlan_cmd= ("mtpid=0x8100 mvid=%d" % vlan) if vlan else ""
+        tmp_cmd = "dmirror %s %s %s %s" % (bcm_src_port, mode_cmd, dp_cmd, vlan_cmd)
         ret_val = bcm_execute_diag_cmd(tmp_cmd)
 
     return ret_val
@@ -138,11 +142,11 @@ def bcm_set_vesta_mirror(root_yph, pkey_ar, val, is_create, disp_args):
       "1": {
         "src-port": "Ethernet0",
         "dst-port": "Ethernet3",
-        "mode"    : "Both"
+        "mode"    : "Both",
+        "vlan"    : 4001
       }
     }
     """
-
     pm_cfg = {} if val == "" else eval(val)
 
     # only one entry

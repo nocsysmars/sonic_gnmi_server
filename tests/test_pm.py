@@ -64,6 +64,24 @@ class TestPM(test_inc.MyTestCase):
             output = "".join(output.replace('\n', '').split())
             self.chk_output(org_cfg, output)
 
+    def test_4_add_mirror_port1_to_port3_vlan_100(self):
+        TEST_CFG_MIRROR_JSON="""{
+          "1": {
+            "src-port": "Ethernet1",
+            "dst-port": "Ethernet3",
+            "mode"    : "Both",
+            "vlan"    : 100
+          }
+        }"""
+
+        org_cfg = eval(TEST_CFG_MIRROR_JSON)
+        output = self.run_script(['update', PATH_SET_MIRROR_TMPL, "'{0}'".format(TEST_CFG_MIRROR_JSON)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_MIRROR_TMPL, ''])
+            output = "".join(output.replace('\n', '').split())
+            self.chk_output(org_cfg, output)
+
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)
 
