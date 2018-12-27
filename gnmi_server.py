@@ -449,8 +449,11 @@ def main():
         # clear log file
         with open(log_path, 'w'):
             pass
-    else:
-        util_utl.DBG_MODE = 0
+
+#   let systemd redirect the stdout to syslog
+#
+#    else:
+#        util_utl.DBG_MODE = 0
 
     log_level_map = [logging.NOTSET, logging.DEBUG, logging.INFO, logging.WARNING,
                      logging.ERROR, logging.CRITICAL]
