@@ -82,4 +82,7 @@ def sys_set_ntp_server(root_yph, pkey_ar, val, is_create, disp_args):
 
     disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_NTP, pkey_ar[0], ntp_cfg)
 
+    # restart the ntpd to make new config take effect
+    util_utl.utl_execute_cmd("/usr/bin/ntp-config.sh")
+
     return True
