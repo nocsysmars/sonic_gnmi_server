@@ -6,13 +6,8 @@
 # GNMI Server
 #
 
-import argparse
-import time
-import json
-import Queue
-import threading
-import logging, logging.handlers
-import pdb
+import argparse, time, json, Queue, threading
+import logging, logging.handlers, re, pdb
 
 from concurrent import futures
 import grpc
@@ -124,22 +119,21 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                 tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
                 # TODO: if got more than one obj ?
-                if len(tmp_obj) > 1:
-                    if tmp_obj[0]._parent == tmp_obj[1]._parent:
-                        leaf_str = path_ar[-1]
-                        tmp_json = ExtractJson(tmp_obj[0]._parent, leaf_str)
-                    else:
-                        tmp_json = {}
-                        for idx in range(len(tmp_obj)):
-                            obj_json = ExtractJson(tmp_obj[idx], None)
-                            if obj_json:
-                                tmp_json[tmp_obj[idx]._yang_path()]= obj_json
+                if len(tmp_obj) >= 1:
+                    tmp_json = {}
+                    for idx in range(len(tmp_obj)):
+                        obj_json = ExtractJson(tmp_obj[idx], None)
+                        if obj_json:
+                            # remove "'" for the key in the _yang_path
+                            obj_path = re.sub(r'\[([\w-]*)=\'([^]]*)\'\]', r'[\1=\2]', tmp_obj[idx]._yang_path())
+                            if len(tmp_obj) == 1 and obj_path == yp_str:
+                                tmp_json = obj_json
+                            else:
+                                tmp_json[obj_path]= obj_json
 
-                elif len(tmp_obj) == 1:
-                    tmp_json = ExtractJson(tmp_obj[0], None)
             self.lock.release()
 
-            if tmp_json:
+            if tmp_json != None:
                 notif = getResp.notification.add()
                 notif.timestamp = int(time.time())
                 notif.prefix.CopyFrom(reqGetObj.prefix)
