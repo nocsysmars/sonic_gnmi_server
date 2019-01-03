@@ -92,6 +92,12 @@ def nwi_get_fdb_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
             port_id = if_br_oid_map[br_port_id]
             if_name = if_oid_map[port_id]
 
+            if "vlan" not in fdb:
+                if "bvid" in fdb:
+                    fdb["vlan"] = port_util.get_vlan_id_from_bvid(disp_args.appdb, fdb["bvid"])
+                else:
+                    continue
+
             #pdb.set_trace()
 
             # ex:
