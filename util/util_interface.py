@@ -193,14 +193,26 @@ def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
 def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
     # ex:
     #  192.168.200.10 dev eth0 lladdr a0:36:9f:8d:52:fa STALE
+    old_nbr_lst  = [x for x in oc_inf.routed_vlan.ipv4.neighbors.neighbor]
+
     if inf_name in out_tbl["ip4_nbr_output"]:
         nbr_output = out_tbl["ip4_nbr_output"][inf_name]
 
         for idx in range(0, len(nbr_output)):
             nbr_info = nbr_output[idx]
-            oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor.add(nbr_info[0])
+
+            if nbr_info[0] not in oc_inf.routed_vlan.ipv4.neighbors.neighbor:
+                oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor.add(nbr_info[0])
+            else:
+                oc_nbr = oc_inf.routed_vlan.ipv4.neighbors.neighbor[nbr_info[0]]
+                old_nbr_lst.remove(nbr_info[0])
+
             oc_nbr.config.link_layer_address = nbr_info[4]
             oc_nbr.state._set_origin('DYNAMIC')
+
+    # remove unused nbr entry
+    for x in old_nbr_lst:
+        oc_inf.routed_vlan.ipv4.neighbors.neighbor.delete(x)
 
 def interface_get_inf_ip_output(ip4_addr_output, inf_name):
     if "Vlan" in inf_name:
@@ -212,7 +224,7 @@ def interface_get_inf_ip_output(ip4_addr_output, inf_name):
 
 # fill inf's ip v4 info here
 def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
-    oc_inf.routed_vlan._unset_ipv4()
+    old_addr_lst = [x for x in oc_inf.routed_vlan.ipv4.addresses.address]
 
     # ex:
     #  89: Vlan3000@Bridge: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN group default
@@ -224,10 +236,19 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
         if m:
             ip_info = m.group(1).split('/')
 
-            oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
+            if ip_info[0] not in oc_inf.routed_vlan.ipv4.addresses.address:
+                oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
+            else:
+                old_addr_lst.remove (ip_info[0])
+                oc_addr = oc_inf.routed_vlan.ipv4.addresses.address[ip_info[0]]
+
             oc_addr.config.prefix_length = int(ip_info[1])
 
     interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl)
+
+    # remove unused addr entry
+    for x in old_addr_lst:
+        oc_inf.routed_vlan.ipv4.addresses.address.delete(x)
 
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
