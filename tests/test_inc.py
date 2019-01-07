@@ -105,3 +105,18 @@ class MyTestCase(unittest.TestCase):
 #            else:
 #                print '    Output: ({0} lines, {1} bytes)'.format(linecount + 1, len(output))
         return output
+
+    def run_shell_cmd(self, argument, check_stderr=False):
+        exec_cmd = "{0}".format(*argument)
+
+        if self.dbg_print:
+            print '\n    Running %s' % exec_cmd
+
+        if check_stderr:
+            output = subprocess.check_output(exec_cmd, stderr=subprocess.STDOUT, shell=True)
+        else:
+            output = subprocess.check_output(exec_cmd, shell=True)
+
+        if self.dbg_print:
+            print '    Output:\n' + output.strip()
+        return output
