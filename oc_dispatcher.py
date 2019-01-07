@@ -80,6 +80,8 @@ setPathTable = {
             "util_nwi.nwi_pf_set_policy",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
             "util_nwi.nwi_pf_set_rule",
+    '/vesta/mac' :
+            "util_sonic.sonic_set_vesta_mac",
     '/vesta/mirror' :
             "util_bcm.bcm_set_vesta_mirror",
     }
@@ -158,4 +160,3 @@ class ocDispatcher:
             ret_val = False
 
         return ret_val
-

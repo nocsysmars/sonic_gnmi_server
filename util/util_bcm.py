@@ -1,7 +1,7 @@
 #
 # util_bcm.py
 #
-# Utility APIsi for bcm diag shell.
+# Utility APIs for bcm diag shell.
 #
 
 import subprocess, json, logging, inspect
@@ -105,12 +105,12 @@ def bcm_get_diag_mirror_mode(in_mode):
 
     return ret_val
 
-# ex: src_port: 'Ethernet0'
-#     dst_port: 'Ethernet3' (None to delete)
-#         mode: 'Both'      (None or 'OFF' to delete)
-#         vlan: 4000        (None to ignore)
-#   pm_cfg = '{"src-port": "Ethernet0","dst-port": "Ethernet3",
-#              "mode": "Both","vlan": 4000}'
+# ex: src_port= 'Ethernet0'
+#     dst_port= 'Ethernet3' (None to delete)
+#         mode= 'Both'      (None or 'OFF' to delete)
+#         vlan= 4000        (None to ignore)
+#      pm_cfg = '{"src-port": "Ethernet0","dst-port": "Ethernet3",
+#                 "mode": "Both","vlan": 4000}'
 def bcm_set_one_port_mirror(pm_cfg):
     try:
         src_port = pm_cfg['src-port']
@@ -126,7 +126,7 @@ def bcm_set_one_port_mirror(pm_cfg):
 
     ret_val = False
     dp_cmd = "" if not bcm_dst_port else "dp=%s" % bcm_dst_port
-    if m_mode == 'off' or dp_cmd != "":
+    if m_mode == "off" or dp_cmd != "":
         mode_cmd= "mode=%s" % m_mode
         vlan_cmd= ("mtpid=0x8100 mvid=%d" % vlan) if vlan else ""
         tmp_cmd = "dmirror %s %s %s %s" % (bcm_src_port, mode_cmd, dp_cmd, vlan_cmd)
@@ -156,6 +156,61 @@ def bcm_set_vesta_mirror(root_yph, pkey_ar, val, is_create, disp_args):
         ret_val = True
         for seq_id in pm_cfg.keys():
             ret_val = bcm_set_one_port_mirror(pm_cfg[seq_id])
+            if not ret_val:
+                break
+
+    return ret_val
+
+# ex:
+#      port = None or "" to delete
+#   mac_cfg = '{"port": "Ethernet0","mac": "00:00:00:00:00:02","vlan": 4000}'
+def bcm_set_one_mac(mac_cfg):
+    try:
+        mac_port = None if 'port' not in mac_cfg else mac_cfg['port']
+        mac_trgt = mac_cfg['mac']
+        vlan     = int (mac_cfg['vlan'])
+    except:
+        return False
+
+    mode_cmd = None
+    if mac_port and mac_port != "":
+        bcm_mac_port = bcm_get_diag_port_name(mac_port)
+        if bcm_mac_port:
+            port_cmd = "port=%s" % bcm_mac_port
+            mode_cmd = "add"
+    else:
+        mode_cmd = "del"
+        port_cmd = ""
+
+    # ex: l2 add mac=00:00:00:00:00:02 v=10 port=xe5
+    ret_val = False
+    if mode_cmd:
+        tmp_cmd = "l2 %s %s v=%s mac=%s" % (mode_cmd, port_cmd, vlan, mac_trgt)
+        ret_val = bcm_execute_diag_cmd(tmp_cmd)
+
+    return ret_val
+
+#
+# To set vesta static mac
+def bcm_set_vesta_mac(root_yph, pkey_ar, val, is_create, disp_args):
+    """ example:
+    {
+      "1": {
+        "port" : "Ethernet0",
+        "mac"  : "00:00:00:00:00:02",
+        "vlan" : 4001
+      }
+    }
+    """
+    mac_cfg = {} if val == "" else eval(val)
+
+    # only one entry
+    if 'port' in mac_cfg.keys():
+        ret_val = bcm_set_one_mac(mac_cfg)
+    else:
+        ret_val = True
+        for seq_id in mac_cfg.keys():
+            ret_val = bcm_set_one_mac(mac_cfg[seq_id])
             if not ret_val:
                 break
 
