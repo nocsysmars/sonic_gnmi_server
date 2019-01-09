@@ -50,9 +50,10 @@ TEAMD_CONF_TMPL      = """
 FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_NAME  = 0x01  # fill name info
 FILL_INFO_VLAN  = 0x02  # fill vlan mbr info
-FILL_INFO_STATE = 0x04  # fill counter/admin/oper info
+FILL_INFO_STATE = 0x04  # fill admin/oper info
 FILL_INFO_PC    = 0x08  # fill port channel info
 FILL_INFO_IP    = 0x10  # fill arp/route info
+FILL_INFO_CNTR  = 0x20  # fill counter info
 FILL_INFO_ALL   = 0xff  # fill all info
 
 # refer to /usr/bin/intfutil
@@ -427,9 +428,9 @@ def interface_get_port_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
 
                 interface_fill_inf_state(oc_inf, inf_name, disp_args.appdb)
 
-                counter_port_name_map = disp_args.appdb.get_all(disp_args.appdb.COUNTERS_DB, COUNTERS_PORT_NAME_MAP)
-                if inf_name in counter_port_name_map:
-                    interface_fill_inf_counters(oc_inf, inf_name, counter_port_name_map, disp_args.appdb)
+            if fill_info_bmp & FILL_INFO_CNTR:
+                if inf_name in out_tbl["cntr_pname_map"]:
+                    interface_fill_inf_counters(oc_inf, inf_name, out_tbl["cntr_pname_map"], disp_args.appdb)
 
             ret_val = True
 
@@ -511,7 +512,8 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
     #   pc          -> get_port_info + get_pc_info
     #   vlan        -> get_port_info + get_pc_info
 
-    fill_type_tbl = { "state"         : FILL_INFO_STATE,
+    fill_type_tbl = { "state"         : FILL_INFO_STATE | FILL_INFO_CNTR,
+                      "counters"      : FILL_INFO_CNTR,
                       "config"        : FILL_INFO_PC,
                       "switched-vlan" : FILL_INFO_VLAN,
                       "routed-vlan"   : FILL_INFO_IP
@@ -541,6 +543,9 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
 
     if fill_info_type & FILL_INFO_STATE:
         out_tbl["ifcfg_output"] = interface_get_ifcfg_output()
+
+    if fill_info_type & FILL_INFO_CNTR:
+        out_tbl["cntr_pname_map"] = disp_args.appdb.get_all(disp_args.appdb.COUNTERS_DB, COUNTERS_PORT_NAME_MAP)
 
     oc_infs = inf_yph.get("/interfaces")[0]
 
