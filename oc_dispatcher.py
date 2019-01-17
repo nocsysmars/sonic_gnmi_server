@@ -61,6 +61,8 @@ setPathTable = {
             "util_interface.interface_set_native_vlan",
     '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
             "util_interface.interface_set_ip_v4",
+    '/interfaces/interface[name]/routed-vlan/ipv4/neighbors/neighbor[ip]/config' :
+            "util_interface.interface_set_nbr_v4",
     '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
             "util_lr.lr_set_route_v4",
     # multiple keys must be in alphabet order

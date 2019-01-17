@@ -4,13 +4,7 @@
 # APIs for processing interface info.
 #
 
-import subprocess
-import json
-import pdb
-import time
-import re
-import swsssdk
-import util_utl
+import subprocess, json, pdb, time, re, swsssdk, util_utl
 
 from util_utl import CFG_PC_CMD_TMPL
 
@@ -194,6 +188,7 @@ def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
 def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
     # ex:
     #  192.168.200.10 dev eth0 lladdr a0:36:9f:8d:52:fa STALE
+    #  100.102.100.12 dev Ethernet2 lladdr 00:00:00:00:00:30 PERMANENT
     old_nbr_lst  = [x for x in oc_inf.routed_vlan.ipv4.neighbors.neighbor]
 
     if inf_name in out_tbl["ip4_nbr_output"]:
@@ -209,7 +204,11 @@ def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
                 old_nbr_lst.remove(nbr_info[0])
 
             oc_nbr.config.link_layer_address = nbr_info[4]
-            oc_nbr.state._set_origin('DYNAMIC')
+
+            if nbr_info[5] == "PERANENT":
+                oc_nbr.state._set_origin('DYNAMIC')
+            else:
+                oc_nbr.state._set_origin('STATIC')
 
     # remove unused nbr entry
     for x in old_nbr_lst:
@@ -905,7 +904,7 @@ def interface_db_set_ip(db, is_add, intf_name, ip):
 # To set inf's ip address (v4)
 def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     try:
-        ip_cfg  = [] if val == "" else eval(val)
+        ip_cfg  = {} if val == "" else eval(val)
         ip_new  = ip_cfg["ip"]
         ip_pfx  = ip_cfg["prefix-length"]
     except:
@@ -924,5 +923,26 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
             ['add', 'del'][is_del], pkey_ar[1], ip_pfx, pkey_ar[0])
 
         util_utl.utl_execute_cmd(exec_cmd)
+
+    return ret_val
+
+# ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
+#   val for del = '{"link-layer-address" : ""} or {} or ""'
+#   val for add = '{"link-layer-address" : "00:00:00:00:00:20"}'
+# To set inf's arp (v4)
+def interface_set_nbr_v4(oc_yph, pkey_ar, val, is_create, disp_args):
+    #pdb.set_trace()
+
+    try:
+        nbr_cfg     = {} if val == "" else eval(val)
+        lladdr_cmd  = "" if "link-layer-address" not in nbr_cfg else \
+                      "lladdr %s" % nbr_cfg["link-layer-address"]
+    except:
+        return False
+
+    exec_cmd = "ip neigh {0} {1} {2} dev {3}".format(
+        ['replace', 'del'][lladdr_cmd == ""], pkey_ar[1], lladdr_cmd, pkey_ar[0])
+
+    ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val

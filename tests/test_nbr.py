@@ -3,6 +3,7 @@ import unittest, pdb, argparse, test_inc, types
 PATH_GET_INF_TMPL      = '/interfaces/interface[name={0}]'
 PATH_INF_CFG_EN_TMPL   = '/interfaces/interface[name={0}]/config/enabled'
 PATH_GET_NBR_TMPL      = '/interfaces/interface/routed-vlan/ipv4/neighbors/neighbor'
+PATH_SET_NBR_TMPL      = '/interfaces/interface[name={0}]/routed-vlan/ipv4/neighbors/neighbor[ip={1}]/config'
 
 class TestNbr(test_inc.MyTestCase):
     def test_1_set_admin_status_port2(self):
@@ -27,6 +28,7 @@ class TestNbr(test_inc.MyTestCase):
         intf_name = 'Ethernet2'
         ip        = "100.102.100.11"
         mac       = "00:00:00:00:00:20"
+
         output = self.run_shell_cmd(['ip neigh replace %s lladdr %s dev %s' % (ip, mac, intf_name)])
 
         #self.assertIn(vlan_name, output)
@@ -81,6 +83,36 @@ class TestNbr(test_inc.MyTestCase):
             self.assertNotIn(ip, output)
             self.assertNotIn(mac, output)
 
+    def test_6_add_nbr1_to_port2_gnmi(self):
+        intf_name = 'Ethernet2'
+        ip        = "100.102.100.11"
+        mac       = "00:00:00:00:00:20"
+        nbr_cfg   = """{"link-layer-address": "%s"}""" % mac
+
+        output = self.run_script(['update', PATH_SET_NBR_TMPL.format(intf_name, ip), "'{0}'".format(nbr_cfg)])
+
+        #self.assertIn(vlan_name, output)
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_NBR_TMPL.format(intf_name), ''])
+            output = "".join(output.replace('\n', '').split())
+
+            self.assertIn(ip, output)
+            self.assertIn(mac, output)
+            self.assertIn(intf_name, output)
+
+    def test_7_del_nbr1_from_port2_gnmi(self):
+        intf_name = 'Ethernet2'
+        ip        = "100.102.100.11"
+        nbr_cfg   = "{}"
+        output = self.run_script(['update', PATH_SET_NBR_TMPL.format(intf_name, ip), "'{0}'".format(nbr_cfg)])
+
+        #self.assertIn(vlan_name, output)
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_NBR_TMPL.format(intf_name), ''])
+            output = "".join(output.replace('\n', '').split())
+
+            self.assertNotIn(ip, output)
+            self.assertNotIn(mac, output)
 
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)
