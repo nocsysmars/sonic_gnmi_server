@@ -99,10 +99,10 @@ def platform_get_info_fan(oc_comps):
         # step 1 name
         # step 2 Adapter
         # step 3 component
-        step = 1
-        for idx in range(len(output)):
-            if 'Command:' in output[idx]: continue
+        beg_id = 1 if 'Command:' in output[0] else 0
 
+        step = 1
+        for idx in range(beg_id, len(output)):
             if step == 1:
                 comp_name = output[idx]
                 step = step + 1
@@ -114,20 +114,24 @@ def platform_get_info_fan(oc_comps):
                 else:
                     m = re.match(r'([^:]*):([^(]*)(.*)', output[idx])
                     if m:
-                        sub_comp_name = comp_name + '_' + m.group(1).replace(' ', '_')
-                        oc_comp = oc_comps.component.add(sub_comp_name)
-                        OLD_COMP_LST.append(sub_comp_name)
+                        is_fan = True if 'RPM' in m.group(2) else False
+                        is_tem = True if 'C' in m.group(2) else False
 
-                        if 'RPM' in m.group(2):
-                            # fan
-                            oc_comp.state._set_type('FAN')
-                            value = int(m.group(2).split(" RPM")[0])
-                            oc_comp.fan.state._set_speed(value)
-                        else:
-                            # temperature
-                            oc_comp.state._set_type('SENSOR')
-                            value = float(m.group(2).split(" C")[0].replace('+', ' '))
-                            oc_comp.state.temperature._set_instant(value)
+                        if is_fan or is_tem:
+                            sub_comp_name = comp_name + '_' + m.group(1).replace(' ', '_')
+                            oc_comp = oc_comps.component.add(sub_comp_name)
+                            OLD_COMP_LST.append(sub_comp_name)
+
+                            if is_fan:
+                                # fan
+                                oc_comp.state._set_type('FAN')
+                                value = int(m.group(2).split(" RPM")[0])
+                                oc_comp.fan.state._set_speed(value)
+                            else:
+                                # temperature
+                                oc_comp.state._set_type('SENSOR')
+                                value = float(m.group(2).split(" C")[0].replace('+', ' '))
+                                oc_comp.state.temperature._set_instant(value)
 
 def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     global OLD_COMP_LST
