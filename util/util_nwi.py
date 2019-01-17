@@ -4,24 +4,12 @@
 # APIs for processing network instance info.
 #
 
-import subprocess
-import json
-import pdb
+import subprocess, json, pdb, util_utl
 from swsssdk import port_util
-import util_utl
-
-from util_utl import RULE_MAX_PRI
-from util_utl import RULE_MIN_PRI
-
-from util_acl import acl_rule_yang2sonic
-from util_acl import acl_set_one_acl_entry
-from util_acl import acl_cnv_to_oc_tcp_flags
-from util_acl import OCYANG_FLDMAP_TBL
-from util_acl import INT_TYPE
-from util_acl import STR_TYPE
-from util_acl import HEX_TYPE
-from util_acl import NON_TYPE
-
+from util_utl import RULE_MAX_PRI, RULE_MIN_PRI
+from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
+                     acl_cnv_to_oc_tcp_flags, \
+                     OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE
 
 DEFAULT_NWI_NAME = 'DEFAULT'
 MIRROR_POLICY_PFX= 'EVERFLOW'
@@ -82,7 +70,7 @@ def nwi_get_fdb_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
         oid_pfx = len("oid:0x")
         for s in fdb_str:
             fdb_entry = s.decode()
-            fdb = json.loads(fdb_entry .split(":", 2)[-1])
+            fdb = json.loads(fdb_entry.split(":", 2)[-1])
             if not fdb: continue
 
             ent = disp_args.appdb.get_all('ASIC_DB', s, blocking=True)
