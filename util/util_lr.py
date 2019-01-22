@@ -37,7 +37,8 @@ def lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, old_sr_lst):
     oc_sr = None
     if pfx_str in oc_lr.static_routes.static:
         oc_sr = oc_lr.static_routes.static[pfx_str]
-        old_sr_lst.remove(pfx_str)
+        if pfx_str in old_sr_lst:
+            old_sr_lst.remove(pfx_str)
         lr_del_all_nhop(oc_sr)
     else:
         oc_sr = oc_lr.static_routes.static.add(pfx_str)
@@ -64,6 +65,13 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
         #   172.17.2.0/24
         #       nexthop via 10.0.0.108  dev Ethernet54 weight 1
         #       nexthop via 10.0.0.142  dev Ethernet71 weight 1
+        #
+        #   default via 192.168.200.254 dev eth0 proto zebra
+        #   100.100.100.0/24 dev Ethernet4 proto kernel scope link src 100.100.100.104 linkdown
+        #   172.17.2.0/24 linkdown
+        #           nexthop via 100.100.100.104  dev Ethernet4 weight 1 linkdown
+        #           nexthop via 100.100.100.108  dev Ethernet8 weight 1 linkdown
+
         idx = 0
         while idx < len(output):
             ldata = output[idx].split()
@@ -71,7 +79,7 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
             oc_sr = None
             pfx_str = lr_get_pfx_str(ldata[0])
 
-            if len(ldata) == 1:
+            if 'dev' not in ldata:
                 # ecmp
                 oc_sr = lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, OLD_SR_LST)
                 idx += 1
@@ -81,10 +89,9 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
                         nh_id += 1
                     idx += 1
             else:
-                if ldata [1] == 'via':
-                    oc_sr = lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, OLD_SR_LST)
-                    if lr_add_nexthop(lr_yph, oc_sr, 0, ldata[2], ldata[4]):
-                        nh_id += 1
+                oc_sr = lr_get_oc_sr(oc_lr, pfx_str, new_sr_lst, OLD_SR_LST)
+                if lr_add_nexthop(lr_yph, oc_sr, 0, ldata[2], ldata[4]):
+                    nh_id += 1
                 idx += 1
 
             if oc_sr and nh_id == 0:
