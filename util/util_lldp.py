@@ -8,6 +8,15 @@ import subprocess
 import json
 import pdb
 
+# CHASSIS/PORT-ID share the same table
+LLDP_SUBTYPE_MAP_TBL = {
+    "mac"     : "MAC_ADDRESS",
+    "ifalias" : "INTERFACE_ALIAS",
+    "local"   : "LOCAL",
+    "ip"      : "NETWORK_ADDRESS",
+    "ifname"  : "INTERFACE_NAME"
+}
+
 # input : '7 days, 22:55:53' / '0 day, 00:00:11'
 # ret   : xxx
 def lldp_cnv_age_to_secs(age_str):
@@ -45,8 +54,8 @@ def lldp_set_id_field(obj, fld_str, fld_dict):
     # TODO: type mapping
     #  CHASSIS_COMPONENT/INTERFACE_ALIAS/PORT_COMPONENT/MAC_ADDRESS
     #  NETWORK_ADDRESS/INTERFACE_NAME/LOCAL
-    if id_dict["type"] == "mac":
-        type_value = "MAC_ADDRESS"
+    if "type" in id_dict and id_dict["type"] in LLDP_SUBTYPE_MAP_TBL:
+        type_value = LLDP_SUBTYPE_MAP_TBL[id_dict["type"]]
 
         set_type_fun = getattr(obj, attr_key_type)
         if set_type_fun:
@@ -85,6 +94,9 @@ def lldp_get_info_interface(lldp_yph, inf, val):
     nbr.state._set_age(lldp_cnv_age_to_secs(val["age"]))
     lldp_set_id_field(nbr.state, "chassis", val)
     lldp_set_id_field(nbr.state, "port", val)
+
+    if "descr" in val["port"]:
+        nbr.state._set_port_description(val["port"]["descr"])
 
     # remove neighbours not used
     for old_nbr in old_nbrs:
