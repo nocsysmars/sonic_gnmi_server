@@ -65,6 +65,9 @@ PORT_DESCRIPTION            = "description"
 COUNTER_TABLE_PREFIX = "COUNTERS:"
 COUNTERS_PORT_NAME_MAP = "COUNTERS_PORT_NAME_MAP"
 
+# set to True if teammgrd is used to manage all port channel related configuration
+IS_NEW_TEAMMGRD = False
+
 # t_vlan, u_vlan for inf
 def interface_get_vlan_output(disp_args):
     # ex: {'Vlan10': {'vlanid': '10', 'members': ['Ethernet9']}}
@@ -636,9 +639,10 @@ def interface_remove_all_mbr_for_pc(pc_name):
     if is_ok:
         pc_cfg = json.loads(output)
 
-        for port in pc_cfg["ports"]:
-            exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
-            util_utl.utl_execute_cmd(exec_cmd)
+        if "ports" in pc_cfg:
+            for port in pc_cfg["ports"]:
+                exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
+                util_utl.utl_execute_cmd(exec_cmd)
 
 # To create/remove port channel by set name
 def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
@@ -650,15 +654,17 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
         # need to write to db first to let other app start working
         if not util_utl.utl_execute_cmd(set_cmd): return False
 
-        # populate create info to teamd
-        conf =  TEAMD_CONF_TMPL % (pkey_ar[0], MY_MAC_ADDR)
+        # (*)steps below can not work for new teammgrd
+        if not IS_NEW_TEAMMGRD:
+            # populate create info to teamd
+            conf =  TEAMD_CONF_TMPL % (pkey_ar[0], MY_MAC_ADDR)
 
-        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
-                    % (conf, TEAMD_CONF_PATH, pkey_ar[0])
-        if not util_utl.utl_execute_cmd(exec_cmd): return False
+            exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
+                        % (conf, TEAMD_CONF_PATH, pkey_ar[0])
+            if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-        exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
-        if not util_utl.utl_execute_cmd(exec_cmd): return False
+            exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
+            if not util_utl.utl_execute_cmd(exec_cmd): return False
 
         oc_infs.interface.add(pkey_ar[0])
     else:
@@ -666,9 +672,11 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
 
         interface_remove_all_mbr_for_pc(pkey_ar[0])
 
-        # populate delete info to teamd
-        exec_cmd = 'docker exec teamd teamd -k -t %s' % pkey_ar[0]
-        util_utl.utl_execute_cmd(exec_cmd)
+        # (*)steps below can not work for new teammgrd
+        if not IS_NEW_TEAMMGRD:
+            # populate delete info to teamd
+            exec_cmd = 'docker exec teamd teamd -k -t %s' % pkey_ar[0]
+            util_utl.utl_execute_cmd(exec_cmd)
 
         # remove port channel in db last to let other app finish jobs
         util_utl.utl_execute_cmd(set_cmd)
