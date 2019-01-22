@@ -22,16 +22,16 @@ class TestMac(test_inc.MyTestCase):
         vlan_name = 'Vlan100'
         output = self.run_script(['update', PATH_INF_CFG_NAME_TMPL.format(vlan_name), '"{0}"'.format(vlan_name)])
 
-    def test_2_add_port5_to_tag_vlan100(self):
-        inf_name = 'Ethernet5'
+    def test_2_add_port4_to_tag_vlan100(self):
+        inf_name = 'Ethernet4'
         output = self.run_script(['update',
                                   PATH_INF_TAG_VLAN_TMPL.format(inf_name),
                                   '"[100]"'])
 
-    def test_3_add_mac_to_port5(self):
+    def test_3_add_mac_to_port4(self):
         TEST_CFG_JSON="""{
           "1": {
-            "port": "Ethernet5",
+            "port": "Ethernet4",
             "mac" : "00:00:00:10:20:30",
             "vlan": 100
           }
@@ -39,7 +39,7 @@ class TestMac(test_inc.MyTestCase):
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
 
-    def test_4_del_mac_from_port5(self):
+    def test_4_del_mac_from_port4(self):
         TEST_CFG_JSON="""{
           "1": {
             "mac" : "00:00:00:10:20:30",
@@ -49,7 +49,8 @@ class TestMac(test_inc.MyTestCase):
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
 
-    def test_5_del_mac_from_port5_2(self):
+
+    def test_5_del_mac_from_port4_2(self):
         TEST_CFG_JSON="""{
           "1": {
             "port": "",
@@ -60,7 +61,7 @@ class TestMac(test_inc.MyTestCase):
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
 
-    def test_6_del_mac_from_port5_swss(self):
+    def test_6_del_mac_from_port4_swss(self):
         TEST_CFG_JSON="""{
           "1": {
             "port": "Ethernet5",
@@ -72,13 +73,23 @@ class TestMac(test_inc.MyTestCase):
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
 
+    def test_7_add_mac_to_port4(self):
+        TEST_CFG_JSON="""{
+            "port": "Ethernet4",
+            "mac" : "00:00:00:10:20:30",
+            "vlan": 100
+        }"""
+
+        output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
+
+
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)
 
     test_case = {}
 
     # basic test
-    test_case[0] = [1, 2]
+    test_case[0] = [1, 2, 7, 6]
 
     if t_case:
         t_sel = eval (t_case)
