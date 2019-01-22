@@ -153,12 +153,13 @@ class ocDispatcher:
     @util_utl.utl_timeit
     @util_utl.utl_log_outer
     def SetValByPath(self, yp_str, pkey_ar, val):
-        tmp_obj = self.oc_yph.get(yp_str)
-
-        # replace key [xxx=yyy] with [xxx]
-        reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
 
         try:
+            tmp_obj = self.oc_yph.get(yp_str)
+
+            # replace key [xxx=yyy] with [xxx]
+            reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
+
             ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0, self.my_args) \
                     if reg_path in setPathTable else False
         except Exception as e:

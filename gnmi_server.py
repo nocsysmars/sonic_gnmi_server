@@ -21,13 +21,15 @@ from oc_dispatcher import ocDispatcher
 
 #          input : PathElem
 # example of ret : [ 'interfaces', 'interface' ]
+#
+# TODO: check if input path is invalid, e.g. [ip=]
 def EncodePath(path):
     pathStrs = []
     for pe in path:
         pstr = pe.name
         if pe.key:
              for k, v in sorted(pe.key.iteritems()):
-                  pstr += "[" + str(k) + "=" + str(v) + "]"
+                pstr += "[" + str(k) + "=" + str(v) + "]"
         pathStrs += [pstr]
     return pathStrs
 
@@ -110,28 +112,32 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             util_utl.utl_log("get req path :" + yp_str)
 
-            self.lock.acquire()
             tmp_json = None
-            oc_yph = self.myDispatcher.GetRequestYph(path_ar, pkey_ar)
-            if isinstance(oc_yph, grpc.StatusCode):
-                er_code = oc_yph
-            else:
-                tmp_obj = oc_yph.get(yp_str) if oc_yph else []
+            self.lock.acquire()
+            try:
+                oc_yph = self.myDispatcher.GetRequestYph(path_ar, pkey_ar)
+                if isinstance(oc_yph, grpc.StatusCode):
+                    er_code = oc_yph
+                else:
+                    tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
-                # TODO: if got more than one obj ?
-                if len(tmp_obj) >= 1:
-                    tmp_json = {}
-                    for idx in range(len(tmp_obj)):
-                        obj_json = ExtractJson(tmp_obj[idx], None)
-                        if obj_json:
-                            # remove "'" for the key in the _yang_path
-                            obj_path = re.sub(r'\[([\w-]*)=\'([^]]*)\'\]', r'[\1=\2]', tmp_obj[idx]._yang_path())
-                            if len(tmp_obj) == 1 and obj_path == yp_str:
-                                tmp_json = obj_json
-                            else:
-                                tmp_json[obj_path]= obj_json
-
-            self.lock.release()
+                    # TODO: if got more than one obj ?
+                    if len(tmp_obj) >= 1:
+                        tmp_json = {}
+                        for idx in range(len(tmp_obj)):
+                            obj_json = ExtractJson(tmp_obj[idx], None)
+                            if obj_json:
+                                # remove "'" for the key in the _yang_path
+                                obj_path = re.sub(r'\[([\w-]*)=\'([^]]*)\'\]', r'[\1=\2]', tmp_obj[idx]._yang_path())
+                                if len(tmp_obj) == 1 and obj_path == yp_str:
+                                    tmp_json = obj_json
+                                else:
+                                    tmp_json[obj_path]= obj_json
+            except:
+                er_code = grpc.StatusCode.INTERNAL
+                tmp_json= None
+            finally:
+                self.lock.release()
 
             if tmp_json != None:
                 notif = getResp.notification.add()
@@ -213,6 +219,9 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
             set_val = getattr(update.val, update.val.WhichOneof("value"))
             yp_str  = EncodeYangPath(updPath)
 
+            util_utl.utl_log("set req path :" + yp_str)
+            util_utl.utl_log("set req val  :" + set_val)
+
             self.lock.acquire()
             ret_set = self.myDispatcher.SetValByPath(yp_str, pkey_ar, set_val)
             self.lock.release()
@@ -225,8 +234,6 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
 
             self.__AddOneSetResp(setResp, update.path, 3, ret_set, None)
 
-            util_utl.utl_log("set req path :" + yp_str)
-            util_utl.utl_log("set req val  :" + set_val)
             util_utl.utl_log("set req code :" + str(ret_set))
 
         # Fill error message
