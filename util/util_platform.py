@@ -4,11 +4,7 @@
 # APIs for processing platform info.
 #
 
-import subprocess
-import json
-import pdb
-import re
-import util_utl
+import subprocess, json, re, pdb, util_utl
 
 OLD_COMP_LST = []
 
@@ -190,6 +186,11 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
                     oc_comp =oc_comps.component.add(val)
                     OLD_COMP_LST.append(val)
                     oc_comp.state._set_type('FABRIC')
+
+                    (is_mac_ok, mac_output) = util_utl.utl_get_execute_cmd_output("cat /sys/class/net/eth0/address")
+                    if is_mac_ok:
+                        oc_prop = oc_comp.properties.property_.add('ETH0_MAC')
+                        oc_prop.state._set_value(mac_output.replace('\n', '').upper())
                 else:
                     if idx == 5:
                         val = val.split('/')
