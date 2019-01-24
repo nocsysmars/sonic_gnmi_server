@@ -351,17 +351,27 @@ def interface_convert_speed(speed_in_mb):
     return 'SPEED_{0}'.format(str_speed)
 
 def interface_fill_inf_state(oc_inf, inf_name, db):
+    # fill alias into description to make topology discovery using lldp work
     fld_tbl = {
         "admin_status": PORT_ADMIN_STATUS,
         "oper_status" : PORT_OPER_STATUS,
         "mtu"         : PORT_MTU_STATUS,
-        "port_speed"  : PORT_SPEED          # in Mbps
+        "description" : PORT_ALIAS,
+        "port_speed"  : PORT_SPEED,          # in Mbps
         }
 
     for fld in fld_tbl:
         val = interface_db_port_status_get(db, inf_name, fld_tbl[fld])
         if val and val != "N/A":
-            val = int(val) if fld in ["mtu", "port_speed"] else val.upper()
+            if fld in ["mtu", "port_speed"]:
+                val = int(val)
+            elif fld not in ["description"]:
+                val = val.upper()
+        else:
+            # default value for description
+            if fld in ["description"]:
+                val = inf_name
+        if val:
             if fld == "port_speed":
                 set_fun = getattr(oc_inf.ethernet.config, "_set_%s" % (fld))
                 val = interface_convert_speed(val)
