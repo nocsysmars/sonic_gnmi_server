@@ -121,8 +121,8 @@ class ocDispatcher:
         util_qos.qos_create_dflt_obj(self.oc_yph, is_dbg_test)
 
         # check if new teammgrd is used
-        test_cmd = "docker exec teamd bash -c '[  -d /etc/teamd/ ]'"
-        util_interface.IS_NEW_TEAMMGRD = not util_utl.utl_execute_cmd(test_cmd)
+        test_cmd = 'docker run --rm=true --privileged=true --entrypoint="/bin/bash" "docker-teamd" -c "[ -f /usr/bin/teammgrd ]"'
+        util_interface.IS_NEW_TEAMMGRD = util_utl.utl_execute_cmd(test_cmd)
 
     #def CreateAllInterfaces(self, is_dbg_test):
     #    return util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test)

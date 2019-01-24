@@ -580,9 +580,12 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
 
 def interface_get_my_mac():
     global MY_MAC_ADDR
-    exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
+    #exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
+    # bcz some vendors use different mac for eth0
+    exec_cmd = "sonic-cfggen -d -v DEVICE_METADATA.localhost.mac"
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok: MY_MAC_ADDR = output.strip('\n')
+
 
 @util_utl.utl_timeit
 def interface_create_all_infs(inf_yph, is_dbg_test, disp_args):
@@ -649,44 +652,73 @@ def interface_remove_all_mbr_for_pc(pc_name):
                 exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
                 util_utl.utl_execute_cmd(exec_cmd)
 
+# destroy pc by teamd operation
+def interface_destroy_pc(pc_name, is_force = False):
+    # teammgrd will destroy pc when pc is removed from db
+    if not IS_NEW_TEAMMGRD or is_force:
+        exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
+        return util_utl.utl_execute_cmd(exec_cmd)
+
+    return True
+
+# destroy pc created by teammgrd
+def interface_destroy_pc_by_teammgrd(pc_name):
+    LOOP_CNT = 10
+    exec_cmd = "teamdctl %s state" % pc_name
+
+    # wait for the pc created by teammgrd to show up
+    for idx in range(LOOP_CNT):
+        time.sleep(1)
+
+        if util_utl.utl_execute_cmd(exec_cmd):
+            break
+
+    return interface_destroy_pc(pc_name, True)
+
+# create pc by teamd operation
+def interface_create_pc(pc_name):
+    global MY_MAC_ADDR
+    if IS_NEW_TEAMMGRD:
+        interface_destroy_pc_by_teammgrd(pc_name)
+
+        # re-create the pc (static trunk)
+        pc_cfg   = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"roundrobin"}}' % (pc_name, MY_MAC_ADDR)
+        exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
+
+        return util_utl.utl_execute_cmd(exec_cmd)
+    else:
+        # populate create info to teamd
+        conf =  TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR)
+
+        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
+                    % (conf, TEAMD_CONF_PATH, pc_name)
+        if not util_utl.utl_execute_cmd(exec_cmd): return False
+
+        exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
+        if not util_utl.utl_execute_cmd(exec_cmd): return False
+
 # To create/remove port channel by set name
 def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
     set_cmd = CFG_PC_CMD_TMPL % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
 
     #pdb.set_trace()
+    ret_val = False
     if is_create:
         # need to write to db first to let other app start working
-        if not util_utl.utl_execute_cmd(set_cmd): return False
-
-        # (*)steps below can not work for new teammgrd
-        if not IS_NEW_TEAMMGRD:
-            # populate create info to teamd
-            conf =  TEAMD_CONF_TMPL % (pkey_ar[0], MY_MAC_ADDR)
-
-            exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
-                        % (conf, TEAMD_CONF_PATH, pkey_ar[0])
-            if not util_utl.utl_execute_cmd(exec_cmd): return False
-
-            exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pkey_ar[0])
-            if not util_utl.utl_execute_cmd(exec_cmd): return False
-
-        oc_infs.interface.add(pkey_ar[0])
+        if util_utl.utl_execute_cmd(set_cmd):
+            interface_create_pc(pkey_ar[0])
+            oc_infs.interface.add(pkey_ar[0])
+            ret_val = True
     else:
         oc_infs.interface.delete(pkey_ar[0])
-
         interface_remove_all_mbr_for_pc(pkey_ar[0])
-
-        # (*)steps below can not work for new teammgrd
-        if not IS_NEW_TEAMMGRD:
-            # populate delete info to teamd
-            exec_cmd = 'docker exec teamd teamd -k -t %s' % pkey_ar[0]
-            util_utl.utl_execute_cmd(exec_cmd)
+        interface_destroy_pc(pkey_ar[0])
 
         # remove port channel in db last to let other app finish jobs
-        util_utl.utl_execute_cmd(set_cmd)
+        ret_val = util_utl.utl_execute_cmd(set_cmd)
 
-    return True
+    return ret_val
 
 # vlan_name should be in "VlanXXX" format
 def interface_extract_vid(vlan_name):
