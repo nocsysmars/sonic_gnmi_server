@@ -137,26 +137,21 @@ def interface_get_ip4_nbr_output():
 
     return ret_output
 
-def interface_get_ifcfg_output():
+def interface_get_ip_link_output():
     """
-    use 'ifconfig -a' command to gather information
+    use 'ip link show' command to gather information
     """
     ret_output = {}
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ifconfig -a')
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output('ip -o link show')
     if is_ok:
         tmp_output = output.splitlines()
 
-    blk_head = 0
-    for idx in range(0, len(tmp_output)):
-        if '' == tmp_output[idx] or idx == len(tmp_output)-1:
-            # ex: Ethernet0 Link encap:Ethernet  HWaddr cc:37:ab:ec:d9:b
-            head_line = tmp_output[blk_head].split()
-            inf_name = head_line[0]
-            ret_output[inf_name] = []
-            for blk_idx in range(blk_head, idx):
-                ret_output[inf_name].append(tmp_output[blk_idx])
-
-            blk_head = idx +1
+        for idx in range(0, len(tmp_output)):
+            # ex:
+            #  27: Ethernet84: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 9100 qdisc pfifo_fast state DOWN mode DEFAULT group default qlen 1000\    link/ether 50:6b:4b:95:e1:00 brd ff:ff:ff:ff:ff:ff
+            onel = tmp_output[idx].split()
+            inf_name = onel[1].rstrip(':')
+            ret_output[inf_name] = tmp_output[idx]
 
     return ret_output
 
@@ -255,14 +250,14 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
 
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
-    output = out_tbl["ifcfg_output"][inf_name] if inf_name in out_tbl["ifcfg_output"] else []
+    output = out_tbl["ip_link_output"][inf_name] if inf_name in out_tbl["ip_link_output"] else []
     if output:
-        if 'UP' in output[1]:
+        if re.search(r'\bUP\b', output):
             oc_inf.state._set_admin_status('UP')
         else:
             oc_inf.state._set_admin_status('DOWN')
 
-        if 'RUNNING' in output[1]:
+        if re.search(r'\bLOWER_UP\b', output):
             oc_inf.state._set_oper_status('UP')
         else:
             oc_inf.state._set_oper_status('DOWN')
@@ -544,7 +539,7 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
         out_tbl["vlan_output"] = interface_get_vlan_output(disp_args)
 
     if fill_info_type & FILL_INFO_STATE:
-        out_tbl["ifcfg_output"] = interface_get_ifcfg_output()
+        out_tbl["ip_link_output"] = interface_get_ip_link_output()
 
     if fill_info_type & FILL_INFO_CNTR:
         out_tbl["cntr_pname_map"] = disp_args.appdb.get_all(disp_args.appdb.COUNTERS_DB, COUNTERS_PORT_NAME_MAP)
