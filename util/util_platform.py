@@ -20,7 +20,7 @@ def platform_get_syseeprom_output_val(sys_output, tag_str, pos):
 
     return ret_val
 
-def platform_get_info_psu(oc_comps):
+def platform_get_info_psu(oc_comps, old_comp_lst):
     """
     root@switch1:/home/admin# show platform psustatus
     PSU    Status
@@ -28,7 +28,6 @@ def platform_get_info_psu(oc_comps):
     PSU 1  NOT OK
     PSU 2  OK
     """
-    global OLD_COMP_LST
     exec_cmd = 'show platform psustatus'
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -42,7 +41,7 @@ def platform_get_info_psu(oc_comps):
                 psu_line = output[idx].split("  ")
                 psu_name = psu_line[0].replace(" ", "_")
                 oc_comp = oc_comps.component.add(psu_name)
-                OLD_COMP_LST.append(psu_name)
+                old_comp_lst.append(psu_name)
                 oc_comp.state._set_type('POWER_SUPPLY')
                 oc_comp.power_supply.state._set_enabled(
                     True if "OK" == psu_line[1] else False)
@@ -51,7 +50,7 @@ def platform_get_info_psu(oc_comps):
                 if '-----' in output[idx]:
                     psu_beg = True
 
-def platform_get_info_fan(oc_comps):
+def platform_get_info_fan(oc_comps, old_comp_lst):
     """
     root@switch1:/home/admin# show environment
     coretemp-isa-0000
@@ -116,7 +115,7 @@ def platform_get_info_fan(oc_comps):
                         if is_fan or is_tem:
                             sub_comp_name = comp_name + '_' + m.group(1).replace(' ', '_')
                             oc_comp = oc_comps.component.add(sub_comp_name)
-                            OLD_COMP_LST.append(sub_comp_name)
+                            old_comp_lst.append(sub_comp_name)
 
                             if is_fan:
                                 # fan
@@ -140,10 +139,10 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     OLD_COMP_LST = []
 
     # get info for psu
-    platform_get_info_psu(oc_comps)
+    platform_get_info_psu(oc_comps, OLD_COMP_LST)
 
     # get info for fan/sensor
-    platform_get_info_fan(oc_comps)
+    platform_get_info_fan(oc_comps, OLD_COMP_LST)
 
     # show platform syseeprom
     #  ex:  Command: sudo decode-syseeprom

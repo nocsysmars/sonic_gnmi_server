@@ -790,8 +790,19 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create, disp_args):
     # not support create
     if is_create: return False
 
-    exec_cmd = 'ifconfig %s %s' % (pkey_ar[0], ["down", "up"][val.upper() == "TRUE"])
-    util_utl.utl_execute_cmd(exec_cmd)
+    tbl = None
+    if pkey_ar[0].startswith("Ethernet"):
+        tbl = "PORT"
+    elif pkey_ar[0].startswith("PortChannel"):
+        tbl = "PORTCHANNEL"
+
+    if IS_NEW_TEAMMGRD and tbl:
+        val = ["down", "up"][val.upper() == "TRUE"]
+        disp_args.cfgdb.mod_entry(tbl, pkey_ar[0], {"admin_status": val})
+    else:
+        exec_cmd = 'ifconfig %s %s' % (pkey_ar[0], ["down", "up"][val.upper() == "TRUE"])
+        util_utl.utl_execute_cmd(exec_cmd)
+
     return True
 
 # Return false if any vlan in the list not exist
