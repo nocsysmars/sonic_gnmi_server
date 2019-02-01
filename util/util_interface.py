@@ -48,22 +48,29 @@ FILL_INFO_STATE = 0x04  # fill admin/oper info
 FILL_INFO_PC    = 0x08  # fill port channel info
 FILL_INFO_IP    = 0x10  # fill arp/route info
 FILL_INFO_CNTR  = 0x20  # fill counter info
+FILL_INFO_PORT  = 0x40  # fill port info
 FILL_INFO_ALL   = 0xff  # fill all info
 
 # refer to /usr/bin/intfutil
-PORT_STATUS_TABLE_PREFIX    = "PORT_TABLE:"
-PORT_OPER_STATUS            = "oper_status"
-PORT_ADMIN_STATUS           = "admin_status"
-PORT_MTU_STATUS             = "mtu"
-PORT_SPEED                  = "speed"
+PORT_STATUS_TABLE_PREFIX = "PORT_TABLE:"
+PORT_OPER_STATUS         = "oper_status"
+PORT_ADMIN_STATUS        = "admin_status"
+PORT_MTU_SIZE            = "mtu"
+PORT_SPEED               = "speed"
 
-PORT_LANES_STATUS           = "lanes"
-PORT_ALIAS                  = "alias"
-PORT_DESCRIPTION            = "description"
+PORT_LANES_STATUS        = "lanes"
+PORT_ALIAS               = "alias"
+PORT_DESCRIPTION         = "description"
+
+# refer to /usr/bin/teamshow
+PC_STATUS_TABLE_PREFIX   = "LAG_TABLE:"
+
+
+VLAN_STATUS_TABLE_PREFIX = "VLAN_TABLE:"
 
 # refer to /usr/bin/portstat
-COUNTER_TABLE_PREFIX = "COUNTERS:"
-COUNTERS_PORT_NAME_MAP = "COUNTERS_PORT_NAME_MAP"
+COUNTER_TABLE_PREFIX     = "COUNTERS:"
+COUNTERS_PORT_NAME_MAP   = "COUNTERS_PORT_NAME_MAP"
 
 # set to True if teammgrd is used to manage all port channel related configuration
 IS_NEW_TEAMMGRD = False
@@ -250,7 +257,14 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
 
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
-    output = out_tbl["ip_link_output"][inf_name] if inf_name in out_tbl["ip_link_output"] else []
+    oc_inf._unset_state()
+
+    if inf_name.startswith('Vlan'):
+        match_name = inf_name + "@Bridge"
+    else:
+        match_name = inf_name
+
+    output = out_tbl["ip_link_output"][match_name] if match_name in out_tbl["ip_link_output"] else []
     if output:
         if re.search(r'\bUP\b', output):
             oc_inf.state._set_admin_status('UP')
@@ -293,8 +307,7 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
 
             if not is_key_et:
                 if fill_info_bmp & FILL_INFO_STATE:
-                    oc_inf.state._set_type('ianaift:ieee8023adLag')
-                    interface_fill_inf_admin_oper(oc_inf, pc, out_tbl)
+                    interface_fill_inf_state(oc_inf, pc, disp_args.appdb, FILL_INFO_PC)
                 if fill_info_bmp & FILL_INFO_VLAN:
                     interface_fill_inf_vlanmbr_info(oc_inf, pc, out_tbl["vlan_output"])
                 if fill_info_bmp & FILL_INFO_IP:
@@ -336,10 +349,19 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
 
     return ret_val
 
-# get port status form appl db
-def interface_db_port_status_get(db, inf_name, status_type):
-    full_table_id = PORT_STATUS_TABLE_PREFIX + inf_name
-    status = db.get(db.APPL_DB, full_table_id, status_type)
+# get inf status form appl db
+def interface_db_inf_status_get(db, inf_name, status_fld, fill_info):
+    pfx_tbl = { FILL_INFO_PC   : PC_STATUS_TABLE_PREFIX,
+                FILL_INFO_PORT : PORT_STATUS_TABLE_PREFIX,
+                FILL_INFO_VLAN : VLAN_STATUS_TABLE_PREFIX }
+
+    if fill_info in pfx_tbl:
+        pfx = pfx_tbl[fill_info]
+    else:
+        return None
+
+    full_table_id = pfx + inf_name
+    status = db.get(db.APPL_DB, full_table_id, status_fld)
     return status
 
 def interface_convert_speed(speed_in_mb):
@@ -350,18 +372,33 @@ def interface_convert_speed(speed_in_mb):
     str_speed = speed_tbl[speed_in_mb] if speed_in_mb in speed_tbl else 'UNKNOWN'
     return 'SPEED_{0}'.format(str_speed)
 
-def interface_fill_inf_state(oc_inf, inf_name, db):
+def interface_fill_inf_state(oc_inf, inf_name, db, fill_info):
+    # Ethernet?     => PORT_TABLE
+    # PortChannel?  => LAG_TABLE
+    # Vlan?         => VLAN_TABLE (TODO ?)
+
     # fill alias into description to make topology discovery using lldp work
     fld_tbl = {
-        "admin_status": PORT_ADMIN_STATUS,
-        "oper_status" : PORT_OPER_STATUS,
-        "mtu"         : PORT_MTU_STATUS,
-        "description" : PORT_ALIAS,
-        "port_speed"  : PORT_SPEED,          # in Mbps
+        "admin_status": { "tag": PORT_ADMIN_STATUS, "info" : FILL_INFO_PORT|FILL_INFO_PC },
+        "oper_status" : { "tag": PORT_OPER_STATUS,  "info" : FILL_INFO_PORT|FILL_INFO_PC },
+        "mtu"         : { "tag": PORT_MTU_SIZE,     "info" : FILL_INFO_PORT|FILL_INFO_PC|FILL_INFO_VLAN },
+        "description" : { "tag": PORT_ALIAS,        "info" : FILL_INFO_PORT              },
+        "port_speed"  : { "tag": PORT_SPEED,        "info" : FILL_INFO_PORT              },  # in Mbps
         }
 
+    type_tbl = {
+        FILL_INFO_PC  : "ianaift:ieee8023adLag",
+        FILL_INFO_PORT: "ift:ethernetCsmacd"
+        }
+
+    oc_inf._unset_state()
+    if fill_info in type_tbl:
+        oc_inf.state._set_type(type_tbl[fill_info])
+
     for fld in fld_tbl:
-        val = interface_db_port_status_get(db, inf_name, fld_tbl[fld])
+        if not fld_tbl[fld]["info"] & fill_info: continue
+
+        val = interface_db_inf_status_get(db, inf_name, fld_tbl[fld]["tag"], fill_info)
         if val and val != "N/A":
             if fld in ["mtu", "port_speed"]:
                 val = int(val)
@@ -430,10 +467,7 @@ def interface_get_port_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
             if fill_info_bmp & FILL_INFO_IP:
                 interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl)
             if fill_info_bmp & FILL_INFO_STATE:
-                oc_inf._unset_state()
-                oc_inf.state._set_type('ift:ethernetCsmacd')
-
-                interface_fill_inf_state(oc_inf, inf_name, disp_args.appdb)
+                interface_fill_inf_state(oc_inf, inf_name, disp_args.appdb, FILL_INFO_PORT)
 
             if fill_info_bmp & FILL_INFO_CNTR:
                 if inf_name in out_tbl["cntr_pname_map"]:
@@ -466,8 +500,9 @@ def interface_get_vlan_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
             new_vlan_inf_lst.append(vname)
 
             if fill_info_bmp & FILL_INFO_STATE:
-                oc_inf._unset_state()
                 interface_fill_inf_admin_oper(oc_inf, vname, out_tbl)
+                # status in VLAN_TABLE is not ready yet
+                # interface_fill_inf_state(oc_inf, vname, disp_args.appdb, FILL_INFO_VLAN)
             if fill_info_bmp & FILL_INFO_IP:
                 interface_fill_inf_ip_info(oc_inf, vname, out_tbl)
 
