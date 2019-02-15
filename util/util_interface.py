@@ -23,15 +23,15 @@ MGMT_PORT_NAME       = 'eth0'
 
 MY_MAC_ADDR          = ""
 TEAMD_CFG_PORT_CMD_TMPL='teamdctl {0} port {1} {2}'
+TEAMD_CONF_RUNNER    = 'loadbalance'
 TEAMD_CONF_PATH      = "/etc/teamd"
 TEAMD_CONF_TMPL      = """
     {
         "device": "%s",
         "hwaddr": "%s",
         "runner": {
-            "name": "roundrobin",
+            "name": "%s",
             "active": true,
-            "min_ports": 0,
             "tx_hash": ["eth", "ipv4", "ipv6"]
         },
         "link_watch": {
@@ -321,7 +321,7 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
                     pc_state = json.loads(output)
 
                     if not is_key_et:
-                        if pc_state["setup"]["runner_name"] != "roundrobin":
+                        if pc_state["setup"]["runner_name"] == "lacp":
                             oc_inf.aggregation.state._set_lag_type('LACP')
                         else:
                             oc_inf.aggregation.state._set_lag_type('STATIC')
@@ -500,9 +500,9 @@ def interface_get_vlan_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
             new_vlan_inf_lst.append(vname)
 
             if fill_info_bmp & FILL_INFO_STATE:
-                interface_fill_inf_admin_oper(oc_inf, vname, out_tbl)
-                # status in VLAN_TABLE is not ready yet
+                # TODO: replace interface_fill_inf_admin_oper if status in VLAN_TABLE is ready
                 # interface_fill_inf_state(oc_inf, vname, disp_args.appdb, FILL_INFO_VLAN)
+                interface_fill_inf_admin_oper(oc_inf, vname, out_tbl)
             if fill_info_bmp & FILL_INFO_IP:
                 interface_fill_inf_ip_info(oc_inf, vname, out_tbl)
 
@@ -717,13 +717,13 @@ def interface_create_pc(pc_name):
         interface_destroy_pc_by_teammgrd(pc_name)
 
         # re-create the pc (static trunk)
-        pc_cfg   = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"roundrobin"}}' % (pc_name, MY_MAC_ADDR)
+        pc_cfg   = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"%s"}}' % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
         exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
 
         return util_utl.utl_execute_cmd(exec_cmd)
     else:
         # populate create info to teamd
-        conf =  TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR)
+        conf =  TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
 
         exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
                     % (conf, TEAMD_CONF_PATH, pc_name)
@@ -832,6 +832,7 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create, disp_args):
         tbl = "PORTCHANNEL"
 
     if IS_NEW_TEAMMGRD and tbl:
+        # only need to modify db
         val = ["down", "up"][val.upper() == "TRUE"]
         disp_args.cfgdb.mod_entry(tbl, pkey_ar[0], {"admin_status": val})
     else:
@@ -1005,15 +1006,16 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
 
     ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0], pkey_ar[1]+'/'+ str(ip_pfx))
 
-    # only ip on vlan interface can take effect immediately
-    if pkey_ar[0].startswith('Vlan'):
-        return ret_val
+    if not IS_NEW_TEAMMGRD:
+        # only ip on vlan interface can take effect immediately
+        if pkey_ar[0].startswith('Vlan'):
+            return ret_val
 
-    if ret_val:
-        exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(
-            ['add', 'del'][is_del], pkey_ar[1], ip_pfx, pkey_ar[0])
+        if ret_val:
+            exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(
+                ['add', 'del'][is_del], pkey_ar[1], ip_pfx, pkey_ar[0])
 
-        util_utl.utl_execute_cmd(exec_cmd)
+            util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
 
