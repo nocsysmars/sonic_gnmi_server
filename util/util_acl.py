@@ -10,8 +10,10 @@ import pdb
 import util_utl
 import swsssdk
 
-from util_utl import RULE_MAX_PRI
-from util_utl import RULE_MIN_PRI
+from util_utl import RULE_MAX_PRI, RULE_MIN_PRI
+
+MIRROR_POLICY_PFX= 'EVERFLOW'
+PROUTE_POLICY_PFX= 'POLRT'
 
 # convert openconfig yang model to sonic
 SONIC_FLDMAP_TBL = {
@@ -149,6 +151,16 @@ def acl_fill_binding_info(oc_acl, acl_name, acl_type, acl_info):
 
         oc_acl_inf.ingress_acl_sets.ingress_acl_set.add(set_name=acl_name, type=acl_type)
 
+# to filter out acl used for pf
+def acl_is_acl_for_pf(acl_name):
+    ret_val = False
+
+    if acl_name.startswith(PROUTE_POLICY_PFX) or \
+       acl_name.startswith(MIRROR_POLICY_PFX):
+        ret_val = True
+
+    return ret_val
+
 # fill DUT's current acl info into root_yph
 # key_ar [0] : interface name e.g. "eth0"
 # ret        : True/False
@@ -173,6 +185,8 @@ def acl_get_info(root_yph, path_ar, key_ar, disp_args):
 
         # acl_set must be created b4 filling binding info
         for acl_name in acl_tlst.keys():
+            if acl_is_acl_for_pf(acl_name): continue
+
             acl_type = acl_cnv_to_oc_acl_type(acl_tlst[acl_name]['type'])
             if acl_type:
                 oc_acl_set = oc_acl.acl_sets.acl_set.add(name = acl_name, type = acl_type)
@@ -182,6 +196,8 @@ def acl_get_info(root_yph, path_ar, key_ar, disp_args):
                         oc_acl_rule = acl_add_one_rule(oc_acl_set, acl_rule_key[1], acl_rlst[acl_rule_key])
 
         for acl_name in acl_tlst.keys():
+            if acl_is_acl_for_pf(acl_name): continue
+
             acl_type = acl_cnv_to_oc_acl_type(acl_tlst[acl_name]['type'])
             if acl_type:
                 acl_fill_binding_info(oc_acl, acl_name, acl_type, acl_tlst[acl_name])
@@ -193,6 +209,7 @@ def acl_get_info(root_yph, path_ar, key_ar, disp_args):
 #   val for add  = '{"type":"ACL_IPV4", "name":"DATAACL"}'
 #
 # To create/remove an acl (no checking for existence)
+# TODO: filter out name not valid for ACL ???
 def acl_set_acl_set(root_yph, pkey_ar, val, is_create, disp_args):
     try:
         cfg_info = {"name":""} if val == "" else eval(val)
@@ -412,6 +429,7 @@ def acl_set_acl_entry(root_yph, pkey_ar, val, is_create, disp_args):
 #   val for add  = '{"set-name": "lll", "type": "ACL_IPV4"}'
 #
 # To bind/unbind an acl to an interface
+# TODO: filter out name not valid for ACL ???
 def acl_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     ret_val = False
 

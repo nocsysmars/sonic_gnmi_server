@@ -8,11 +8,11 @@ import subprocess, json, pdb, util_utl
 from swsssdk import port_util
 from util_utl import RULE_MAX_PRI, RULE_MIN_PRI
 from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
-                     acl_cnv_to_oc_tcp_flags, \
-                     OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE
+                     acl_cnv_to_oc_tcp_flags, acl_is_acl_for_pf, \
+                     OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE, \
+                     MIRROR_POLICY_PFX, PROUTE_POLICY_PFX
 
 DEFAULT_NWI_NAME = 'DEFAULT'
-MIRROR_POLICY_PFX= 'EVERFLOW'
 
 FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_FDB   = 0x01  # fill fdb info
@@ -133,6 +133,12 @@ def nwi_pf_add_one_mirror_action(oc_rule, act_data, msess_lst):
         oc_target.config.destination = dst_ip_str
         oc_target.config.ip_ttl      = msess_lst[act_data]['ttl']
 
+# ex: act_data = 'REDIRECT:1.1.1.1'
+def nwi_pf_add_one_pol_rt_action(oc_rule, act_data):
+    if act_data.startswith('REDIRECT:'):
+        value = act_data.lstrip('REDIRECT:')
+        oc_rule.action.config._set_next_hop(value)
+
 # add a rule to oc_pol with rule_name and rule_data
 def nwi_pf_add_one_rule(oc_pol, rule_name, rule_data, msess_lst):
     # {0} : entry name
@@ -155,7 +161,7 @@ def nwi_pf_add_one_rule(oc_pol, rule_name, rule_data, msess_lst):
                 nwi_pf_add_one_mirror_action(oc_rule, value_str, msess_lst)
                 value_str = None
             elif d_key == 'PACKET_ACTION':
-                util_utl.utl_err("Unsupported action for PF (%s:%s)" % (d_key, value_str))
+                nwi_pf_add_one_pol_rt_action(oc_rule, value_str)
                 value_str = None
             elif d_key == 'TCP_FLAGS':
                 value_str = acl_cnv_to_oc_tcp_flags(value_str)
@@ -233,7 +239,7 @@ def nwi_get_pf_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
             acl_rlst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_RULE)
 
         for acl_name in acl_tlst.keys():
-            if acl_tlst[acl_name]['type'] == 'MIRROR':
+            if acl_is_acl_for_pf(acl_name):
                 oc_pol = oc_pf.policies.policy.add(acl_name)
 
                 if key_pol and key_pol != acl_name: continue
@@ -247,7 +253,7 @@ def nwi_get_pf_info(oc_nwis, fill_info_bmp, key_ar, disp_args):
         # otherwise the reference relationship will be corrupted.
         if FILL_INFO_INTFS & fill_info_bmp:
             for acl_name in acl_tlst.keys():
-                if acl_tlst[acl_name]['type'] == 'MIRROR':
+                if acl_is_acl_for_pf(acl_name):
                     nwi_pf_fill_binding_info(oc_pf, acl_name, acl_tlst[acl_name])
 
     return ret_val
@@ -285,6 +291,7 @@ def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
 #   val for add  = '{"apply-forwarding-policy": "lll"}'
 #
 # To bind/unbind a policy to an interface
+# TODO: filter out name not valid for PF ???
 def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
 
@@ -312,8 +319,6 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
         # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
         if not acl_cfg: return False
 
-        if acl_cfg['type'] != 'MIRROR': return False
-
         if '' in acl_cfg['ports']:
             acl_cfg['ports'].remove('')
 
@@ -339,6 +344,7 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
 #   val for add  = '{"policy-id": "EVERFLOW"}'
 #
 # To add/remove a policy (no checking for existence)
+# TODO: filter out name not valid for PF ???
 def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
     try:
         pf_cfg = {"policy-id":""} if val == "" else eval(val)
