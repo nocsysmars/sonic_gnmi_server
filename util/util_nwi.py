@@ -291,11 +291,15 @@ def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
 #   val for add  = '{"apply-forwarding-policy": "lll"}'
 #
 # To bind/unbind a policy to an interface
-# TODO: filter out name not valid for PF ???
+# TODO: 1.filter out name not valid for PF ???
+#       2.only one policy per port ???
 def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     #pdb.set_trace()
 
-    ret_val = False
+    tmp_cfg = {} if val == "" or val == "{}" else eval(val)
+    acl_name = tmp_cfg.get('apply-forwarding-policy')
+    is_add = True if acl_name else False
+    ret_val = False if is_add else True
 
     # 1. get old port list
     # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
@@ -303,39 +307,38 @@ def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
 
     # acl must be created b4 binding to interface
     if acl_lst:
-        tmp_cfg = {} if val == "" or val == "{}" else eval(val)
-        acl_name = tmp_cfg.get('apply-forwarding-policy')
-
-        is_add = True if acl_name else False
-
-        # find old acl_name for binding port
-        if not is_add:
-            for acl in acl_lst:
-                if pkey_ar[1] in acl_lst[acl]['ports']:
+        # remove port from all policies
+        for acl in acl_lst:
+            if not is_add:
+                # find old acl_name for binding port
+                if pkey_ar[1] in acl_lst[acl]['ports'] and acl_is_acl_for_pf(acl):
                     acl_name = acl
-                    break
+                else:
+                    continue
 
-        acl_cfg  = acl_lst.get(acl_name)
-        # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
-        if not acl_cfg: return False
+            acl_cfg  = acl_lst.get(acl_name)
+            # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
+            if not acl_cfg: return False
 
-        if '' in acl_cfg['ports']:
-            acl_cfg['ports'].remove('')
+            if '' in acl_cfg['ports']:
+                acl_cfg['ports'].remove('')
 
-        is_changed = False
-        # 2. add/remove new port to/from old port list
-        if is_add:
-            if pkey_ar[1] not in acl_cfg['ports']:
-                acl_cfg['ports'].append(pkey_ar[1])
-                is_changed = True
-        else:
-            if pkey_ar[1] in acl_cfg['ports']:
-                acl_cfg['ports'].remove(pkey_ar[1])
-                is_changed = True
+            is_changed = False
+            # 2. add/remove new port to/from old port list
+            if is_add:
+                if pkey_ar[1] not in acl_cfg['ports']:
+                    acl_cfg['ports'].append(pkey_ar[1])
+                    is_changed = True
+            else:
+                if pkey_ar[1] in acl_cfg['ports']:
+                    acl_cfg['ports'].remove(pkey_ar[1])
+                    is_changed = True
 
-        ret_val = True
-        if is_changed:
-            disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, acl_name, acl_cfg)
+            ret_val = True
+            if is_changed:
+                disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, acl_name, acl_cfg)
+
+            if is_add: break
 
     return ret_val
 
