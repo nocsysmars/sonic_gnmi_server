@@ -139,9 +139,9 @@ def lr_set_route_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[0], "")
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
-    # add new routes
+    # add new routes ('replace' works even if old route exists
     if nh_str != "":
-        exec_cmd = IP_ROUTE_CMD_TMPL.format("add", pkey_ar[0], nh_str)
+        exec_cmd = IP_ROUTE_CMD_TMPL.format("replace", pkey_ar[0], nh_str)
         ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
