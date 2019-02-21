@@ -434,11 +434,8 @@ def acl_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
     ret_val = False
 
     # 1. get old port list
-    exec_cmd = 'sonic-cfggen -d -v "ACL_TABLE[\'%s\']"' % pkey_ar[1]
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
-    if is_ok:
-        # ex: {'type': 'L3', 'policy_desc': 'lll', 'ports': ['']}
-        acl_cfg = {} if output.strip('\n') =='' else eval(output)
+    acl_lst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
+    acl_cfg  = acl_lst.get(pkey_ar[1]) if acl_lst else None
 
     # acl must be created b4 binding to interface
     if acl_cfg:
