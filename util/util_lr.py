@@ -96,6 +96,7 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
 
             if oc_sr and nh_id == 0:
                 oc_lr.static_routes.static.delete(pfx_str)
+                new_sr_lst.remove(pfx_str)
 
             if key_ar and key_ar[0] == pfx_str:
                 break
