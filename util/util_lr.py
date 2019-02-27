@@ -136,13 +136,13 @@ def lr_set_route_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     # {2} : nexthop via 10.0.0.108 dev Ethernet54
     IP_ROUTE_CMD_TMPL = "ip route {0} {1} {2}"
 
-    # delete all old routes
-    exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[0], "")
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
-
     # add new routes ('replace' works even if old route exists
     if nh_str != "":
         exec_cmd = IP_ROUTE_CMD_TMPL.format("replace", pkey_ar[0], nh_str)
+        ret_val = util_utl.utl_execute_cmd(exec_cmd)
+    else:
+        # delete all old routes
+        exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[0], "")
         ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
