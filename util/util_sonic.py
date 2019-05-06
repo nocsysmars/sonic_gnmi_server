@@ -23,7 +23,7 @@ SWSS_CFG_TMPL_FDB ="""
 
 class oc_custom_subobj(object):
     def __init__(self, path):
-        #self.path = path, not used now
+        self.path = path
         self._data = {}
 
     @property
@@ -52,6 +52,9 @@ class oc_custom_subobj(object):
     def get(self, filter = True):
         return self.data
 
+    def _yang_path(self):
+        return self.path
+
 class openconfig_custom(object):
     def __init__(self, path_helper):
         path_helper.register([SONIC_ROOT_PATH], self)
@@ -70,7 +73,7 @@ class openconfig_custom(object):
             }
 
         for path in reg_path:
-            self.dispatch_tbl[path] = oc_custom_subobj(path)
+            self.dispatch_tbl[path] = oc_custom_subobj('/'.join(['', SONIC_ROOT_PATH, path]))
             path_helper.register([SONIC_ROOT_PATH, path], self.dispatch_tbl[path])
 
     def get(self, filter = True):
@@ -78,6 +81,9 @@ class openconfig_custom(object):
         for key in self.dispatch_tbl:
             data[key] = self.dispatch_tbl[key].get()
         return data
+
+    def _yang_path(self):
+        return '/' + SONIC_ROOT_PATH
 
 # ex: path_ar = [u'sonic', u'SCHEDULER']
 # To get sonic qos settings
