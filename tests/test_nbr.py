@@ -112,7 +112,6 @@ class TestNbr(test_inc.MyTestCase):
             output = "".join(output.replace('\n', '').split())
 
             self.assertNotIn(ip, output)
-            self.assertNotIn(mac, output)
 
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)
@@ -120,7 +119,7 @@ def suite(t_case, t_cls):
     test_case = {}
 
     # basic test
-    test_case[0] = [1,2,3,4,5]
+    test_case[0] = [6,7]
     #
     #
 

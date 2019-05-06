@@ -51,7 +51,7 @@ class TestIp(test_inc.MyTestCase):
         inf_1 = 'Ethernet4'
         ip1   = "100.100.100.104"
         inf_2 = 'Ethernet8'
-        ip2   = "100.100.100.108"
+        ip2   = "200.100.100.108"
         pfx   = "24"
         cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format(ip1, pfx)
         output = self.run_script(['update',
@@ -73,7 +73,7 @@ class TestIp(test_inc.MyTestCase):
         inf_1 = 'Ethernet4'
         ip1   = "100.100.100.104"
         inf_2 = 'Ethernet8'
-        ip2   = "100.100.100.108"
+        ip2   = "200.100.100.108"
         pfx   = "24"
         cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format("", pfx)
         output = self.run_script(['update',
@@ -94,7 +94,7 @@ class TestIp(test_inc.MyTestCase):
     def test_7_add_static_route(self):
         ip_pfx   = "172.17.2.0/24"
         nh1      = '"next-hop":"100.100.100.104"'
-        nh2      = '"next-hop":"100.100.100.108"'
+        nh2      = '"next-hop":"200.100.100.108"'
         dev1     = '"interface":"Ethernet4"'
         dev2     = '"interface":"Ethernet8"'
         cfg_str  = """
