@@ -236,8 +236,9 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
     #  inet 100.100.100.200/24 scope global Vlan3000
     #  valid_lft forever preferred_lft forever
     output = interface_get_inf_ip_output(out_tbl["ip4_addr_output"], inf_name)
+    pat_obj = re.compile(r'.*inet ([\d.\/]+) (.*)')
     for idx in range(1, len(output)):
-        m = re.match(r'.*inet ([\d.\/]+) (.*)', output[idx])
+        m = pat_obj.match(output[idx])
         if m:
             ip_info = m.group(1).split('/')
 

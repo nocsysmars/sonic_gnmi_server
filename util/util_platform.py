@@ -97,6 +97,7 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
         beg_id = 1 if 'Command:' in output[0] else 0
 
         step = 1
+        pat_obj = re.compile(r'([^:]*):([^(]*)(.*)')
         for idx in range(beg_id, len(output)):
             if step == 1:
                 comp_name = output[idx]
@@ -107,7 +108,7 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
                 if output[idx] == '':
                     step = 1 # begin for next component
                 else:
-                    m = re.match(r'([^:]*):([^(]*)(.*)', output[idx])
+                    m = pat_obj.match(output[idx])
                     if m:
                         is_fan = True if 'RPM' in m.group(2) else False
                         is_tem = True if 'C' in m.group(2) else False

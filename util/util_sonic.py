@@ -21,7 +21,7 @@ SWSS_CFG_TMPL_FDB ="""
 """
 
 
-class oc_custom_subobj(object):
+class oc_subobj_sonic(object):
     def __init__(self, path):
         self.path = path
         self._data = {}
@@ -55,7 +55,7 @@ class oc_custom_subobj(object):
     def _yang_path(self):
         return self.path
 
-class openconfig_custom(object):
+class openconfig_sonic(object):
     def __init__(self, path_helper):
         path_helper.register([SONIC_ROOT_PATH], self)
         self.dispatch_tbl = {}
@@ -73,7 +73,7 @@ class openconfig_custom(object):
             }
 
         for path in reg_path:
-            self.dispatch_tbl[path] = oc_custom_subobj('/'.join(['', SONIC_ROOT_PATH, path]))
+            self.dispatch_tbl[path] = oc_subobj_sonic('/'.join(['', SONIC_ROOT_PATH, path]))
             path_helper.register([SONIC_ROOT_PATH, path], self.dispatch_tbl[path])
 
     def get(self, filter = True):
@@ -86,8 +86,8 @@ class openconfig_custom(object):
         return '/' + SONIC_ROOT_PATH
 
 # ex: path_ar = [u'sonic', u'SCHEDULER']
-# To get sonic qos settings
-def sonic_get_sonic(root_yph, path_ar, key_ar, disp_args):
+# To get sonic db settings
+def sonic_get_sonic_db_info(root_yph, path_ar, key_ar, disp_args):
     oc_sonic = root_yph.get('/sonic')[0]
     if len (path_ar) == 1:
         disp_tbl = oc_sonic.dispatch_tbl
@@ -103,12 +103,10 @@ def sonic_get_sonic(root_yph, path_ar, key_ar, disp_args):
     return True
 
 #
-# To set sonic qos settings
-def sonic_set_sonic(root_yph, pkey_ar, val, is_create, disp_args):
-
+# To set sonic db settings
+def sonic_set_sonic_db(root_yph, pkey_ar, val, is_create, disp_args):
     exec_cmd = 'sonic-cfggen -a \'%s\' --write-to-db' % val
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
-
     return ret_val
 
 # Use swssconfig to set static mac
@@ -136,8 +134,8 @@ def sonic_set_one_mac_swss(mac_cfg):
     return True
 
 #
-# To set vesta static mac
-def sonic_set_vesta_mac(root_yph, pkey_ar, val, is_create, disp_args):
+# To add/del mac address
+def sonic_set_mac(root_yph, pkey_ar, val, is_create, disp_args):
     """ example:
     {
       "1": {

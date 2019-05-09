@@ -5,9 +5,10 @@
 #
 
 import subprocess, json, logging, inspect
-import sys, os, time, functools, util_utl, pdb
+import sys, os, time, functools, util_utl, re, pdb
 
-BCM_PORT_MAP      = {}
+BCM_PHY_PORT_MAP = {}   # key : Ethernet#
+BCM_USR_PORT_MAP = {}   # key : xe#
 BCM_PORT_MAP_INIT = False
 
 BCM_MIRROR_OFF  = 0
@@ -22,6 +23,49 @@ BCM_MIRROR_MODE_TBL = {
     BCM_MIRROR_TX  : {'diag': 'egress',  'gtag': 'TX'  },
     BCM_MIRROR_ALL : {'diag': 'all',     'gtag': 'BOTH'}
 }
+
+VESTA_ROOT_PATH     = 'vesta'
+VESTA_TABLE_NAME_PM = 'mirror'
+
+class oc_subobj_pm(object):
+    def __init__(self, path):
+        self.path = path
+        self._data = {}
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+
+    def get(self, filter = True):
+        return self.data
+
+    def _yang_path(self):
+        return self.path
+
+class openconfig_vesta(object):
+    def __init__(self, path_helper):
+        path_helper.register([VESTA_ROOT_PATH], self)
+        self.dispatch_tbl = {}
+        reg_path = {
+                VESTA_TABLE_NAME_PM : oc_subobj_pm
+            }
+
+        for path in reg_path.keys():
+            self.dispatch_tbl[path] = reg_path[path]('/'.join(['', VESTA_ROOT_PATH, path]))
+            path_helper.register([VESTA_ROOT_PATH, path], self.dispatch_tbl[path])
+
+    def get(self, filter = True):
+        data = {}
+        for key in self.dispatch_tbl:
+            data[key] = self.dispatch_tbl[key].get()
+        return data
+
+    def _yang_path(self):
+        return '/' + VESTA_ROOT_PATH
 
 @util_utl.utl_timeit
 def bcm_execute_diag_cmd(exe_cmd):
@@ -43,9 +87,29 @@ def bcm_execute_diag_cmd(exe_cmd):
 
     return True
 
+@util_utl.utl_timeit
+def bcm_get_execute_diag_cmd_output(exe_cmd):
+    diag_cmd = BCM_DIAG_CMD_TMPL % exe_cmd
+    p = subprocess.Popen(diag_cmd, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    ## Wait for end of command. Get return code ##
+    returncode = p.wait()
+
+    if returncode != 0:
+        # if no decorator, use inspect.stack()[1][3] to get caller
+        util_utl.utl_log("Failed to [%s] by %s !!!" % (diag_cmd, inspect.stack()[2][3]), logging.ERROR)
+        return (False, None)
+
+    if any(x in output for x in ['Fail', 'Err']):
+        util_utl.utl_log("Failed to [%s] by %s !!!" % (diag_cmd + '(' + output +')',
+                inspect.stack()[2][3]), logging.ERROR)
+        return (False, None)
+
+    return (True, output)
+
 # get a dictionary mapping port name ("Ethernet48") to a physical port number
 def bcm_get_diag_port_map():
-    global BCM_PORT_MAP, BCM_PORT_MAP_INIT
+    global BCM_PHY_PORT_MAP, BCM_USR_PORT_MAP, BCM_PORT_MAP_INIT
 
     if BCM_PORT_MAP_INIT: return
 
@@ -55,7 +119,7 @@ def bcm_get_diag_port_map():
         # Default column definition
         titles = ['name', 'lanes', 'alias', 'index']
         output = output.splitlines()
-        BCM_PORT_MAP = {}
+        BCM_PHY_PORT_MAP = {}
         for line in output:
             if line.startswith('#'):
                 if "name" in line:
@@ -72,38 +136,69 @@ def bcm_get_diag_port_map():
                    continue
                 data[titles[i]] = item
             data.setdefault('alias', name)
-            BCM_PORT_MAP[name] = data
+            BCM_PHY_PORT_MAP[name] = data
+
+        for key in BCM_PHY_PORT_MAP.keys():
+            BCM_USR_PORT_MAP['xe'+BCM_PHY_PORT_MAP[key]['index']] = key
 
         BCM_PORT_MAP_INIT = True
 
-# convert "Ethernet0" to "xe#"
-def bcm_get_diag_port_name(log_port_name):
-    global BCM_PORT_MAP
+# convert "Ethernet#" to "xe#"
+def bcm_get_phy_port_name(usr_port_name):
+    global BCM_PHY_PORT_MAP
 
     bcm_get_diag_port_map()
 
-    diag_port_name = None
-    if log_port_name:
-        if log_port_name in BCM_PORT_MAP:
-            diag_port_name = 'xe%s' % BCM_PORT_MAP[log_port_name]['index']
+    phy_port_name = None
+    if usr_port_name:
+        if usr_port_name in BCM_PHY_PORT_MAP:
+            phy_port_name = 'xe%s' % BCM_PHY_PORT_MAP[usr_port_name]['index']
         else:
-            util_utl.utl_err("Failed to get diag port name (%s)" % log_port_name)
+            util_utl.utl_err("Failed to get diag port name (%s)" % usr_port_name)
 
-    return diag_port_name
+    return phy_port_name
+
+# convert "xe#" to "Ethernet#"
+def bcm_get_usr_port_name(phy_port_name):
+    global BCM_USR_PORT_MAP
+
+    bcm_get_diag_port_map()
+
+    usr_port_name = None
+    if phy_port_name:
+        if phy_port_name in BCM_USR_PORT_MAP:
+            usr_port_name = BCM_USR_PORT_MAP[phy_port_name]
+        else:
+            util_utl.utl_err("Failed to get port name (%s)" % phy_port_name)
+
+    return usr_port_name
+
+# ex: in_mode = 'BOTH', in_type = 'gtag'
+#     in_mode = 'all',  in_type = 'diag'
+def bcm_get_mirror_mode_by_type(in_mode, in_type):
+
+    out_type = 'diag' if in_type == 'gtag' else 'gtag'
+
+    ret_val = None
+    for key in BCM_MIRROR_MODE_TBL.keys():
+        if BCM_MIRROR_MODE_TBL[key][in_type] == in_mode:
+            ret_val = BCM_MIRROR_MODE_TBL[key][out_type]
+            break
+
+    if not ret_val:
+        util_utl.utl_err("Failed to get mirror mode (%s/%s)" % (in_mode, in_type))
+
+    return ret_val
 
 # ex: in_mode = 'BOTH'
 #     ret_val = 'all'
 def bcm_get_diag_mirror_mode(in_mode):
-    ret_val = None
-    for key in BCM_MIRROR_MODE_TBL.keys():
-        if BCM_MIRROR_MODE_TBL[key]['gtag'] == in_mode:
-            ret_val = BCM_MIRROR_MODE_TBL[key]['diag']
-            break
+    return bcm_get_mirror_mode_by_type(in_mode, 'gtag')
 
-    if not ret_val:
-        util_utl.utl_err("Failed to get diag mirror mode (%d)" % in_mode)
-
-    return ret_val
+# ex: in_mode = 'all'
+#     ret_val = 'BOTH'
+def bcm_get_user_mirror_mode(in_mode):
+    return bcm_get_mirror_mode_by_type(in_mode, 'diag')
 
 # ex: src_port= 'Ethernet0'
 #     dst_port= 'Ethernet3' (None to delete)
@@ -120,8 +215,8 @@ def bcm_set_one_port_mirror(pm_cfg):
     except:
         return False
 
-    bcm_src_port = bcm_get_diag_port_name(src_port)
-    bcm_dst_port = bcm_get_diag_port_name(dst_port)
+    bcm_src_port = bcm_get_phy_port_name(src_port)
+    bcm_dst_port = bcm_get_phy_port_name(dst_port)
     m_mode       = bcm_get_diag_mirror_mode(m_mode)
 
     ret_val = False
@@ -135,8 +230,8 @@ def bcm_set_one_port_mirror(pm_cfg):
     return ret_val
 
 #
-# To set vesta port mirror
-def bcm_set_vesta_mirror(root_yph, pkey_ar, val, is_create, disp_args):
+# To set port mirror
+def bcm_set_port_mirror(root_yph, pkey_ar, val, is_create, disp_args):
     """ example:
     {
       "1": {
@@ -161,6 +256,57 @@ def bcm_set_vesta_mirror(root_yph, pkey_ar, val, is_create, disp_args):
 
     return ret_val
 
+def bcm_extract_one_mirror_info(mir_diag_str, pat_obj):
+    # ex:
+    #  xe3: Mirror egress to local port xe5 (TPID=0x8100(33024), VLAN=0x0064(100))
+    #  g1 -> xe3,    "src-port"
+    #  g2 -> egress, "mode"
+    #  g3 -> xe5,    "dst-port"
+    #  g4 -> 100     "vlan"     (optional)
+    #
+    ret_val = None
+    match = pat_obj.match(mir_diag_str)
+    if match:
+        ret_val = { "src-port" : bcm_get_usr_port_name(match.group(1)),
+                    "dst-port" : bcm_get_usr_port_name(match.group(3)),
+                    "mode"     : bcm_get_user_mirror_mode(match.group(2)) }
+
+        if match.group(4):
+            ret_val["vlan"] = int(match.group(4))
+
+    return ret_val
+
+def bcm_get_mirror_info():
+    (is_ok, output) = bcm_get_execute_diag_cmd_output('dmirror show')
+    output = output.replace('\r','').split('\n')
+
+    # ex:
+    # dmirror show
+    #  xe1: Mirror all to local port xe3
+    #  xe3: Mirror egress to local port xe5 (TPID=0x8100(33024), VLAN=0x0064(100))
+    #
+    # dmirror show
+    # DMIRror: No mirror ports configured
+    #
+    pat_obj = re.compile(r'\s*(xe\d+): Mirror (\w*) to local port (xe\d+)(?:\s\(TPID=.*?, VLAN=.*?\((\d+)\))?')
+    idx = 1
+    ret_val = {}
+    for line in output:
+        tmp_ret = 'to' in line and bcm_extract_one_mirror_info(line, pat_obj)
+        if tmp_ret:
+            ret_val[str(idx)] = tmp_ret
+            idx = idx +1
+
+    return ret_val
+
+# fill port mirror info into root_yph
+def bcm_get_info(root_yph, path_ar, key_ar, disp_args):
+    oc_vesta = root_yph.get('/'+VESTA_ROOT_PATH)[0]
+    if len (path_ar) == 1 or path_ar[1] == VESTA_TABLE_NAME_PM:
+        oc_vesta.dispatch_tbl[VESTA_TABLE_NAME_PM].data = bcm_get_mirror_info()
+
+    return True
+
 # ex:
 #      port = None or "" to delete
 #   mac_cfg = '{"port": "Ethernet0","mac": "00:00:00:00:00:02","vlan": 4000}'
@@ -174,7 +320,7 @@ def bcm_set_one_mac(mac_cfg):
 
     mode_cmd = None
     if mac_port and mac_port != "":
-        bcm_mac_port = bcm_get_diag_port_name(mac_port)
+        bcm_mac_port = bcm_get_phy_port_name(mac_port)
         if bcm_mac_port:
             port_cmd = "port=%s" % bcm_mac_port
             mode_cmd = "add"
@@ -191,8 +337,8 @@ def bcm_set_one_mac(mac_cfg):
     return ret_val
 
 #
-# To set vesta static mac
-def bcm_set_vesta_mac(root_yph, pkey_ar, val, is_create, disp_args):
+# To add/del mac address
+def bcm_set_mac(root_yph, pkey_ar, val, is_create, disp_args):
     """ example:
     {
       "1": {

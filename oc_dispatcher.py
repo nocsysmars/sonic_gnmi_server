@@ -41,8 +41,10 @@ ocTable = {
                      "info_f": "util_sys.sys_get_info"              },
     "qos"        : { "cls"   : openconfig_qos,
                      "info_f": "util_qos.qos_get_info"              },
-    "sonic"      : { "cls"   : util_sonic.openconfig_custom,
-                     "info_f": "util_sonic.sonic_get_sonic"             },
+    "sonic"      : { "cls"   : util_sonic.openconfig_sonic,
+                     "info_f": "util_sonic.sonic_get_sonic_db_info" },
+    "vesta"      : { "cls"   : util_bcm.openconfig_vesta,
+                     "info_f": "util_bcm.bcm_get_info"              },
     }
 
 # Dispatch table for registered path and set function
@@ -75,7 +77,7 @@ setPathTable = {
     '/system/ntp/servers/server[address]/config' :
             "util_sys.sys_set_ntp_server",
     '/sonic' :
-            "util_sonic.sonic_set_sonic",
+            "util_sonic.sonic_set_sonic_db",
     '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
             "util_nwi.nwi_pf_set_interface",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config' :
@@ -83,13 +85,25 @@ setPathTable = {
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
             "util_nwi.nwi_pf_set_rule",
     '/vesta/mac' :
-            "util_sonic.sonic_set_vesta_mac",
+            "util_sonic.sonic_set_mac",
     '/vesta/mirror' :
-            "util_bcm.bcm_set_vesta_mirror",
+            "util_bcm.bcm_set_port_mirror",
     }
 
 class dispArgs: pass
 
+class openconfig_root_dpt_1(object):
+    def __init__(self, path_helper):
+        path_helper.register([''], self)
+        self.data = {}
+        for k in ocTable.keys():
+            self.data [k] = {}
+
+    def get(self, filter = True):
+        return self.data
+
+    def _yang_path(self):
+        return '/'
 
 class ocDispatcher:
     """ Open Config Dispatcher that dispatch requests to
@@ -111,6 +125,9 @@ class ocDispatcher:
             if ocTable[k]["cls"]:
                 ocTable[k]["cls"](path_helper = self.oc_yph)
 
+        # create obj for "/" to only return subtree of depth 1
+        openconfig_root_dpt_1(self.oc_yph)
+
         # create all interfaces to speed up processing request for interfaces later
         util_interface.interface_create_all_infs(self.oc_yph, is_dbg_test, self.my_args)
 
@@ -130,10 +147,9 @@ class ocDispatcher:
     @util_utl.utl_timeit
     @util_utl.utl_log_outer
     def GetRequestYph(self, path_ar, key_ar):
-        # TODO: not support "/"
+        # only return subtree of depth 1
         if len(path_ar) < 1:
-            #print "Invalid request"
-            return StatusCode.INVALID_ARGUMENT
+            return self.oc_yph
 
         if path_ar[0] not in ocTable:
             oc_yph = StatusCode.INVALID_ARGUMENT

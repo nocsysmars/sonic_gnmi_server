@@ -100,6 +100,7 @@ def qos_get_schdlr_info(oc_qos, disp_args):
             oc_inp.config.weight = int(schdlr_lst[schdlr]['weight'])
 
         queue_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_QUEUE)
+        pat_obj = re.compile(r'\[SCHEDULER\|(.*)\]')
         for inf_q in queue_lst:
             inf, qid = inf_q
             # TODO multi q mapped to one scheduler
@@ -108,7 +109,7 @@ def qos_get_schdlr_info(oc_qos, disp_args):
                 continue
 
             sched_key = queue_lst[inf_q]['scheduler']
-            m = re.match(r'\[SCHEDULER\|(.*)\]', sched_key)
+            m = pat_obj.match(sched_key)
             if m:
                 if m.group(1) in oc_schdlr.inputs.input:
                     oc_inp = oc_schdlr.inputs.input[m.group(1)]
