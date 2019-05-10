@@ -1,8 +1,4 @@
-import unittest
-import pdb
-import argparse
-import test_inc
-import json
+import unittest, pdb, argparse, test_inc, types, json
 
 PATH_SET_ACL_TMPL    = '/acl/acl-sets/acl-set[name={0}][type={1}]/config'
 PATH_GET_ACL_TMPL    = '/acl/acl-sets/acl-set'
@@ -33,13 +29,13 @@ TEST_RUL_FLD_TBL = {
     }
 
 class TestAcl(test_inc.MyTestCase):
-    def test_create_acl(self):
+    def test_1_create_acl(self):
         acl_cfg = ACL_CFG_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE)
         output = self.run_script(['update', PATH_SET_ACL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(acl_cfg)])
         output = self.run_script(['get', PATH_GET_ACL_TMPL, ''])
         self.assertIn(TEST_ACL_NAME, output)
 
-    def test_destroy_acl(self):
+    def test_2_destroy_acl(self):
         acl_cfg = ACL_CFG_TMPL.format("", TEST_ACL_TYPE)
         output = self.run_script(['update', PATH_SET_ACL_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(acl_cfg)])
         output = self.run_script(['get', PATH_GET_ACL_TMPL, ''])
@@ -84,7 +80,7 @@ class TestAcl(test_inc.MyTestCase):
                 else:
                     self.assertNotIn(chk_str, output)
 
-    def test_mod_rule(self):
+    def test_3_mod_rule(self):
         TEST_SEQ_ID   = "2"
         TEST_RUL_NAME = "RULE_2"
         rule_cfg = self.create_rule_cfg(TEST_SEQ_ID, TEST_RUL_NAME, ['SRC_IP'])
@@ -108,7 +104,7 @@ class TestAcl(test_inc.MyTestCase):
         output = "".join(output.replace('\n', '').split())
         self.assertNotIn(TEST_SEQ_ID, output)
 
-    def test_add_rule_to_acl(self):
+    def test_4_add_rule_to_acl(self):
         #pdb.set_trace()
         TEST_SEQ_ID   = "1"
         TEST_RUL_NAME = "RULE_1"
@@ -121,7 +117,7 @@ class TestAcl(test_inc.MyTestCase):
         chk_tbl = [ "ipv4", "l2", "transport", "actions" ]
         self.chk_rule_output(TEST_SEQ_ID, input_dict, output, chk_tbl, True)
 
-    def test_del_rule_from_acl(self):
+    def test_5_del_rule_from_acl(self):
         #pdb.set_trace()
         TEST_SEQ_ID   = "1"
         TEST_RUL_NAME = "RULE_1"
@@ -132,41 +128,62 @@ class TestAcl(test_inc.MyTestCase):
         output = "".join(output.replace('\n', '').split())
         self.assertNotIn(TEST_SEQ_ID, output)
 
-    def test_bind_acl_to_port(self):
+    def test_6_bind_acl_to_port(self):
         acl_bind_cfg = ACL_BIND_CFG_TMPL.format(TEST_ACL_NAME, TEST_ACL_TYPE)
         output = self.run_script(['update', PATH_SET_ACL_BIND_TMPL.format(TEST_PORT, TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(acl_bind_cfg)])
         output = self.run_script(['get', PATH_GET_ACL_BIND_TMPL, ''])
         self.assertIn(TEST_PORT, output)
 
-    def test_unbind_acl_from_port(self):
+    def test_7_unbind_acl_from_port(self):
         acl_bind_cfg = ""
         output = self.run_script(['update', PATH_SET_ACL_BIND_TMPL.format(TEST_PORT, TEST_ACL_NAME, TEST_ACL_TYPE), "'{0}'".format(acl_bind_cfg)])
         output = self.run_script(['get', PATH_GET_ACL_BIND_TMPL, ''])
         self.assertNotIn(TEST_PORT, output)
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestAcl('test_create_acl'))
-    suite.addTest(TestAcl('test_mod_rule'))
-    suite.addTest(TestAcl('test_add_rule_to_acl'))
-    suite.addTest(TestAcl('test_bind_acl_to_port'))
-    suite.addTest(TestAcl('test_unbind_acl_from_port'))
-    suite.addTest(TestAcl('test_del_rule_from_acl'))
-    suite.addTest(TestAcl('test_destroy_acl'))
-    return suite
+def suite(t_case, t_cls):
+    test_inc.gen_test_op_lst(t_cls)
+
+    test_case = {}
+
+    # basic test
+    test_case[0] = [1,3,4,6,7,5,2]
+
+    if t_case:
+        t_sel = eval (t_case)
+    else:
+        t_sel = 0
+
+    if type(t_sel) == types.ListType:
+        print 'Running Custom Test Case, %s' % (t_sel)
+        test_flst = map  (lambda x: test_inc.TEST_OP_LST[x], t_sel)
+    elif t_sel in test_case:
+        test_flst = map (lambda x: test_inc.TEST_OP_LST[x], test_case[t_sel])
+        print 'Running Test Case %d, %s' % (t_sel, test_case[t_sel])
+    else:
+        test_flst = ['test_case_not_found']
+        t_cls.t_case = test_case
+        t_cls.t_sel  = t_sel
+
+    return unittest.TestSuite(map(t_cls, test_flst))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--target', help="target url, typically localhost:<port>")
     parser.add_argument('--dbg', action="store_true", help="print debug messages")
+    parser.add_argument('--case', action="store", type=str, default=None,
+                           help="ex: 1 (pre-defined test case) / \
+                                     [1,2,3] (custom test case)")
+    parser.add_argument('--chk', action="store_true", help="check result")
     args = parser.parse_args()
 
+    TestCls = TestAcl
     if args.target:
-        TestAcl.use_internal_svr = False
+        TestCls.use_internal_svr = False
         test_inc.TEST_URL = args.target
 
-    TestAcl.dbg_print = args.dbg
+    TestCls.dbg_print = args.dbg
+    TestCls.chk_ret   = args.chk
 
     runner = unittest.TextTestRunner(verbosity=2, failfast=True)
-    runner.run(suite())
+    runner.run(suite(args.case, TestCls))
 

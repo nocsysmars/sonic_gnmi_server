@@ -15,4 +15,9 @@
     - /lldp/
     - /interfaces/
     - /components/
-    - /network-instances/network-instance[name=default]/fdb/
+    - /network-instances/network-instance[name=DEFAULT]/fdb/
+
+- List the path available:
+```sh
+  gnmi -addr localhost:5001 get "/"
+```

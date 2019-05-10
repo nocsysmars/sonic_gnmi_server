@@ -20,7 +20,7 @@ class TestPM(test_inc.MyTestCase):
           "1": {
             "src-port": "Ethernet1",
             "dst-port": "Ethernet3",
-            "mode"    : "Both"
+            "mode"    : "BOTH"
           }
         }"""
 
@@ -47,7 +47,7 @@ class TestPM(test_inc.MyTestCase):
         if self.chk_ret:
             output = self.run_script(['get', PATH_GET_MIRROR_TMPL, ''])
             output = "".join(output.replace('\n', '').split())
-            self.chk_output(org_cfg, output)
+            self.assertNotIn("Ethernet1", output)
 
     def test_3_del_mirror_port1_to_port3_2(self):
         TEST_CFG_MIRROR_JSON="""{
@@ -62,14 +62,14 @@ class TestPM(test_inc.MyTestCase):
         if self.chk_ret:
             output = self.run_script(['get', PATH_GET_MIRROR_TMPL, ''])
             output = "".join(output.replace('\n', '').split())
-            self.chk_output(org_cfg, output)
+            self.assertNotIn("Ethernet1", output)
 
     def test_4_add_mirror_port1_to_port3_vlan_100(self):
         TEST_CFG_MIRROR_JSON="""{
           "1": {
             "src-port": "Ethernet1",
             "dst-port": "Ethernet3",
-            "mode"    : "Both",
+            "mode"    : "BOTH",
             "vlan"    : 100
           }
         }"""
@@ -88,7 +88,7 @@ def suite(t_case, t_cls):
     test_case = {}
 
     # basic test
-    test_case[0] = [1, 2, 3]
+    test_case[0] = [1, 2, 4, 3]
 
     if t_case:
         t_sel = eval (t_case)

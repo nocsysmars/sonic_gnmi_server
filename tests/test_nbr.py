@@ -119,7 +119,7 @@ def suite(t_case, t_cls):
     test_case = {}
 
     # basic test
-    test_case[0] = [6,7]
+    test_case[0] = [1,6,7]
     #
     #
 

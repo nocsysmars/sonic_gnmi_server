@@ -86,6 +86,9 @@ class TestPf(test_inc.MyTestCase):
                 "sequence-id": seq_id,
                 "config": {
                     "sequence-id": seq_id,
+                    # add rule with desc field (name),
+                    # need to carry the desc field when del rule
+                    #"description":"POLRT_policy1_tcp"
                     },
                 }
             }
@@ -146,7 +149,9 @@ class TestPf(test_inc.MyTestCase):
             pol_bind_cfg = CFG_POLICY_BIND_TMPL.format(pol_name)
             output = self.run_script(['update', PATH_SET_POL_BIND_TMPL.format(TEST_DFT_NWI_NAME, inf_name), "'{0}'".format(pol_bind_cfg)])
             output = self.run_script(['get', PATH_GET_POL_BIND_TMPL.format(TEST_DFT_NWI_NAME), ''])
-            self.assertIn(pol_name, output)
+            #self.assertIn(pol_name, output)
+            #use inf_name to check for binding muliple policy to one inf
+            self.assertIn(inf_name, output)
         else:
             pol_bind_cfg = ""
             output = self.run_script(['update', PATH_SET_POL_BIND_TMPL.format(TEST_DFT_NWI_NAME, inf_name), "'{0}'".format(pol_bind_cfg)])
@@ -202,6 +207,9 @@ class TestPf(test_inc.MyTestCase):
     def test_11_bind_policy_to_port_prt(self):
         self.set_policy_to_port(TEST_POL_NAME_PRT, TEST_PORT, True)
 
+    def test_21_bind_policy_to_port2_prt(self):
+        self.set_policy_to_port(TEST_POL_NAME_PRT, 'Ethernet2', True)
+
     def test_12_unbind_policy_from_port_prt(self):
         self.set_policy_to_port(TEST_POL_NAME_PRT, TEST_PORT, False)
 
@@ -215,6 +223,9 @@ def suite(t_case, t_cls):
 
     # basic test for policy route
     test_case[1] = [7,9,11,12,10,8]
+
+    # test for binding two policies to one port
+    test_case[2] = [1,7,5,11,21] #2,8]
 
     if t_case:
         t_sel = eval (t_case)

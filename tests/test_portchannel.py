@@ -41,7 +41,7 @@ class TestPortChannel(test_inc.MyTestCase):
             chk_str = '"aggregate-id":"{0}"'.format(pc_name)
             self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
-    def test_4_set_pc2_admin_status(self):
+    def test_4_set_pc2_admin_status_reverse(self):
         pc_name  = 'PortChannel2'
 
         output = self.run_script(['get', PATH_GET_INF_TMPL.format(pc_name), ''])
@@ -184,6 +184,86 @@ class TestPortChannel(test_inc.MyTestCase):
             output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_name), ''])
             self.assertNotIn(chk_str, "".join(output.replace('\n', '').split()))
 
+    def test_17_set_port4_admin_status_reverse(self):
+        pc_name  = 'Ethernet4'
+
+        output = self.run_script(['get', PATH_GET_INF_TMPL.format(pc_name), ''])
+        chk_str = '"admin-status":"UP"'
+
+        is_admin_up = True if chk_str in "".join(output.replace('\n', '').split()) else False
+
+        output = self.run_script(['update',
+                                  PATH_INF_CFG_EN_TMPL.format(pc_name),
+                                  '"{0}"'.format(["true", "false"][is_admin_up])])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(pc_name), ''])
+            chk_str = '"admin-status":"{0}"'.format(["UP", "DOWN"][is_admin_up])
+            self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
+
+    def test_18_add_ip4_to_pc2(self):
+        inf_1 = 'PortChannel2'
+        ip1   = "100.100.100.137"
+        pfx   = "24"
+        cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format(ip1, pfx)
+        output = self.run_script(['update',
+                                  PATH_SET_IP_TMPL.format(inf_1, ip1),
+                                  "'{0}'".format(cfg_str)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_1), ''])
+            self.assertIn(cfg_str, "".join(output.replace('\n', '').split()))
+
+    def test_19_add_ip4_to_port4(self):
+        inf_1 = 'Ethernet4'
+        ip1   = "100.100.100.137"
+        pfx   = "24"
+        cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format(ip1, pfx)
+        output = self.run_script(['update',
+                                  PATH_SET_IP_TMPL.format(inf_1, ip1),
+                                  "'{0}'".format(cfg_str)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_1), ''])
+            self.assertIn(cfg_str, "".join(output.replace('\n', '').split()))
+
+    def test_20_del_ip4_from_pc2(self):
+        inf_1 = 'PortChannel2'
+        ip1   = "100.100.100.137"
+        pfx   = "24"
+        cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format("", pfx)
+        output = self.run_script(['update',
+                                  PATH_SET_IP_TMPL.format(inf_1, ip1),
+                                  "'{0}'".format(cfg_str)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_1), ''])
+            self.assertNotIn(ip1, "".join(output.replace('\n', '').split()))
+
+    def test_21_del_ip4_from_port4(self):
+        inf_1 = 'Ethernet4'
+        ip1   = "100.100.100.137"
+        pfx   = "24"
+        cfg_str  = '{{"ip":"{0}","prefix-length":{1}}}'.format("", pfx)
+        output = self.run_script(['update',
+                                  PATH_SET_IP_TMPL.format(inf_1, ip1),
+                                  "'{0}'".format(cfg_str)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_1), ''])
+            self.assertNotIn(ip1, "".join(output.replace('\n', '').split()))
+
+    def test_22_add_port8_to_pc2(self):
+        inf_name = 'Ethernet8'
+        pc_name  = 'PortChannel2'
+        output = self.run_script(['update',
+                                  PATH_INF_AGG_ID_TMPL.format(inf_name),
+                                  '"{0}"'.format(pc_name)])
+
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_name), ''])
+            chk_str = '"aggregate-id":"{0}"'.format(pc_name)
+            self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)
@@ -199,6 +279,9 @@ def suite(t_case, t_cls):
     test_case[2] = [8,15,9,16,14]
 
     test_case[3] = [8,15,9,14,16]
+
+    # set pc admin status than set pc mbr port admin status test
+    test_case[4] = [1,3,4,17]
 
     if t_case:
         t_sel = eval (t_case)

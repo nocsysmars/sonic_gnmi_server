@@ -1,10 +1,14 @@
-import unittest, pdb, argparse, test_inc, types, json
+import unittest, pdb, argparse, test_inc, types, json, sys
+
+sys.path.append("../util/")
+
+from util_nwi import DEFAULT_NWI_NAME as TEST_DFT_NWI_NAME
 
 PATH_INF_CFG_NAME_TMPL = '/interfaces/interface[name={0}]/config/name'
 PATH_INF_TAG_VLAN_TMPL = '/interfaces/interface[name={0}]/ethernet/switched-vlan/config/trunk-vlans'
 
 PATH_SET_MAC_TMPL = '/vesta/mac'
-PATH_GET_MAC_TMPL = '/vesta/mac'
+PATH_GET_MAC_TMPL = '/network-instances/network-instance[name={0}]/fdb'
 
 class TestMac(test_inc.MyTestCase):
     def chk_output(self, tbl, output, is_assert_in = True):
@@ -64,7 +68,7 @@ class TestMac(test_inc.MyTestCase):
     def test_6_del_mac_from_port4_swss(self):
         TEST_CFG_JSON="""{
           "1": {
-            "port": "Ethernet5",
+            "port": "Ethernet4",
             "mac" : "00:00:00:10:20:30",
             "vlan": 100,
             "mode": "del"
@@ -72,6 +76,10 @@ class TestMac(test_inc.MyTestCase):
         }"""
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_MAC_TMPL.format(TEST_DFT_NWI_NAME), ''])
+            self.assertNotIn("Ethernet4", output)
+            self.assertNotIn("00:00:00:10:20:30", output)
 
     def test_7_add_mac_to_port4(self):
         TEST_CFG_JSON="""{
@@ -82,6 +90,10 @@ class TestMac(test_inc.MyTestCase):
 
         output = self.run_script(['update', PATH_SET_MAC_TMPL, "'{0}'".format(TEST_CFG_JSON)])
 
+        if self.chk_ret:
+            output = self.run_script(['get', PATH_GET_MAC_TMPL.format(TEST_DFT_NWI_NAME), ''])
+            self.assertIn("Ethernet4", output)
+            self.assertIn("00:00:00:10:20:30", output)
 
 def suite(t_case, t_cls):
     test_inc.gen_test_op_lst(t_cls)

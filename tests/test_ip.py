@@ -34,6 +34,46 @@ class TestIp(test_inc.MyTestCase):
         output = self.run_script(['get', PATH_GET_INF_TMPL.format(inf_name), ''])
         self.assertIn(cfg_str, "".join(output.replace('\n', '').split()))
 
+    def test_31_add_static_route_vlan3001(self):
+        ip_pfx   = "172.17.2.0/24"
+        nh1      = '"next-hop":"100.100.100.109"'
+        dev1     = '"interface":"Vlan3001"'
+        cfg_str  = """
+        { "1" : {"config": { %s },
+                 "interface-ref": {"config": {%s} } }
+        }
+        """.replace('\n', '') % (nh1, dev1)
+
+        output = self.run_script(['update',
+                                  PATH_SET_ROUTE_TMPL.format(ip_pfx),
+                                  "'{0}'".format(cfg_str)])
+
+        output = self.run_script(['get', PATH_GET_ROUTE_TMPL, ''])
+        output = "".join(output.replace('\n', '').split())
+        self.assertIn(ip_pfx, output)
+        self.assertIn(nh1, output)
+        self.assertIn(dev1, output)
+
+    def test_32_add_wrong_route_vlan3001(self):
+        ip_pfx   = "172.17.2.0/24"
+        nh1      = '"next-hop":"101.100.100.109"'
+        dev1     = '"interface":"Vlan3001"'
+        cfg_str  = """
+        { "1" : {"config": { %s },
+                 "interface-ref": {"config": {%s} } }
+        }
+        """.replace('\n', '') % (nh1, dev1)
+
+        output = self.run_script(['update',
+                                  PATH_SET_ROUTE_TMPL.format(ip_pfx),
+                                  "'{0}'".format(cfg_str)])
+
+        output = self.run_script(['get', PATH_GET_ROUTE_TMPL, ''])
+        output = "".join(output.replace('\n', '').split())
+        self.assertIn(ip_pfx, output)
+        self.assertIn(nh1, output)
+        self.assertIn(dev1, output)
+
     def test_4_del_ip4_from_vlan(self):
         inf_name = 'Vlan3001'
         ip       = "100.100.100.200"
@@ -116,6 +156,41 @@ class TestIp(test_inc.MyTestCase):
         self.assertIn(dev1, output)
         self.assertIn(dev2, output)
 
+    def test_17_add_static_route_2_steps(self):
+        ip_pfx   = "172.17.2.0/24"
+        nh1      = '"next-hop":"100.100.100.104"'
+        nh2      = '"next-hop":"200.100.100.109"'
+        dev1     = '"interface":"Ethernet4"'
+        dev2     = '"interface":"Ethernet8"'
+        cfg_str  = """
+        { "1" : {"config": { %s },
+                 "interface-ref": {"config": {%s} } } }
+        """.replace('\n', '') % (nh1, dev1)
+
+        output = self.run_script(['update',
+                                  PATH_SET_ROUTE_TMPL.format(ip_pfx),
+                                  "'{0}'".format(cfg_str)])
+
+        cfg_str  = """
+        { "1" : {"config": { %s },
+                 "interface-ref": {"config": {%s} } } }
+        """.replace('\n', '') % (nh2, dev2)
+
+        output = self.run_script(['update',
+                                  PATH_SET_ROUTE_TMPL.format(ip_pfx),
+                                  "'{0}'".format(cfg_str)])
+
+        output = self.run_script(['get', PATH_GET_ROUTE_TMPL, ''])
+        output = "".join(output.replace('\n', '').split())
+
+        # fail case: ip route command can not add ecmp route by 2 commands
+        # the 2nd will replace the 1st
+        self.assertIn(ip_pfx, output)
+        self.assertNotIn(nh1, output)
+        self.assertIn(nh2, output)
+        self.assertNotIn(dev1, output)
+        self.assertIn(dev2, output)
+
     def test_8_del_static_route(self):
         ip_pfx   = "172.17.2.0/24"
         cfg_str = ""
@@ -137,6 +212,12 @@ def suite(t_case, t_cls):
     test_case[1] = [1,3]
     #
     test_case[2] = [4,2]
+    # fail case: ip route command can not add ecmp route by 2 commands
+    # the 2nd will replace the 1st
+    test_case[3] = [1,3,4,2,5,17,8,6]
+
+    # add route to vlan device
+    test_case[4] = [1,3,31,32]
 
     if t_case:
         t_sel = eval (t_case)
