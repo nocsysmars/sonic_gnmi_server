@@ -655,6 +655,15 @@ def interface_get_old_pc_name_by_port(port_name, disp_args):
 
     return old_pc_name
 
+# restore the port setting when port is removed from portchannel
+def interface_restore_port_setting(db, port_name):
+    # need to restore the admin status like teammgr
+    # TODO: restore mtu ???
+    adm_val = interface_db_inf_status_get(db, port_name, PORT_ADMIN_STATUS, FILL_INFO_PORT)
+    if adm_val and adm_val == 'up':
+        exec_cmd = 'ip link set dev %s up' % port_name
+        util_utl.utl_execute_cmd(exec_cmd)
+
 # To make interface join/leave port channel
 def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create, disp_args):
     # not support to create port interface
@@ -675,9 +684,13 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create, disp_args):
     # use teamdctl to add/remove port
     exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, ["add", "remove"][is_remove], pkey_ar[0])
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
+
+    if is_remove:
+        interface_restore_port_setting(disp_args.appdb, pkey_ar[0])
+
     return ret_val
 
-def interface_remove_all_mbr_for_pc(pc_name):
+def interface_remove_all_mbr_for_pc(db, pc_name):
     exec_cmd = 'teamdctl %s config dump actual' % pc_name
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -687,6 +700,8 @@ def interface_remove_all_mbr_for_pc(pc_name):
             for port in pc_cfg["ports"]:
                 exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
                 util_utl.utl_execute_cmd(exec_cmd)
+
+                interface_restore_port_setting(db, port)
 
 # destroy pc by teamd operation
 def interface_destroy_pc(pc_name, is_force = False):
@@ -748,7 +763,7 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
             ret_val = True
     else:
         oc_infs.interface.delete(pkey_ar[0])
-        interface_remove_all_mbr_for_pc(pkey_ar[0])
+        interface_remove_all_mbr_for_pc(disp_args.appdb, pkey_ar[0])
         interface_destroy_pc(pkey_ar[0])
 
         # remove port channel in db last to let other app finish jobs

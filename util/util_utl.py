@@ -115,7 +115,7 @@ def utl_execute_cmd(exe_cmd):
 
     if returncode != 0:
         # if no decorator, use inspect.stack()[1][3] to get caller
-        utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
+        utl_log("Failed to [%s] by %s !!! (%s)" % (exe_cmd, inspect.stack()[2][3], err), logging.ERROR)
         return False
 
     return True
