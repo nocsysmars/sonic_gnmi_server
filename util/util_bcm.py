@@ -7,6 +7,8 @@
 import subprocess, json, logging, inspect
 import sys, os, time, functools, util_utl, re, pdb
 
+OLD_TSEG_DOWNLINK = []
+
 BCM_PHY_PORT_MAP = {}   # key : Ethernet#
 BCM_USR_PORT_MAP = {}   # key : xe#
 BCM_PORT_MAP_INIT = False
@@ -24,8 +26,9 @@ BCM_MIRROR_MODE_TBL = {
     BCM_MIRROR_ALL : {'diag': 'all',     'gtag': 'BOTH'}
 }
 
-VESTA_ROOT_PATH     = 'vesta'
-VESTA_TABLE_NAME_PM = 'mirror'
+VESTA_ROOT_PATH       = 'vesta'
+VESTA_TABLE_NAME_PM   = 'mirror'
+VESTA_TABLE_NAME_TSEG = 'traffic-seg'
 
 class oc_subobj_pm(object):
     def __init__(self, path):
@@ -51,7 +54,8 @@ class openconfig_vesta(object):
         path_helper.register([VESTA_ROOT_PATH], self)
         self.dispatch_tbl = {}
         reg_path = {
-                VESTA_TABLE_NAME_PM : oc_subobj_pm
+                VESTA_TABLE_NAME_PM   : oc_subobj_pm,
+                VESTA_TABLE_NAME_TSEG : oc_subobj_pm
             }
 
         for path in reg_path.keys():
@@ -66,26 +70,6 @@ class openconfig_vesta(object):
 
     def _yang_path(self):
         return '/' + VESTA_ROOT_PATH
-
-@util_utl.utl_timeit
-def bcm_execute_diag_cmd(exe_cmd):
-    diag_cmd = BCM_DIAG_CMD_TMPL % exe_cmd
-    p = subprocess.Popen(diag_cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = p.communicate()
-    ## Wait for end of command. Get return code ##
-    returncode = p.wait()
-
-    if returncode != 0:
-        # if no decorator, use inspect.stack()[1][3] to get caller
-        util_utl.utl_log("Failed to [%s] by %s !!!" % (diag_cmd, inspect.stack()[2][3]), logging.ERROR)
-        return False
-
-    if any(x in output for x in ['Fail', 'Err']):
-        util_utl.utl_log("Failed to [%s] by %s !!!" % (diag_cmd + '(' + output +')',
-                inspect.stack()[2][3]), logging.ERROR)
-        return False
-
-    return True
 
 @util_utl.utl_timeit
 def bcm_get_execute_diag_cmd_output(exe_cmd):
@@ -106,6 +90,10 @@ def bcm_get_execute_diag_cmd_output(exe_cmd):
         return (False, None)
 
     return (True, output)
+
+def bcm_execute_diag_cmd(exe_cmd):
+    ret_val, output = bcm_get_execute_diag_cmd_output(exe_cmd)
+    return ret_val
 
 # get a dictionary mapping port name ("Ethernet48") to a physical port number
 def bcm_get_diag_port_map():
@@ -143,41 +131,35 @@ def bcm_get_diag_port_map():
 
         BCM_PORT_MAP_INIT = True
 
-# convert "Ethernet#" to "xe#"
-def bcm_get_phy_port_name(usr_port_name):
-    global BCM_PHY_PORT_MAP
-
+# util function to convert "Ethernet#" to "xe#" or "xe#" to "Ethernet#"
+def bcm_get_port_name(is_phy, src_port_name):
     bcm_get_diag_port_map()
 
-    phy_port_name = None
-    if usr_port_name:
-        if usr_port_name in BCM_PHY_PORT_MAP:
-            phy_port_name = 'xe%s' % BCM_PHY_PORT_MAP[usr_port_name]['index']
+    ret_port_name = None
+    map_tbl = BCM_PHY_PORT_MAP if is_phy else BCM_USR_PORT_MAP
+    if src_port_name in map_tbl:
+        if 'index' in map_tbl[src_port_name]:
+            ret_port_name = 'xe%s' % map_tbl[src_port_name]['index']
         else:
-            util_utl.utl_err("Failed to get diag port name (%s)" % usr_port_name)
+            ret_port_name = map_tbl[src_port_name]
+    else:
+        util_utl.utl_err("Failed to convert port name (%s)" % src_port_name)
 
-    return phy_port_name
+    return ret_port_name
+
+# convert "Ethernet#" to "xe#"
+def bcm_get_phy_port_name(usr_port_name):
+    return bcm_get_port_name(True, usr_port_name)
 
 # convert "xe#" to "Ethernet#"
 def bcm_get_usr_port_name(phy_port_name):
-    global BCM_USR_PORT_MAP
-
-    bcm_get_diag_port_map()
-
-    usr_port_name = None
-    if phy_port_name:
-        if phy_port_name in BCM_USR_PORT_MAP:
-            usr_port_name = BCM_USR_PORT_MAP[phy_port_name]
-        else:
-            util_utl.utl_err("Failed to get port name (%s)" % phy_port_name)
-
-    return usr_port_name
+    return bcm_get_port_name(False, phy_port_name)
 
 # ex: in_mode = 'BOTH', in_type = 'gtag'
 #     in_mode = 'all',  in_type = 'diag'
 def bcm_get_mirror_mode_by_type(in_mode, in_type):
 
-    out_type = 'diag' if in_type == 'gtag' else 'gtag'
+    out_type = ['gtag', 'diag'][in_type == 'gtag']
 
     ret_val = None
     for key in BCM_MIRROR_MODE_TBL.keys():
@@ -299,11 +281,21 @@ def bcm_get_mirror_info():
 
     return ret_val
 
+def bcm_get_tseg_info():
+    return { "downlink" : OLD_TSEG_DOWNLINK }
+
 # fill port mirror info into root_yph
 def bcm_get_info(root_yph, path_ar, key_ar, disp_args):
     oc_vesta = root_yph.get('/'+VESTA_ROOT_PATH)[0]
-    if len (path_ar) == 1 or path_ar[1] == VESTA_TABLE_NAME_PM:
-        oc_vesta.dispatch_tbl[VESTA_TABLE_NAME_PM].data = bcm_get_mirror_info()
+
+    func_tbl = {
+        VESTA_TABLE_NAME_PM   : bcm_get_mirror_info,
+        VESTA_TABLE_NAME_TSEG : bcm_get_tseg_info
+    }
+
+    for reg_path in func_tbl.keys():
+        if len (path_ar) == 1 or path_ar[1] == reg_path:
+            oc_vesta.dispatch_tbl[reg_path].data = func_tbl[reg_path]()
 
     return True
 
@@ -359,5 +351,50 @@ def bcm_set_mac(root_yph, pkey_ar, val, is_create, disp_args):
             ret_val = bcm_set_one_mac(mac_cfg[seq_id])
             if not ret_val:
                 break
+
+    return ret_val
+
+# ex: dl_port  = xe1
+#     pbmp_str = all,~xe1
+def bcm_set_one_downlink(dl_port, pbmp_str):
+    tmp_cmd = "egr set port=%s pbmp=%s" % (dl_port, pbmp_str)
+    ret_val = bcm_execute_diag_cmd(tmp_cmd)
+    return ret_val
+
+#
+# To set traffic segmentation
+def bcm_set_traffic_seg(root_yph, pkey_ar, val, is_create, disp_args):
+    """ example:
+    {
+      "downlink": ["Ethernet0", "Ethernet1"]
+    }
+    """
+    global OLD_TSEG_DOWNLINK
+
+    ts_cfg = {'downlink':[]} if val == "" else eval(val)
+
+    if not isinstance(ts_cfg['downlink'], list):
+        ts_cfg['downlink'] = [ts_cfg['downlink']]
+
+    bcm_port_lst = [ y for y in \
+        (bcm_get_phy_port_name(usr_port) for usr_port in ts_cfg['downlink']) \
+        if y is not None ]
+
+    pbmp_str = ',~'.join (['all'] + bcm_port_lst)
+
+    ret_val = not ts_cfg['downlink']
+
+    for bcm_port in bcm_port_lst:
+        ret_val = bcm_set_one_downlink(bcm_port, pbmp_str)
+        if not ret_val:
+            break
+
+    # reset port not in new downlink cfg to uplink
+    for usr_port in OLD_TSEG_DOWNLINK:
+        if usr_port not in ts_cfg['downlink']:
+            bcm_port = bcm_get_phy_port_name(usr_port)
+            tmp_val = bcm_port and bcm_set_one_downlink(bcm_port, 'all')
+
+    OLD_TSEG_DOWNLINK = ts_cfg['downlink']
 
     return ret_val

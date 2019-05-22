@@ -88,6 +88,8 @@ setPathTable = {
             "util_sonic.sonic_set_mac",
     '/vesta/mirror' :
             "util_bcm.bcm_set_port_mirror",
+    '/vesta/traffic-seg' :
+            "util_bcm.bcm_set_traffic_seg",
     }
 
 class dispArgs: pass

@@ -1,7 +1,12 @@
 import unittest, time, logging, subprocess, threading, sys, types
 
 sys.path.append("../")
-from gnmi_server import gNMITarget
+
+try:
+    from gnmi_server import gNMITarget
+    GNMI_TARGET_IMPORT = True
+except:
+    GNMI_TARGET_IMPORT = False
 
 # {0}   : URL to test
 # {{0}} : get/update
@@ -62,6 +67,10 @@ class MyTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if cls.use_internal_svr:
+            if not GNMI_TARGET_IMPORT:
+                print "No internal test server found !!!"
+                return
+
             t_beg = time.time()
 
             log_path = '/var/log/gnmi_server.log'
@@ -82,7 +91,7 @@ class MyTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls.use_internal_svr:
+        if cls.use_internal_svr and GNMI_TARGET_IMPORT:
             cls.test_svr.is_stopped = True
             cls.test_thd.join()
 
