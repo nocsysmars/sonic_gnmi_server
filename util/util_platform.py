@@ -212,10 +212,12 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     #      Built by: johnar@jenkins-worker-3
     show_cmd_ver = 'show version'
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_ver)
-    if is_ok:
-        if oc_comp:
-            output = output.splitlines()
-            oc_comp.state._set_software_version(output[0].split(': ')[1])
+    if is_ok and oc_comp:
+        output = output.splitlines()
+        for idx in range(len(output)):
+            if 'Software Version' in output[idx]:
+                oc_comp.state._set_software_version(output[idx].split(': ')[1])
+                break
 
     return True if OLD_COMP_LST else False
 

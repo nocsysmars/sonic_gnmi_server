@@ -2,12 +2,12 @@ import unittest, pdb, argparse, test_inc, types
 
 PATH_GET_INF_TMPL      = '/interfaces/interface[name={0}]'
 PATH_INF_CFG_EN_TMPL   = '/interfaces/interface[name={0}]/config/enabled'
-PATH_GET_NBR_TMPL      = '/interfaces/interface/routed-vlan/ipv4/neighbors/neighbor'
+PATH_GET_NBR_TMPL      = '/interfaces/interface/routed-vlan/ipv4/neighbors/'
 PATH_SET_NBR_TMPL      = '/interfaces/interface[name={0}]/routed-vlan/ipv4/neighbors/neighbor[ip={1}]/config'
 
 class TestNbr(test_inc.MyTestCase):
     def test_1_set_admin_status_port2(self):
-        intf_name  = 'Ethernet2'
+        intf_name  = 'Ethernet4'
 
         output = self.run_script(['get', PATH_GET_INF_TMPL.format(intf_name), ''])
         chk_str = '"admin-status":"UP"'
@@ -25,7 +25,7 @@ class TestNbr(test_inc.MyTestCase):
                 self.assertIn(chk_str, "".join(output.replace('\n', '').split()))
 
     def test_2_add_nbr1_to_port2(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.11"
         mac       = "00:00:00:00:00:20"
 
@@ -41,7 +41,7 @@ class TestNbr(test_inc.MyTestCase):
             self.assertIn(intf_name, output)
 
     def test_3_add_nbr2_to_port2(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.12"
         mac       = "00:00:00:00:00:30"
         output = self.run_shell_cmd(['ip neigh replace %s lladdr %s dev %s' % (ip, mac, intf_name)])
@@ -56,7 +56,7 @@ class TestNbr(test_inc.MyTestCase):
             self.assertIn(intf_name, output)
 
     def test_4_del_nbr1_from_port2(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.11"
         mac       = "00:00:00:00:00:20"
         output = self.run_shell_cmd(['ip neigh del %s lladdr %s dev %s' % (ip, mac, intf_name)])
@@ -70,7 +70,7 @@ class TestNbr(test_inc.MyTestCase):
             self.assertNotIn(mac, output)
 
     def test_5_del_nbr2_from_port2(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.12"
         mac       = "00:00:00:00:00:30"
         output = self.run_shell_cmd(['ip neigh del %s lladdr %s dev %s' % (ip, mac, intf_name)])
@@ -84,7 +84,7 @@ class TestNbr(test_inc.MyTestCase):
             self.assertNotIn(mac, output)
 
     def test_6_add_nbr1_to_port2_gnmi(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.11"
         mac       = "00:00:00:00:00:20"
         nbr_cfg   = """{"link-layer-address": "%s"}""" % mac
@@ -101,7 +101,7 @@ class TestNbr(test_inc.MyTestCase):
             self.assertIn(intf_name, output)
 
     def test_7_del_nbr1_from_port2_gnmi(self):
-        intf_name = 'Ethernet2'
+        intf_name = 'Ethernet4'
         ip        = "100.102.100.11"
         nbr_cfg   = "{}"
         output = self.run_script(['update', PATH_SET_NBR_TMPL.format(intf_name, ip), "'{0}'".format(nbr_cfg)])
