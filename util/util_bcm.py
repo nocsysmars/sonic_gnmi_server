@@ -101,7 +101,8 @@ def bcm_get_diag_port_map():
 
     if BCM_PORT_MAP_INIT: return
 
-    exe_cmd = 'docker exec -i syncd cat /usr/share/sonic/hwsku/port_config.ini'
+    #exe_cmd = 'docker exec -i syncd cat /usr/share/sonic/hwsku/port_config.ini'
+    exe_cmd = 'cat /usr/share/sonic/hwsku/port_config.ini'
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exe_cmd)
     if is_ok:
         # Default column definition

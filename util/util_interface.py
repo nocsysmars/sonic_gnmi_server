@@ -707,7 +707,8 @@ def interface_remove_all_mbr_for_pc(db, pc_name):
 def interface_destroy_pc(pc_name, is_force = False):
     # teammgrd will destroy pc when pc is removed from db
     if not IS_NEW_TEAMMGRD or is_force:
-        exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
+        #exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
+        exec_cmd = 'teamd -k -t %s' % pc_name
         return util_utl.utl_execute_cmd(exec_cmd)
 
     return True
@@ -734,18 +735,21 @@ def interface_create_pc(pc_name):
 
         # re-create the pc (static trunk)
         pc_cfg   = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"%s"}}' % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
-        exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
+        #exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
+        exec_cmd = "bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
 
         return util_utl.utl_execute_cmd(exec_cmd)
     else:
         # populate create info to teamd
         conf =  TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
 
-        exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
-                    % (conf, TEAMD_CONF_PATH, pc_name)
+        #exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
+        #            % (conf, TEAMD_CONF_PATH, pc_name)
+        exec_cmd = "echo '%s' | cat > %s/%s.conf" % (conf, TEAMD_CONF_PATH, pc_name)
         if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-        exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
+        #exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
+        exec_cmd = 'teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
         if not util_utl.utl_execute_cmd(exec_cmd): return False
 
 # To create/remove port channel by set name
