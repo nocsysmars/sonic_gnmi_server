@@ -124,11 +124,13 @@ def sonic_set_one_mac_swss(mac_cfg):
 
     conf =  SWSS_CFG_TMPL_FDB % (vlan, mac_trgt.replace(':', '-'), mac_port, mac_mode)
 
-    exec_cmd = "echo '%s' | (docker exec -i swss bash -c 'cat > /tmp/fdb.json')" \
-                % (conf)
+    #exec_cmd = "echo '%s' | (docker exec -i swss bash -c 'cat > /tmp/fdb.json')" \
+    #            % (conf)
+    exec_cmd = "echo '%s' | cat > /tmp/fdb.json" % (conf)
     if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-    exec_cmd = 'docker exec -i swss swssconfig /tmp/fdb.json'
+    #exec_cmd = 'docker exec -i swss swssconfig /tmp/fdb.json'
+    exec_cmd = 'swssconfig /tmp/fdb.json'
     if not util_utl.utl_execute_cmd(exec_cmd): return False
 
     return True

@@ -4,7 +4,7 @@
 # APIs for processing platform info.
 #
 
-import subprocess, json, re, pdb, util_utl
+import subprocess, json, re, pdb, util_utl, util_data_platform
 
 OLD_COMP_LST = []
 
@@ -29,7 +29,8 @@ def platform_get_info_psu(oc_comps, old_comp_lst):
     PSU 2  OK
     """
     exec_cmd = 'show platform psustatus'
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    #(is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    (is_ok, output) = util_data_platform.docker_get_execute_cmd_test_output(exec_cmd)
     if is_ok:
         output = output.splitlines()
         #pdb.set_trace()
@@ -87,7 +88,8 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
     temp1:        +30.5 C  (high = +80.0 C, hyst = +75.0 C)
     """
     exec_cmd = 'show environment'
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    #(is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    (is_ok, output) = util_data_platform.docker_get_execute_cmd_test_output(exec_cmd)
     if is_ok:
         output = output.splitlines()
 
@@ -169,7 +171,8 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     #       CRC-32               0xFE   4 0x5B1B4944
     show_cmd_pf = 'show platform syseeprom'
     oc_comp = None
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_pf)
+    #(is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_pf)
+    (is_ok, output) = util_data_platform.docker_get_execute_cmd_test_output(show_cmd_pf)
     if is_ok:
         output = output.splitlines()
         fld_map = [ {"fld" : "pd",               "tag" : "Product",          "pos" : 4 },
@@ -211,7 +214,8 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     #      Build date: Wed Dec 20 09:44:56 UTC 2017
     #      Built by: johnar@jenkins-worker-3
     show_cmd_ver = 'show version'
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_ver)
+    #(is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_ver)
+    (is_ok, output) = util_data_platform.docker_get_execute_cmd_test_output(show_cmd_ver)
     if is_ok and oc_comp:
         output = output.splitlines()
         for idx in range(len(output)):
