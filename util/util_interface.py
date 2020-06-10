@@ -5,6 +5,7 @@
 #
 
 import subprocess, json, pdb, time, re, swsssdk, util_utl
+import ipaddress
 
 from util_utl import CFG_PC_CMD_TMPL
 
@@ -65,7 +66,6 @@ PORT_DESCRIPTION         = "description"
 # refer to /usr/bin/teamshow
 PC_STATUS_TABLE_PREFIX   = "LAG_TABLE:"
 
-
 VLAN_STATUS_TABLE_PREFIX = "VLAN_TABLE:"
 
 # refer to /usr/bin/portstat
@@ -75,28 +75,36 @@ COUNTERS_PORT_NAME_MAP   = "COUNTERS_PORT_NAME_MAP"
 # set to True if teammgrd is used to manage all port channel related configuration
 IS_NEW_TEAMMGRD = False
 
+CFG_LOOPBACK_PREFIX = "Loopback"
+CFG_LOOPBACK_PREFIX_LEN = len(CFG_LOOPBACK_PREFIX)
+CFG_LOOPBACK_NAME_TOTAL_LEN_MAX = 11
+CFG_LOOPBACK_ID_MAX_VAL = 999
+CFG_LOOPBACK_NO = "<0-999>"
+
+
 # t_vlan, u_vlan for inf
 def interface_get_vlan_output(disp_args):
     # ex: {'Vlan10': {'vlanid': '10', 'members': ['Ethernet9']}}
-    vlan_lst     = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_VLAN)
+    vlan_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_VLAN)
     # ex: {('Vlan10', 'Ethernet9'): {'tagging_mode': 'tagged'}}
     vlan_mbr_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_VLAN_MBR)
 
     ret_output = {}
     for vlan in vlan_lst:
-        vid = int (vlan_lst[vlan]['vlanid'])
+        vid = int(vlan_lst[vlan]['vlanid'])
 
         if 'members' in vlan_lst[vlan]:
             for mbr in vlan_lst[vlan]['members']:
                 if mbr not in ret_output:
-                    ret_output[mbr] = {'t_vlan' : [], 'u_vlan' : []}
+                    ret_output[mbr] = {'t_vlan': [], 'u_vlan': []}
 
                 if vlan_mbr_lst[vlan, mbr]['tagging_mode'] == 'tagged':
-                    ret_output[mbr]['t_vlan'].append (vid)
+                    ret_output[mbr]['t_vlan'].append(vid)
                 else:
-                    ret_output[mbr]['u_vlan'].append (vid)
+                    ret_output[mbr]['u_vlan'].append(vid)
 
     return ret_output
+
 
 def interface_get_ip4_addr_output():
     """
@@ -109,7 +117,7 @@ def interface_get_ip4_addr_output():
 
     blk_head = 0
     for idx in range(0, len(tmp_output)):
-        if ':' in tmp_output[idx] or idx == len(tmp_output) -1:
+        if ':' in tmp_output[idx] or idx == len(tmp_output) - 1:
             # ex: 163: Ethernet0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 9100 qdisc pfifo_fast state DOWN group default qlen 1000
             head_line = tmp_output[blk_head].split(':')
             inf_name = head_line[1].strip()
@@ -120,6 +128,7 @@ def interface_get_ip4_addr_output():
             blk_head = idx
 
     return ret_output
+
 
 def interface_get_ip4_nbr_output():
     """
@@ -144,6 +153,7 @@ def interface_get_ip4_nbr_output():
 
     return ret_output
 
+
 def interface_get_ip_link_output():
     """
     use 'ip link show' command to gather information
@@ -161,6 +171,7 @@ def interface_get_ip_link_output():
             ret_output[inf_name] = tmp_output[idx]
 
     return ret_output
+
 
 # fill a inf's vlan info
 def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
@@ -180,21 +191,22 @@ def interface_fill_inf_vlanmbr_info(oc_inf, inf_name, vlan_output):
             oc_inf.ethernet.switched_vlan.config.interface_mode = 'TRUNK'
             oc_inf.ethernet.switched_vlan.config.trunk_vlans = t_vlan
 
-            if len(u_vlan) > 0: # TODO: what to do if > 1 ???
+            if len(u_vlan) > 0:  # TODO: what to do if > 1 ???
                 oc_inf.ethernet.switched_vlan.config.native_vlan = u_vlan[0]
-        elif len(u_vlan) > 0: # TODO: what to do if > 1 ???
+        elif len(u_vlan) > 0:  # TODO: what to do if > 1 ???
             # access mode
             oc_inf.ethernet.switched_vlan.config.interface_mode = 'ACCESS'
-            oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan [0]
+            oc_inf.ethernet.switched_vlan.config.access_vlan = u_vlan[0]
     else:
         return (t_vlan, u_vlan)
+
 
 # fill inf's ip v4 neighbours (arp) info here
 def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
     # ex:
     #  192.168.200.10 dev eth0 lladdr a0:36:9f:8d:52:fa STALE
     #  100.102.100.12 dev Ethernet2 lladdr 00:00:00:00:00:30 PERMANENT
-    old_nbr_lst  = [x for x in oc_inf.routed_vlan.ipv4.neighbors.neighbor]
+    old_nbr_lst = [x for x in oc_inf.routed_vlan.ipv4.neighbors.neighbor]
 
     if inf_name in out_tbl["ip4_nbr_output"]:
         nbr_output = out_tbl["ip4_nbr_output"][inf_name]
@@ -219,6 +231,7 @@ def interface_fill_inf_nbr_info(oc_inf, inf_name, out_tbl):
     for x in old_nbr_lst:
         oc_inf.routed_vlan.ipv4.neighbors.neighbor.delete(x)
 
+
 def interface_get_inf_ip_output(ip4_addr_output, inf_name):
     if "Vlan" in inf_name:
         match_name = inf_name + "@Bridge"
@@ -226,6 +239,7 @@ def interface_get_inf_ip_output(ip4_addr_output, inf_name):
         match_name = inf_name
 
     return ip4_addr_output[match_name] if match_name in ip4_addr_output else []
+
 
 # fill inf's ip v4 info here
 def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
@@ -245,7 +259,7 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
             if ip_info[0] not in oc_inf.routed_vlan.ipv4.addresses.address:
                 oc_addr = oc_inf.routed_vlan.ipv4.addresses.address.add(ip_info[0])
             else:
-                old_addr_lst.remove (ip_info[0])
+                old_addr_lst.remove(ip_info[0])
                 oc_addr = oc_inf.routed_vlan.ipv4.addresses.address[ip_info[0]]
 
             oc_addr.config.prefix_length = int(ip_info[1])
@@ -255,6 +269,7 @@ def interface_fill_inf_ip_info(oc_inf, inf_name, out_tbl):
     # remove unused addr entry
     for x in old_addr_lst:
         oc_inf.routed_vlan.ipv4.addresses.address.delete(x)
+
 
 # fill inf's admin/oper status by "ifconfig xxx" output
 def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
@@ -277,6 +292,7 @@ def interface_fill_inf_admin_oper(oc_inf, inf_name, out_tbl):
         else:
             oc_inf.state._set_oper_status('DOWN')
 
+
 # get all pc info with "teamdctl" command
 def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args):
     global OLD_AGG_MBR_LST, OLD_PC_INF_LST
@@ -292,7 +308,7 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
     pc_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_PC)
     if pc_lst:
         is_key_pc = True if key_ar and key_ar[0].find('PortChannel') == 0 else False
-        is_key_et = True if key_ar and key_ar[0].find('Ethernet')    == 0 else False
+        is_key_et = True if key_ar and key_ar[0].find('Ethernet') == 0 else False
 
         ret_val = True
         for pc in pc_lst:
@@ -350,11 +366,12 @@ def interface_get_pc_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args
 
     return ret_val
 
+
 # get inf status form appl db
 def interface_db_inf_status_get(db, inf_name, status_fld, fill_info):
-    pfx_tbl = { FILL_INFO_PC   : PC_STATUS_TABLE_PREFIX,
-                FILL_INFO_PORT : PORT_STATUS_TABLE_PREFIX,
-                FILL_INFO_VLAN : VLAN_STATUS_TABLE_PREFIX }
+    pfx_tbl = {FILL_INFO_PC: PC_STATUS_TABLE_PREFIX,
+               FILL_INFO_PORT: PORT_STATUS_TABLE_PREFIX,
+               FILL_INFO_VLAN: VLAN_STATUS_TABLE_PREFIX}
 
     if fill_info in pfx_tbl:
         pfx = pfx_tbl[fill_info]
@@ -365,6 +382,7 @@ def interface_db_inf_status_get(db, inf_name, status_fld, fill_info):
     status = db.get(db.APPL_DB, full_table_id, status_fld)
     return status
 
+
 def interface_convert_speed(speed_in_mb):
     speed_tbl = {    10:'10MB',    100:'100MB',  1000:'1GB',   2500:'2500MB',
                    5000:'5GB',   10000:'10GB',  25000:'25GB', 40000:'40GB',
@@ -372,6 +390,7 @@ def interface_convert_speed(speed_in_mb):
 
     str_speed = speed_tbl[speed_in_mb] if speed_in_mb in speed_tbl else 'UNKNOWN'
     return 'SPEED_{0}'.format(str_speed)
+
 
 def interface_fill_inf_state(oc_inf, inf_name, db, fill_info):
     # Ethernet?     => PORT_TABLE
@@ -390,7 +409,7 @@ def interface_fill_inf_state(oc_inf, inf_name, db, fill_info):
     type_tbl = {
         FILL_INFO_PC  : "ianaift:ieee8023adLag",
         FILL_INFO_PORT: "ift:ethernetCsmacd"
-        }
+    }
 
     oc_inf._unset_state()
     if fill_info in type_tbl:
@@ -419,6 +438,7 @@ def interface_fill_inf_state(oc_inf, inf_name, db, fill_info):
             if set_fun:
                 set_fun(val)
 
+
 def interface_fill_inf_counters(oc_inf, inf_name, counter_port_name_map, db):
     cntr_map_tbl = {
         'SAI_PORT_STAT_IF_IN_UCAST_PKTS'        :  'in_unicast_pkts',
@@ -441,7 +461,7 @@ def interface_fill_inf_counters(oc_inf, inf_name, counter_port_name_map, db):
         if set_fun:
             table_id = counter_port_name_map[inf_name]
             full_table_id = COUNTER_TABLE_PREFIX + table_id
-            cntr_data =  db.get(db.COUNTERS_DB, full_table_id, cntr)
+            cntr_data = db.get(db.COUNTERS_DB, full_table_id, cntr)
             if cntr_data:
                 set_fun(cntr_data)
 
@@ -478,6 +498,7 @@ def interface_get_port_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
 
     return ret_val
 
+
 # get all vlan info
 def interface_get_vlan_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_args):
     if fill_info_bmp & (FILL_INFO_NAME | FILL_INFO_STATE | FILL_INFO_IP) == 0:
@@ -510,13 +531,14 @@ def interface_get_vlan_inf_info(oc_infs, fill_info_bmp, key_ar, out_tbl, disp_ar
             ret_val = True
 
     # remove no existing vlan
-    for vlan  in OLD_VLAN_INF_LST:
+    for vlan in OLD_VLAN_INF_LST:
         if vlan not in new_vlan_inf_lst and vlan in oc_infs.interface:
             oc_infs.interface.delete(vlan)
 
     OLD_VLAN_INF_LST = new_vlan_inf_lst
 
     return ret_val
+
 
 def interface_get_mgmtport_info(oc_infs, fill_info_bmp, key_ar, out_tbl):
     ret_val = False
@@ -535,6 +557,7 @@ def interface_get_mgmtport_info(oc_infs, fill_info_bmp, key_ar, out_tbl):
         ret_val = True
 
     return ret_val
+
 
 # ex:
 #  key_ar [0] : interface name e.g. "eth0"
@@ -560,7 +583,7 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
                       "config"        : FILL_INFO_PC,
                       "switched-vlan" : FILL_INFO_VLAN,
                       "routed-vlan"   : FILL_INFO_IP
-        }
+    }
 
     try:
         fill_info_type = fill_type_tbl[path_ar[-1]]
@@ -569,7 +592,7 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
 
     is_done = False
     # fill mgmt port info, not used now
-    #if not key_ar or MGMT_PORT_NAME == key_ar[0]:
+    # if not key_ar or MGMT_PORT_NAME == key_ar[0]:
     #    ret_val = interface_get_mgmtport_info(inf_yph, True, key_ar)
     #    if key_ar and MGMT_PORT_NAME == key_ar[0]:
     #        # only need mgmt port info
@@ -614,9 +637,10 @@ def interface_get_info(inf_yph, path_ar, key_ar, disp_args):
 
     return ret_val
 
+
 def interface_get_my_mac():
     global MY_MAC_ADDR
-    #exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
+    # exec_cmd = "ip link show eth0 | grep ether | awk '{print $2}'"
     # bcz some vendors use different mac for eth0
     exec_cmd = "sonic-cfggen -d -v DEVICE_METADATA.localhost.mac"
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
@@ -630,7 +654,7 @@ def interface_create_all_infs(inf_yph, is_dbg_test, disp_args):
 
     oc_infs = inf_yph.get("/interfaces")[0]
 
-    #ret_val = interface_get_mgmtport_info(inf_yph, False, None) or ret_val
+    # ret_val = interface_get_mgmtport_info(inf_yph, False, None) or ret_val
     ret_val = interface_get_port_inf_info(oc_infs, FILL_INFO_NAME, None, None, disp_args, is_dbg_test)
 
     ret_val = interface_get_pc_inf_info(oc_infs, FILL_INFO_NAME, None, None, disp_args) or ret_val
@@ -638,6 +662,7 @@ def interface_create_all_infs(inf_yph, is_dbg_test, disp_args):
     ret_val = interface_get_vlan_inf_info(oc_infs, FILL_INFO_NAME, None, None, disp_args) or ret_val
 
     return ret_val
+
 
 # get old pc name by port with "teamdctl" command
 def interface_get_old_pc_name_by_port(port_name, disp_args):
@@ -655,6 +680,7 @@ def interface_get_old_pc_name_by_port(port_name, disp_args):
 
     return old_pc_name
 
+
 # restore the port setting when port is removed from portchannel
 def interface_restore_port_setting(db, port_name):
     # need to restore the admin status like teammgr
@@ -663,6 +689,7 @@ def interface_restore_port_setting(db, port_name):
     if adm_val and adm_val == 'up':
         exec_cmd = 'ip link set dev %s up' % port_name
         util_utl.utl_execute_cmd(exec_cmd)
+
 
 # To make interface join/leave port channel
 def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create, disp_args):
@@ -690,6 +717,7 @@ def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return ret_val
 
+
 def interface_remove_all_mbr_for_pc(db, pc_name):
     exec_cmd = 'teamdctl %s config dump actual' % pc_name
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
@@ -703,15 +731,17 @@ def interface_remove_all_mbr_for_pc(db, pc_name):
 
                 interface_restore_port_setting(db, port)
 
+
 # destroy pc by teamd operation
 def interface_destroy_pc(pc_name, is_force = False):
     # teammgrd will destroy pc when pc is removed from db
     if not IS_NEW_TEAMMGRD or is_force:
-        #exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
+        # exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
         exec_cmd = 'teamd -k -t %s' % pc_name
         return util_utl.utl_execute_cmd(exec_cmd)
 
     return True
+
 
 # destroy pc created by teammgrd
 def interface_destroy_pc_by_teammgrd(pc_name):
@@ -727,6 +757,7 @@ def interface_destroy_pc_by_teammgrd(pc_name):
 
     return interface_destroy_pc(pc_name, True)
 
+
 # create pc by teamd operation
 def interface_create_pc(pc_name):
     global MY_MAC_ADDR
@@ -734,30 +765,32 @@ def interface_create_pc(pc_name):
         interface_destroy_pc_by_teammgrd(pc_name)
 
         # re-create the pc (static trunk)
-        pc_cfg   = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"%s"}}' % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
-        #exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
+        pc_cfg = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"%s"}}' % (
+        pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
+        # exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
         exec_cmd = "bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
 
         return util_utl.utl_execute_cmd(exec_cmd)
     else:
         # populate create info to teamd
-        conf =  TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
+        conf = TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
 
-        #exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
+        # exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
         #            % (conf, TEAMD_CONF_PATH, pc_name)
         exec_cmd = "echo '%s' | cat > %s/%s.conf" % (conf, TEAMD_CONF_PATH, pc_name)
         if not util_utl.utl_execute_cmd(exec_cmd): return False
 
-        #exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
+        # exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
         exec_cmd = 'teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
         if not util_utl.utl_execute_cmd(exec_cmd): return False
+
 
 # To create/remove port channel by set name
 def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
     set_cmd = CFG_PC_CMD_TMPL % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
 
-    #pdb.set_trace()
+    # pdb.set_trace()
     ret_val = False
     if is_create:
         # need to write to db first to let other app start working
@@ -775,6 +808,7 @@ def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
 
     return ret_val
 
+
 # vlan_name should be in "VlanXXX" format
 def interface_extract_vid(vlan_name):
     vid_str = vlan_name.lstrip('Vlan')
@@ -784,6 +818,7 @@ def interface_extract_vid(vlan_name):
                 or 0
 
     return ret_vid
+
 
 # create/remove vlan entry in config db
 def interface_db_set_vlan(db, vid, is_add):
@@ -800,9 +835,10 @@ def interface_db_set_vlan(db, vid, is_add):
             db.set_entry('VLAN_MEMBER', k, None)
         db.set_entry('VLAN', 'Vlan{}'.format(vid), None)
 
+
 # To create/remove vlan by set name
 def interface_set_cfg_name_vlan(oc_yph, pkey_ar, is_create, disp_args):
-    #pdb.set_trace()
+    # pdb.set_trace()
     ret_val = False
     vid = interface_extract_vid(pkey_ar[0])
     if vid > 0:
@@ -817,6 +853,7 @@ def interface_set_cfg_name_vlan(oc_yph, pkey_ar, is_create, disp_args):
         ret_val = True
 
     return ret_val
+
 
 # To set name of inf
 def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create, disp_args):
@@ -840,6 +877,7 @@ def interface_set_cfg_name(oc_yph, pkey_ar, val, is_create, disp_args):
     return [interface_set_cfg_name_pc, interface_set_cfg_name_vlan] \
                 [if_type -1](oc_yph, pkey_ar, is_create, disp_args)
 
+
 # To set admin status of inf
 def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create, disp_args):
     # not support create
@@ -861,13 +899,14 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return True
 
+
 # Return false if any vlan in the list not exist
 # auto create vlan if VLAN_AUTO_CREATE == True
 def interface_is_vlan_lst_valid(oc_yph, vid_lst, disp_args):
     ret_val = True
 
     vlan_cfg = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_VLAN)
-    #is_add_vlan = False
+    # is_add_vlan = False
     for vid in vid_lst:
         if "Vlan%s" % str(vid) not in vlan_cfg:
             if not VLAN_AUTO_CREATE:
@@ -877,14 +916,15 @@ def interface_is_vlan_lst_valid(oc_yph, vid_lst, disp_args):
                 # auto create vlan
                 interface_set_cfg_name_vlan(oc_yph, ["Vlan%s" % str(vid)], True, disp_args)
                 util_utl.utl_log("auto create vlan %d" % vid)
-                #is_add_vlan = True
+                # is_add_vlan = True
 
-    #if is_add_vlan:
+    # if is_add_vlan:
     #    time.sleep(2)
     return ret_val
 
+
 # add/remove vlan member port in config db
-def interface_db_set_vlan_member(db, is_add, vid, interface_name, untagged = True):
+def interface_db_set_vlan_member(db, is_add, vid, interface_name, untagged=True):
     vlan_name = 'Vlan{}'.format(vid)
     vlan = db.get_entry('VLAN', vlan_name)
     if len(vlan) == 0:
@@ -899,7 +939,7 @@ def interface_db_set_vlan_member(db, is_add, vid, interface_name, untagged = Tru
         members.append(interface_name)
         vlan['members'] = members
         db.set_entry('VLAN', vlan_name, vlan)
-        db.set_entry('VLAN_MEMBER', (vlan_name, interface_name), {'tagging_mode': "untagged" if untagged else "tagged" })
+        db.set_entry('VLAN_MEMBER', (vlan_name, interface_name), {'tagging_mode': "untagged" if untagged else "tagged"})
     else:
         members = vlan.get('members', [])
         if interface_name not in members:
@@ -912,6 +952,7 @@ def interface_db_set_vlan_member(db, is_add, vid, interface_name, untagged = Tru
             vlan['members'] = members
         db.set_entry('VLAN', vlan_name, vlan)
         db.set_entry('VLAN_MEMBER', (vlan_name, interface_name), None)
+
 
 # To set inf's tagged vlan membership
 def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create, disp_args):
@@ -927,7 +968,7 @@ def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create, disp_args):
     except:
         return False
 
-    del_tvlan =[]
+    del_tvlan = []
     for vid in old_tvlan:
         int_vid = int(vid)
         if int_vid not in new_tvlan:
@@ -949,6 +990,7 @@ def interface_set_trunk_vlans(oc_yph, pkey_ar, val, is_create, disp_args):
         interface_db_set_vlan_member(disp_args.cfgdb, True, vid, pkey_ar[0], False)
 
     return True
+
 
 # To set inf's native vlan
 def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create, disp_args):
@@ -980,6 +1022,7 @@ def interface_set_native_vlan(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return True
 
+
 # get intf table name in db from intf name
 def interface_db_get_intf_table_name(intf_name):
     db_tbl_map = {
@@ -997,6 +1040,7 @@ def interface_db_get_intf_table_name(intf_name):
 
     return ret_tbl_name
 
+
 # add/remove ip of interface in config db
 def interface_db_set_ip(db, is_add, intf_name, ip):
     ret_val = False
@@ -1010,21 +1054,53 @@ def interface_db_set_ip(db, is_add, intf_name, ip):
 
     return ret_val
 
+
+def interface_ipaddr_dependent_on_interface(db, interface_name):
+    data = []
+    table_name = interface_db_get_intf_table_name(interface_name)
+    if table_name == "":
+        return data
+    keys = db.get_keys(table_name)
+    for key in keys:
+        if interface_name in key and len(key) == 2:
+            data.append(key)
+    return data
+
+
+# clear ip of vlan in config db
+def interface_db_clear_ip(db, intf_name):
+    ret_val = False
+
+    intf_tbl_name = interface_db_get_intf_table_name(intf_name)
+
+    if intf_tbl_name:
+        ipaddrs = interface_ipaddr_dependent_on_interface(db, intf_name)
+        for ipaddr in ipaddrs:
+            db.set_entry(intf_tbl_name, (intf_name, ipaddr), None)
+        ret_val = True
+
+    return ret_val
+
+
 # ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
 #   val for del = '{"ip" : "0",   "prefix-length" : 24 }'
 #   val for add = '{"ip" : "xxx", "prefix-length" : 24 }'
 # To set inf's ip address (v4)
 def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     try:
-        ip_cfg  = {} if val == "" else eval(val)
-        ip_new  = ip_cfg["ip"]
-        ip_pfx  = ip_cfg["prefix-length"]
+        ip_cfg = {} if val == "" else eval(val)
+        ip_new = ip_cfg["ip"]
+        ip_pfx = ip_cfg["prefix-length"]
     except:
         return False
 
-    is_del = True if ip_new == "0" or ip_new == "" else False
+    if ip_cfg:
+        ret_val = interface_db_clear_ip(disp_args.cfgdb, pkey_ar[0])
+    else:
+        is_del = True if ip_new == "0" or ip_new == "" else False
 
-    ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0], pkey_ar[1]+'/'+ str(ip_pfx))
+        ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0],
+                                      pkey_ar[1] + '/' + str(ip_pfx))
 
     if not IS_NEW_TEAMMGRD:
         # only ip on vlan interface can take effect immediately
@@ -1039,17 +1115,18 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
 
     return ret_val
 
+
 # ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
 #   val for del = '{"link-layer-address" : ""} or {} or ""'
 #   val for add = '{"link-layer-address" : "00:00:00:00:00:20"}'
 # To set inf's arp (v4)
 def interface_set_nbr_v4(oc_yph, pkey_ar, val, is_create, disp_args):
-    #pdb.set_trace()
+    # pdb.set_trace()
 
     try:
-        nbr_cfg     = {} if val == "" else eval(val)
-        lladdr_cmd  = "" if "link-layer-address" not in nbr_cfg else \
-                      "lladdr %s" % nbr_cfg["link-layer-address"]
+        nbr_cfg = {} if val == "" else eval(val)
+        lladdr_cmd = "" if "link-layer-address" not in nbr_cfg else \
+            "lladdr %s" % nbr_cfg["link-layer-address"]
     except:
         return False
 
@@ -1059,3 +1136,81 @@ def interface_set_nbr_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
+
+
+def is_loopback_name_valid(loopback_name):
+    """Loopback name validation"""
+
+    if loopback_name[:CFG_LOOPBACK_PREFIX_LEN] != CFG_LOOPBACK_PREFIX:
+        return False
+    if (loopback_name[CFG_LOOPBACK_PREFIX_LEN:].isdigit() is False or
+            int(loopback_name[CFG_LOOPBACK_PREFIX_LEN:]) > CFG_LOOPBACK_ID_MAX_VAL):
+        return False
+    if len(loopback_name) > CFG_LOOPBACK_NAME_TOTAL_LEN_MAX:
+        return False
+    return True
+
+
+def add_loopback(config_db, loopback_name, ip_addr):
+    if not is_loopback_name_valid(loopback_name):
+        util_utl.utl_log("loopback name-{} is invalid".format(loopback_name))
+        return False
+
+    try:
+        ipaddress.ip_network(unicode(ip_addr), strict=False)
+    except ValueError:
+        util_utl.utl_log("ip_addr-{} is not valid".format(ip_addr))
+        return False
+
+    loopback_names = config_db.get_entry('LOOPBACK_INTERFACE', [])
+    if loopback_name in loopback_names:
+        util_utl.utl_log("{} already exists in config db".format(loopback_name))
+    else:
+        config_db.set_entry('LOOPBACK_INTERFACE', loopback_name, {"NULL": "NULL"})
+    config_db.set_entry('LOOPBACK_INTERFACE', (loopback_name, ip_addr),
+                        {"NULL": "NULL"})
+    return True
+
+
+# todo(sgk): what to do if loopback binding vrf
+def del_loopback(config_db, loopback_name):
+    if not is_loopback_name_valid(loopback_name):
+        util_utl.utl_log("loopback name-{} is invalid".format(loopback_name))
+        return False
+
+    loopback_table = config_db.get_table('LOOPBACK_INTERFACE')
+    loopback_interfaces = [k for k, v in loopback_table.iteritems() if type(k) != tuple]
+    if loopback_name not in loopback_interfaces:
+        util_utl.utl_log("{} does not exists".format(loopback_name))
+        return True
+
+    ips = [k[1] for k in loopback_table if type(k) == tuple and k[0] == loopback_name]
+    for ip in ips:
+        config_db.set_entry('LOOPBACK_INTERFACE', (loopback_name, ip), None)
+
+    config_db.set_entry('LOOPBACK_INTERFACE', loopback_name, None)
+    return True
+
+
+# config interface in config db
+def interface_config_interface(oc_yph, pkey_ar, val, is_create, disp_args):
+    # support loopback interface only
+    try:
+        tmp_cfg = {} if val == "" or val == "{}" else eval(val)
+        ip_addr = tmp_cfg.get('ip-addr')
+        role = tmp_cfg.get('role')
+    except:
+        util_utl.utl_err("Invalid parameter")
+        return False
+
+    is_add = True if ip_addr else False
+
+    # support to add/delete loopback interface now
+    if pkey_ar[0].find('Loopback') != 0:
+        util_utl.utl_err("Invalid loopback name")
+        return False
+
+    if is_add:
+        return add_loopback(disp_args.cfgdb, pkey_ar[0], ip_addr)
+    else:
+        return del_loopback(disp_args.cfgdb, pkey_ar[0])

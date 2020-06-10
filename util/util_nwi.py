@@ -5,8 +5,10 @@
 #
 
 import subprocess, json, pdb, util_utl
+import os
 from swsssdk import port_util
-from util_utl import RULE_MAX_PRI, RULE_MIN_PRI
+from util_utl import RULE_MAX_PRI, RULE_MIN_PRI, \
+                     interface_ipaddr_dependent_on_interface
 from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
                      acl_cnv_to_oc_tcp_flags, acl_is_acl_for_pf, \
                      OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE, \
@@ -462,3 +464,104 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
         nwi_pf_clear_mirror_sessions(disp_args)
 
     return ret_val
+
+
+def is_vrf_name_valid(vrf_name):
+    if not vrf_name.startswith("Vrf") and vrf_name != 'mgmt' and vrf_name != 'management':
+        util_utl.utl_err("{} is not start with Vrf, mgmt or management!".format(vrf_name))
+        return False
+    if len(vrf_name) > 15:
+        util_utl.utl_err("{} is too long!".format(vrf_name))
+        return False
+    return True
+
+
+def mvrf_restart_services():
+    """Restart interfaces-config service and NTP service when mvrf is changed"""
+    """
+    When mvrf is enabled, eth0 should be moved to mvrf; when it is disabled,
+    move it back to default vrf. Restarting the "interfaces-config" service
+    will recreate the /etc/network/interfaces file and restart the
+    "networking" service that takes care of the eth0 movement.
+    NTP service should also be restarted to rerun the NTP service with or
+    without "cgexec" accordingly.
+    """
+    cmd="service ntp stop"
+    os.system (cmd)
+    cmd="systemctl restart interfaces-config"
+    os.system (cmd)
+    cmd="service ntp start"
+    os.system (cmd)
+
+
+def vrf_add_management_vrf(config_db):
+    """Enable management vrf in config DB"""
+
+    entry = config_db.get_entry('MGMT_VRF_CONFIG', "vrf_global")
+    if entry and entry['mgmtVrfEnabled'] == 'true':
+        util_utl.utl_log("ManagementVRF is already Enabled.")
+        return None
+    config_db.mod_entry('MGMT_VRF_CONFIG', "vrf_global", {"mgmtVrfEnabled": "true"})
+    mvrf_restart_services()
+
+
+def vrf_delete_management_vrf(config_db):
+    """Disable management vrf in config DB"""
+
+    entry = config_db.get_entry('MGMT_VRF_CONFIG', "vrf_global")
+    if not entry or entry['mgmtVrfEnabled'] == 'false':
+        util_utl.utl_log("ManagementVRF is already Disabled.")
+        return None
+    config_db.mod_entry('MGMT_VRF_CONFIG', "vrf_global", {"mgmtVrfEnabled": "false"})
+    mvrf_restart_services()
+
+
+def del_interface_bind_to_vrf(config_db, vrf_name):
+    """delete interface bind to vrf"""
+    tables = ['INTERFACE', 'PORTCHANNEL_INTERFACE', 'VLAN_INTERFACE', 'LOOPBACK_INTERFACE']
+    for table_name in tables:
+        interface_dict = config_db.get_table(table_name)
+        if interface_dict:
+            for interface_name in interface_dict.keys():
+                if interface_dict[interface_name].has_key('vrf_name') and vrf_name == interface_dict[interface_name]['vrf_name']:
+                    interface_dependent = interface_ipaddr_dependent_on_interface(config_db, interface_name)
+                    for interface_del in interface_dependent:
+                        config_db.set_entry(table_name, interface_del, None)
+                    config_db.set_entry(table_name, interface_name, None)
+
+
+def add_vrf(config_db, vrf_name):
+    """Add vrf"""
+    if not is_vrf_name_valid(vrf_name):
+        return False
+
+    if vrf_name == 'mgmt' or vrf_name == 'management':
+        vrf_add_management_vrf(config_db)
+    else:
+        config_db.set_entry('VRF', vrf_name, {"NULL": "NULL"})
+    return True
+
+
+def del_vrf(config_db, vrf_name):
+    """Delete vrf"""
+
+    if not is_vrf_name_valid(vrf_name):
+        return False
+
+    if vrf_name == 'mgmt' or vrf_name == 'management':
+        vrf_delete_management_vrf(config_db)
+    else:
+        del_interface_bind_to_vrf(config_db, vrf_name)
+        config_db.set_entry('VRF', vrf_name, None)
+    return True
+
+
+# To create or remove vrf
+# vrf name should be start with "VRF"
+def nwi_db_cfg_vrf(oc_yph, pkey_ar, val, is_create, disp_args):
+    vrf_name = pkey_ar[0]
+    if val != "" and vrf_name == val:
+        return add_vrf(disp_args.cfgdb, vrf_name)
+    elif val == "" or val is None:
+        return del_vrf(disp_args.cfgdb, vrf_name)
+    return False

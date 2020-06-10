@@ -18,7 +18,7 @@ from grpc import StatusCode
 
 from util import util_lldp, util_interface, util_platform, util_utl, \
                  util_nwi, util_lr, util_acl, util_sys, util_qos, util_bcm, \
-                 util_sonic
+                 util_sonic, util_dhcp
 
 import logging, re, pdb, swsssdk
 
@@ -55,6 +55,8 @@ setPathTable = {
             "util_interface.interface_set_aggregate_id",
     '/interfaces/interface[name]/config/name' :
             "util_interface.interface_set_cfg_name",
+    '/interfaces/interface[name]/config':
+            "util_interface.interface_config_interface",
     '/interfaces/interface[name]/config/enabled' :
             "util_interface.interface_set_cfg_enabled",
     '/interfaces/interface[name]/ethernet/switched-vlan/config/trunk-vlans' :
@@ -63,6 +65,8 @@ setPathTable = {
             "util_interface.interface_set_native_vlan",
     '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
             "util_interface.interface_set_ip_v4",
+    '/interfaces/interface[name]/routed-vlan/config':
+            "util_interface.interface_del_vlan_interface",
     '/interfaces/interface[name]/routed-vlan/ipv4/neighbors/neighbor[ip]/config' :
             "util_interface.interface_set_nbr_v4",
     '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
@@ -84,12 +88,18 @@ setPathTable = {
             "util_nwi.nwi_pf_set_policy",
     '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
             "util_nwi.nwi_pf_set_rule",
+    '/network-instances/network-instance[name]/config/name':
+            "util_nwi.nwi_db_cfg_vrf",
+    '/network-instances/network-instance[name]/vlans/vlan[vlan-id]/config':
+            "util_dhcp.vlan_config_dhcp_relay",
     '/vesta/mac' :
             "util_sonic.sonic_set_mac",
     '/vesta/mirror' :
             "util_bcm.bcm_set_port_mirror",
     '/vesta/traffic-seg' :
             "util_bcm.bcm_set_traffic_seg",
+    '/dhcp-relay/restart':
+            "util_dhcp.dhcp_relay_restart"
     }
 
 class dispArgs: pass
@@ -177,7 +187,6 @@ class ocDispatcher:
 
             # replace key [xxx=yyy] with [xxx]
             reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
-
             ret_val = eval(setPathTable[reg_path])(self.oc_yph, pkey_ar, val.strip('"'), len(tmp_obj) == 0, self.my_args) \
                     if reg_path in setPathTable else False
         except Exception as e:

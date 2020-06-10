@@ -51,6 +51,8 @@ RULE_MIN_PRI         = 1
 DBG_MODE  = 1
 DBG_PERF  = 1
 
+VLAN_SUB_INTERFACE_SEPARATOR = '.'
+
 def utl_log(str, lvl = logging.DEBUG, c_lvl=1):
     if DBG_MODE == 1:
         print str
@@ -133,3 +135,36 @@ def utl_get_execute_cmd_output(exe_cmd):
         return (False, None)
 
     return (True, output)
+
+
+def get_interface_table_name(interface_name):
+    """Get table name by interface_name prefix"""
+
+    if interface_name.startswith("Ethernet"):
+        if VLAN_SUB_INTERFACE_SEPARATOR in interface_name:
+            return "VLAN_SUB_INTERFACE"
+        return "INTERFACE"
+    elif interface_name.startswith("PortChannel"):
+        if VLAN_SUB_INTERFACE_SEPARATOR in interface_name:
+            return "VLAN_SUB_INTERFACE"
+        return "PORTCHANNEL_INTERFACE"
+    elif interface_name.startswith("Vlan"):
+        return "VLAN_INTERFACE"
+    elif interface_name.startswith("Loopback"):
+        return "LOOPBACK_INTERFACE"
+    else:
+        return ""
+
+
+def interface_ipaddr_dependent_on_interface(config_db, interface_name):
+    """Get table keys including ipaddress"""
+
+    data = []
+    table_name = get_interface_table_name(interface_name)
+    if table_name == "":
+        return data
+    keys = config_db.get_keys(table_name)
+    for key in keys:
+        if interface_name in key and len(key) == 2:
+            data.append(key)
+    return data
