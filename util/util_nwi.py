@@ -8,7 +8,9 @@ import subprocess, json, pdb, util_utl
 import os
 from swsssdk import port_util
 from util_utl import RULE_MAX_PRI, RULE_MIN_PRI, \
-                     interface_ipaddr_dependent_on_interface
+                     interface_ipaddr_dependent_on_interface, \
+                     get_interface_table_name
+
 from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
                      acl_cnv_to_oc_tcp_flags, acl_is_acl_for_pf, \
                      OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE, \
@@ -530,7 +532,38 @@ def del_interface_bind_to_vrf(config_db, vrf_name):
                     config_db.set_entry(table_name, interface_name, None)
 
 
-def add_vrf(config_db, vrf_name):
+def is_interface_bind_to_vrf(config_db, interface_name):
+    """whether interface bind to vrf or not"""
+    table_name = get_interface_table_name(interface_name)
+    if table_name == "":
+        return False
+    entry = config_db.get_entry(table_name, interface_name)
+    if entry and entry.get("vrf_name"):
+        return True
+    return False
+
+
+def bind_interface_to_vrf(config_db, interface_name, vrf_name):
+    """bind interface to vrf"""
+    table_name = get_interface_table_name(interface_name)
+    if table_name == "":
+        util_utl.utl_err("interface name is not valid.")
+        return False
+    if is_interface_bind_to_vrf(config_db, interface_name) is True and \
+            config_db.get_entry(table_name, interface_name).get('vrf_name') == vrf_name:
+        return True
+
+    # Clean ip addresses if interface configured
+    interface_dependent = interface_ipaddr_dependent_on_interface(config_db,
+                                                                  interface_name)
+    for interface in interface_dependent:
+        config_db.set_entry(table_name, interface, None)
+    config_db.set_entry(table_name, interface_name, {"vrf_name": vrf_name})
+    # if does not work, please reference config source code
+    return True
+
+
+def add_vrf(config_db, vrf_name, vlan_ids):
     """Add vrf"""
     if not is_vrf_name_valid(vrf_name):
         return False
@@ -539,6 +572,12 @@ def add_vrf(config_db, vrf_name):
         vrf_add_management_vrf(config_db)
     else:
         config_db.set_entry('VRF', vrf_name, {"NULL": "NULL"})
+
+    for vlan_id in vlan_ids:
+        vlan_name = "Vlan{}".format(vlan_id)
+        if bind_interface_to_vrf(config_db, vlan_name, vrf_name):
+            util_utl.utl_err("bind {} to {} failed".format(vlan_name, vrf_name))
+
     return True
 
 
@@ -556,12 +595,20 @@ def del_vrf(config_db, vrf_name):
     return True
 
 
-# To create or remove vrf
+# To create vrf and bind vlan
 # vrf name should be start with "VRF"
 def nwi_db_cfg_vrf(oc_yph, pkey_ar, val, is_create, disp_args):
     vrf_name = pkey_ar[0]
-    if val != "" and vrf_name == val:
-        return add_vrf(disp_args.cfgdb, vrf_name)
-    elif val == "" or val is None:
-        return del_vrf(disp_args.cfgdb, vrf_name)
-    return False
+
+    try:
+        cfg = {} if val == "" else eval(val)
+        vlan_ids = cfg["vlanIds"]
+    except:
+        return False
+
+    return add_vrf(disp_args.cfgdb, vrf_name, vlan_ids)
+
+
+# delete vrf
+def nwi_delete_vrf(oc_yph, pkey_ar, disp_args):
+    return del_vrf(disp_args.cfgdb, pkey_ar[0])

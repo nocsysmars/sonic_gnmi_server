@@ -121,24 +121,39 @@ def dhcp_relay_restart(oc_yph, pkey_ar, val, is_create, disp_args):
     return restart_dhcp_relay()
 
 
-def vlan_config_dhcp_relay(oc_yph, pkey_ar, val, is_create, disp_args):
-    if not pkey_ar[1].isdigit():
+# add a dhcp relay destination
+def vlan_add_dhcp_relay(oc_yph, pkey_ar, val, is_create, disp_args):
+    if not pkey_ar[0].isdigit():
+        return False
+
+    if  pkey_ar[1] != val:
+        return False
+
+    vid = int(pkey_ar[0])
+    return add_vlan_dhcp_relay(disp_args.cfgdb, vid, val)
+
+
+def vlan_config_dhcp_relays(oc_yph, pkey_ar, val, is_create, disp_args):
+    if not pkey_ar[0].isdigit():
         return False
 
     try:
         cfg = {} if val == "" else eval(val)
-        ip_addr_add = cfg.get('ip-addr-add')
-        ip_addr_del = cfg.get('ip-addr-del')
-        ip_addr_set = cfg.get('ip-addr-set')
+        servers = cfg.get('servers')
     except:
         return False
 
-    vid = int(pkey_ar[1])
-    if ip_addr_add is not None and ip_addr_add != "":
-        return add_vlan_dhcp_relay(disp_args.cfgdb, vid, ip_addr_add)
-    elif ip_addr_del is not None and ip_addr_del != "":
-        return del_vlan_dhcp_relay(disp_args.cfgdb, vid, ip_addr_del)
-    elif ip_addr_set is not None and len(ip_addr_set) > 0:
-        return set_vlan_dhcp_relay(disp_args.cfgdb, vid, ip_addr_set)
+    if servers is None  or len(servers) == 0:
+        return False
 
-    return False
+    vid = int(pkey_ar[0])
+    return set_vlan_dhcp_relay(disp_args.cfgdb, vid, servers)
+
+
+# delete dhcp relay from vlan
+def vlan_delete_dhcp_relay(oc_yph, pkey_ar, disp_args):
+    if not pkey_ar[0].isdigit():
+        return False
+
+    vid = int(pkey_ar[0])
+    return del_vlan_dhcp_relay(disp_args.cfgdb, vid, pkey_ar[1])

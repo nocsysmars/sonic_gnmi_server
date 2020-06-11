@@ -1055,18 +1055,6 @@ def interface_db_set_ip(db, is_add, intf_name, ip):
     return ret_val
 
 
-def interface_ipaddr_dependent_on_interface(db, interface_name):
-    data = []
-    table_name = interface_db_get_intf_table_name(interface_name)
-    if table_name == "":
-        return data
-    keys = db.get_keys(table_name)
-    for key in keys:
-        if interface_name in key and len(key) == 2:
-            data.append(key)
-    return data
-
-
 # clear ip of vlan in config db
 def interface_db_clear_ip(db, intf_name):
     ret_val = False
@@ -1074,7 +1062,7 @@ def interface_db_clear_ip(db, intf_name):
     intf_tbl_name = interface_db_get_intf_table_name(intf_name)
 
     if intf_tbl_name:
-        ipaddrs = interface_ipaddr_dependent_on_interface(db, intf_name)
+        ipaddrs = util_utl.interface_ipaddr_dependent_on_interface(db, intf_name)
         for ipaddr in ipaddrs:
             db.set_entry(intf_tbl_name, (intf_name, ipaddr), None)
         ret_val = True
@@ -1094,13 +1082,10 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     except:
         return False
 
-    if ip_cfg:
-        ret_val = interface_db_clear_ip(disp_args.cfgdb, pkey_ar[0])
-    else:
-        is_del = True if ip_new == "0" or ip_new == "" else False
+    is_del = True if ip_new == "0" or ip_new == "" else False
 
-        ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0],
-                                      pkey_ar[1] + '/' + str(ip_pfx))
+    ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0],
+                                  pkey_ar[1] + '/' + str(ip_pfx))
 
     if not IS_NEW_TEAMMGRD:
         # only ip on vlan interface can take effect immediately
@@ -1197,20 +1182,33 @@ def interface_config_interface(oc_yph, pkey_ar, val, is_create, disp_args):
     # support loopback interface only
     try:
         tmp_cfg = {} if val == "" or val == "{}" else eval(val)
-        ip_addr = tmp_cfg.get('ip-addr')
+        ip_addr = tmp_cfg.get('ip')
         role = tmp_cfg.get('role')
     except:
         util_utl.utl_err("Invalid parameter")
         return False
 
-    is_add = True if ip_addr else False
+    if not ip_addr:
+        return False
 
     # support to add/delete loopback interface now
     if pkey_ar[0].find('Loopback') != 0:
         util_utl.utl_err("Invalid loopback name")
         return False
 
-    if is_add:
-        return add_loopback(disp_args.cfgdb, pkey_ar[0], ip_addr)
-    else:
+    return add_loopback(disp_args.cfgdb, pkey_ar[0], ip_addr)
+
+
+# delete interface
+def interface_delete_interface(oc_yph, pkey_ar, disp_args):
+    # support to delete loopback and vlan only
+    if pkey_ar[0].find('Loopback') != 0 and pkey_ar[0].find('Vlan') != 0:
+        util_utl.utl_err("Only support to delete loopback and vlan interface")
+        return False
+
+    if pkey_ar[0].find('Loopback') == 0:
         return del_loopback(disp_args.cfgdb, pkey_ar[0])
+    elif pkey_ar[0].find('Vlan') == 0:
+        return interface_db_clear_ip(disp_args.cfgdb, pkey_ar[0])
+
+    return False

@@ -190,7 +190,25 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         # input: path (delete)
         for delete in reqSetObj.delete:
             delPath = pathPrefix + EncodePath(delete.elem)
-            util_utl.utl_log(delPath)
+
+            pkey_ar = EncodePathKey(delete.elem)
+            yp_str = EncodeYangPath(delPath)
+
+            util_utl.utl_log("delete req path: " + yp_str)
+
+            self.lock.acquire()
+            ret_status = self.myDispatcher.DeleteRequestByPath(yp_str, pkey_ar)
+            self.lock.release()
+
+            if ret_status:
+                ret_status = grpc.StatusCode.OK
+            else:
+                IsAnyErr = True
+                ret_status = grpc.StatusCode.INVALID_ARGUMENT
+
+            self.__AddOneSetResp(setResp, delete, 1, ret_status, None)
+
+            util_utl.utl_log("delete request finished code: " + str(ret_status))
 
         # input: path, val
         #  When the `replace` operation omits values that have been previously set,
