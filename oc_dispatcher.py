@@ -69,7 +69,7 @@ setPathTable = {
             "util_interface.interface_del_vlan_interface",
     '/interfaces/interface[name]/routed-vlan/ipv4/neighbors/neighbor[ip]/config' :
             "util_interface.interface_set_nbr_v4",
-    '/local-routes/static-routes/static[prefix]/next-hops/next-hop' :
+    '/local-routes/static-routes[id]/static[prefix]/next-hops/next-hop' :
             "util_lr.lr_set_route_v4",
     # multiple keys must be in alphabet order
     '/acl/acl-sets/acl-set[name][type]/config' :
