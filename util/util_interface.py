@@ -23,24 +23,6 @@ VLAN_ID_MIN          = 1
 MGMT_PORT_NAME       = 'eth0'
 
 MY_MAC_ADDR          = ""
-TEAMD_CFG_PORT_CMD_TMPL='teamdctl {0} port {1} {2}'
-TEAMD_CONF_RUNNER    = 'loadbalance'
-TEAMD_CONF_PATH      = "/etc/teamd"
-TEAMD_CONF_TMPL      = """
-    {
-        "device": "%s",
-        "hwaddr": "%s",
-        "runner": {
-            "name": "%s",
-            "active": true,
-            "tx_hash": ["eth", "ipv4", "ipv6"]
-        },
-        "link_watch": {
-            "name": "ethtool"
-        },
-        "ports": {
-        }
-    }"""
 
 FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_NAME  = 0x01  # fill name info
@@ -73,7 +55,7 @@ COUNTER_TABLE_PREFIX     = "COUNTERS:"
 COUNTERS_PORT_NAME_MAP   = "COUNTERS_PORT_NAME_MAP"
 
 # set to True if teammgrd is used to manage all port channel related configuration
-IS_NEW_TEAMMGRD = False
+
 
 CFG_LOOPBACK_PREFIX = "Loopback"
 CFG_LOOPBACK_PREFIX_LEN = len(CFG_LOOPBACK_PREFIX)
@@ -664,149 +646,68 @@ def interface_create_all_infs(inf_yph, is_dbg_test, disp_args):
     return ret_val
 
 
-# get old pc name by port with "teamdctl" command
-def interface_get_old_pc_name_by_port(port_name, disp_args):
-    old_pc_name = ""
-
-    pc_lst = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_PC)
-    for pc in pc_lst:
-        exec_cmd = 'teamdctl %s config dump actual' % pc
-        (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
-        if is_ok:
-            pc_cfg = json.loads(output)
-            if port_name in pc_cfg["ports"]:
-                old_pc_name = pc
-                break
-
-    return old_pc_name
+def interface_add_portchannel(db, portchannel_name):
+    """Add port channel"""
+    content = {'admin_status': 'up',
+               'mtu': '9100'}
+    db.set_entry('PORTCHANNEL', portchannel_name, content)
 
 
-# restore the port setting when port is removed from portchannel
-def interface_restore_port_setting(db, port_name):
-    # need to restore the admin status like teammgr
-    # TODO: restore mtu ???
-    adm_val = interface_db_inf_status_get(db, port_name, PORT_ADMIN_STATUS, FILL_INFO_PORT)
-    if adm_val and adm_val == 'up':
-        exec_cmd = 'ip link set dev %s up' % port_name
-        util_utl.utl_execute_cmd(exec_cmd)
+def interface_portchannel_add_member(db, portchannel_name, port_name):
+    """Add port to  port channel's members"""
+    db.set_entry('PORTCHANNEL_MEMBER', (portchannel_name, port_name),
+                 {'NULL': 'NULL'})
 
 
-# To make interface join/leave port channel
-def interface_set_aggregate_id(oc_yph, pkey_ar, val, is_create, disp_args):
-    # not support to create port interface
-    if is_create: return False
+def interface_portchannel_del_member(db, port_name):
+    """Delete port from port channel's members"""
+    portchannel_list = db.get_table('PORTCHANNEL_MEMBER')
+    for k, v in portchannel_list:
+        if v == port_name:
+            db.set_entry('PORTCHANNEL_MEMBER', (k, v), None)
 
-    is_remove = True if val == "" else False
 
-    if is_remove:
-        # get old pc name
-        pc_name = interface_get_old_pc_name_by_port(pkey_ar[0], disp_args)
-        if not pc_name: return True
+def interface_set_portchannel_members(oc_yph, pkey_ar, val, is_create, disp_args):
+    """Add ports to port channel's member"""
+    print pkey_ar
+    print val
+    if is_create:
+        return False
+
+    if val == "":
+        # remove port from port channel
+        interface_portchannel_del_member(disp_args.cfgdb, pkey_ar[0])
     else:
-        pc_name = val
-        # set port down before adding port to port channel
-        exec_cmd = 'ifconfig %s down' % pkey_ar[0]
-        util_utl.utl_execute_cmd(exec_cmd)
-
-    # use teamdctl to add/remove port
-    exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, ["add", "remove"][is_remove], pkey_ar[0])
-    ret_val = util_utl.utl_execute_cmd(exec_cmd)
-
-    if is_remove:
-        interface_restore_port_setting(disp_args.appdb, pkey_ar[0])
-
-    return ret_val
-
-
-def interface_remove_all_mbr_for_pc(db, pc_name):
-    exec_cmd = 'teamdctl %s config dump actual' % pc_name
-    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
-    if is_ok:
-        pc_cfg = json.loads(output)
-
-        if "ports" in pc_cfg:
-            for port in pc_cfg["ports"]:
-                exec_cmd = TEAMD_CFG_PORT_CMD_TMPL.format(pc_name, 'remove', port)
-                util_utl.utl_execute_cmd(exec_cmd)
-
-                interface_restore_port_setting(db, port)
-
-
-# destroy pc by teamd operation
-def interface_destroy_pc(pc_name, is_force = False):
-    # teammgrd will destroy pc when pc is removed from db
-    if not IS_NEW_TEAMMGRD or is_force:
-        # exec_cmd = 'docker exec teamd teamd -k -t %s' % pc_name
-        exec_cmd = 'teamd -k -t %s' % pc_name
-        return util_utl.utl_execute_cmd(exec_cmd)
-
+        interface_portchannel_add_member(disp_args.cfgdb, val, pkey_ar[0])
     return True
 
 
-# destroy pc created by teammgrd
-def interface_destroy_pc_by_teammgrd(pc_name):
-    LOOP_CNT = 10
-    exec_cmd = "teamdctl %s state" % pc_name
-
-    # wait for the pc created by teammgrd to show up
-    for idx in range(LOOP_CNT):
-        time.sleep(1)
-
-        if util_utl.utl_execute_cmd(exec_cmd):
-            break
-
-    return interface_destroy_pc(pc_name, True)
+def interface_clear_portchannel(db, portchannel_name):
+    """Delete all members from port channel"""
+    portchannel_members = db.get_table("PORTCHANNEL_MEMBER")
+    for k, v in portchannel_members:
+        if k == portchannel_name:
+            db.set_entry('PORTCHANNEL_MEMBER', (k, v), None)
 
 
-# create pc by teamd operation
-def interface_create_pc(pc_name):
-    global MY_MAC_ADDR
-    if IS_NEW_TEAMMGRD:
-        interface_destroy_pc_by_teammgrd(pc_name)
-
-        # re-create the pc (static trunk)
-        pc_cfg = '{"device":"%s","hwaddr":"%s","runner":{"active":"true","name":"%s"}}' % (
-        pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
-        # exec_cmd = "docker exec teamd bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
-        exec_cmd = "bash -c '/usr/bin/teamd -r -t %s -c '\\''%s'\\'' -L /var/warmboot/teamd/ -d'" % (pc_name, pc_cfg)
-
-        return util_utl.utl_execute_cmd(exec_cmd)
-    else:
-        # populate create info to teamd
-        conf = TEAMD_CONF_TMPL % (pc_name, MY_MAC_ADDR, TEAMD_CONF_RUNNER)
-
-        # exec_cmd = "echo '%s' | (docker exec -i teamd bash -c 'cat > %s/%s.conf')" \
-        #            % (conf, TEAMD_CONF_PATH, pc_name)
-        exec_cmd = "echo '%s' | cat > %s/%s.conf" % (conf, TEAMD_CONF_PATH, pc_name)
-        if not util_utl.utl_execute_cmd(exec_cmd): return False
-
-        # exec_cmd = 'docker exec teamd teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
-        exec_cmd = 'teamd -d -f %s/%s.conf' % (TEAMD_CONF_PATH, pc_name)
-        if not util_utl.utl_execute_cmd(exec_cmd): return False
+def interface_del_portchannel(db, portchannel_name):
+    """Delete port channel"""
+    db.set_entry('PORTCHANNEL', portchannel_name, None)
 
 
 # To create/remove port channel by set name
 def interface_set_cfg_name_pc(oc_yph, pkey_ar, is_create, disp_args):
-    set_cmd = CFG_PC_CMD_TMPL % (pkey_ar[0], ["null", "{}"][is_create])
     oc_infs = oc_yph.get("/interfaces")[0]
 
-    # pdb.set_trace()
-    ret_val = False
     if is_create:
-        # need to write to db first to let other app start working
-        if util_utl.utl_execute_cmd(set_cmd):
-            interface_create_pc(pkey_ar[0])
-            oc_infs.interface.add(pkey_ar[0])
-            ret_val = True
+        interface_add_portchannel(disp_args.cfgdb, pkey_ar[0])
+        oc_infs.interface.add(pkey_ar[0])
     else:
         oc_infs.interface.delete(pkey_ar[0])
-        interface_remove_all_mbr_for_pc(disp_args.appdb, pkey_ar[0])
-        interface_destroy_pc(pkey_ar[0])
+        interface_clear_portchannel(disp_args.cfgdb, pkey_ar[0])
+        interface_del_portchannel(disp_args.cfgdb, pkey_ar[0])
 
-        # remove port channel in db last to let other app finish jobs
-        ret_val = util_utl.utl_execute_cmd(set_cmd)
-
-    return ret_val
+    return True
 
 
 # vlan_name should be in "VlanXXX" format
@@ -889,13 +790,10 @@ def interface_set_cfg_enabled(oc_yph, pkey_ar, val, is_create, disp_args):
     elif pkey_ar[0].startswith("PortChannel"):
         tbl = "PORTCHANNEL"
 
-    if IS_NEW_TEAMMGRD and tbl:
+    if tbl:
         # only need to modify db
         val = ["down", "up"][val.upper() == "TRUE"]
         disp_args.cfgdb.mod_entry(tbl, pkey_ar[0], {"admin_status": val})
-    else:
-        exec_cmd = 'ifconfig %s %s' % (pkey_ar[0], ["down", "up"][val.upper() == "TRUE"])
-        util_utl.utl_execute_cmd(exec_cmd)
 
     return True
 
@@ -1086,17 +984,6 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
 
     ret_val = interface_db_set_ip(disp_args.cfgdb, not is_del, pkey_ar[0],
                                   pkey_ar[1] + '/' + str(ip_pfx))
-
-    if not IS_NEW_TEAMMGRD:
-        # only ip on vlan interface can take effect immediately
-        if pkey_ar[0].startswith('Vlan'):
-            return ret_val
-
-        if ret_val:
-            exec_cmd = "ip addr {0} {1}/{2} dev {3}".format(
-                ['add', 'del'][is_del], pkey_ar[1], ip_pfx, pkey_ar[0])
-
-            util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
 
