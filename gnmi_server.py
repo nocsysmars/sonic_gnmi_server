@@ -119,7 +119,10 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                 if isinstance(oc_yph, grpc.StatusCode):
                     er_code = oc_yph
                 else:
-                    tmp_obj = oc_yph.get(yp_str) if oc_yph else []
+                    if path_ar[0] == "components":
+                        tmp_obj = oc_yph.get("/components") if oc_yph else []
+                    else:
+                        tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
                     # TODO: if got more than one obj ?
                     if len(tmp_obj) >= 1:

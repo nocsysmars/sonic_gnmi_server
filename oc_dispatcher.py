@@ -215,9 +215,6 @@ class ocDispatcher:
     @util_utl.utl_timeit
     @util_utl.utl_log_outer
     def DeleteRequestByPath(self, yp_str, pkey_ar):
-        print yp_str
-        print pkey_ar
-
         try:
             # replace key [xxx=yyy] with [xxx]
             reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
