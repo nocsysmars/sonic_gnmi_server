@@ -112,7 +112,13 @@ deletePathTable = {
     '/network-instances/network-instance[name]':
         "util_nwi.nwi_delete_vrf",
     '/vlans/vlan[vlan-id]/config/dhcp-relay/ipv4/addresses/address[ip]':
-        "util_dhcp.vlan_delete_dhcp_relay"
+        "util_dhcp.vlan_delete_dhcp_relay",
+    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config':
+        "util_nwi.nwi_pf_delete_policy",
+    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule[sequence-id]':
+        "util_nwi.nwi_pf_delete_rule",
+    '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config[apply-forwarding-policy]':
+        "util_nwi.nwi_pf_delete_interface",
 }
 
 
@@ -215,9 +221,6 @@ class ocDispatcher:
     @util_utl.utl_timeit
     @util_utl.utl_log_outer
     def DeleteRequestByPath(self, yp_str, pkey_ar):
-        print yp_str
-        print pkey_ar
-
         try:
             # replace key [xxx=yyy] with [xxx]
             reg_path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
