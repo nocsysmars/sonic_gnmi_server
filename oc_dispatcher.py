@@ -52,7 +52,7 @@ setPathTable = {
     # path : set function
     # [xxx] means key
     '/interfaces/interface[name]/ethernet/config/aggregate-id' :
-            "util_interface.interface_set_aggregate_id",
+            "util_interface.interface_set_portchannel_members",
     '/interfaces/interface[name]/config/name' :
             "util_interface.interface_set_cfg_name",
     '/interfaces/interface[name]/config':
