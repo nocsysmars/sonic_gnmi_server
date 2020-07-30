@@ -20,6 +20,8 @@ from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
                      MIRROR_POLICY_PFX, PROUTE_POLICY_PFX, ACL_JSON_FILE
 
 from oc_binding import oc_acl_binding
+from sonicpb.sonic_acl_pb2 import SonicAcl
+from util.sonic_helper import AclTableType, AclTableStage, AclPacketAction, IPProtocol
 
 DEFAULT_NWI_NAME = 'DEFAULT'
 
@@ -295,54 +297,6 @@ def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
 
     return ret_val
 
-# ex:    pkey_ar = [u'DEFAULT', u'Ethernet10']
-#        val     = '{"apply-forwarding-policy": "lll"}'
-#
-# To bind/unbind a policy to an interface
-# TODO: 1.filter out name not valid for PF ???
-#       2.only one policy per port ???
-def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
-    try:
-        cfg = eval(val)
-        port = pkey_ar[1]
-        table_name = cfg.get('apply-forwarding-policy').replace(" ", "_").replace("-", "_").upper().encode('ascii')
-        # 1. get old port list
-        # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
-        table_infos = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
-        # acl must be created b4 binding to interface
-        if table_infos:
-            table_info = table_infos.get(table_name)
-            if not table_info:
-                return False
-            if 'ports' in table_info and port not in table_info['ports']:
-                if table_info['ports'][0] == '':
-                    table_info['ports'][0] = port
-                else:
-                    table_info['ports'].append(port)
-                disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
-    except:
-        return False
-
-    return True
-
-def nwi_pf_delete_interface(root_yph, pkey_ar, disp_args):
-    try:
-        port = pkey_ar[1]
-        table_name = pkey_ar[2].replace(" ", "_").replace("-", "_").upper().encode('ascii')
-        table_infos = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
-        # acl must be created b4 binding to interface
-        if table_infos:
-            table_info = table_infos.get(table_name)
-            if not table_info:
-                return False
-            if 'ports' in table_info and port in table_info['ports']:
-                table_info['ports'].remove(port)
-                disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
-    except:
-        return False
-
-    return True
-
 # ex:    pkey_ar = [u'DEFAULT', u'EVERFLOW']
 #        val     = '{"policy-id": "EVERFLOW"}'
 #
@@ -350,21 +304,25 @@ def nwi_pf_delete_interface(root_yph, pkey_ar, disp_args):
 # TODO: filter out name not valid for PF ???
 def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
     try:
-        table_name = pkey_ar[1].replace(" ", "_").replace("-", "_").upper().encode('ascii')
-        table_info = {"policy_desc": table_name, "stage": "ingress", 'ports': []}
-        if table_name.find(MIRROR_POLICY_PFX) == 0:
-            table_info["type"] = "MIRROR"
-        else:
-            table_info["type"] = "L3"
+        tables = SonicAcl.AclTable.FromString(val)
+
+        for table in tables.acl_table_list:
+            table_info = {}
+            table_name = table.acl_table_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            data = table.acl_table_list
+            table_info["policy_desc"] = data.policy_desc
+            table_info["type"] = AclTableType(data.type)
+            table_info["stage"] = AclTableStage(data.stage)
+            table_info["ports"] = [port.value for port in data.ports]
+            disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
     except:
         return False
 
-    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
     return True
 
 def nwi_pf_delete_policy(root_yph, pkey_ar, disp_args):
     try:
-        table_name = pkey_ar[1].replace(" ", "_").replace("-", "_").upper().encode('ascii')
+        table_name = pkey_ar[0].replace(" ", "_").replace("-", "_").upper().encode('ascii')
         if os.path.exists(ACL_JSON_FILE):
             with open(ACL_JSON_FILE) as infile:
                 acl_cfgs = json.load(infile)
@@ -423,45 +381,32 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
     #
     # priority    => RULE_MAX_PRI - sequence-id
     #
-    """ example:
-    {
-      "9999": {
-        "sequence-id": 9999,
-        "config": {
-          "sequence-id": 9999,
-        },
-        "ipv4": {
-          "config": {
-            "protocol": 17,
-            "source-address": "10.0.0.0/8"
-          }
-        },
-        "action": {
-          "config": {
-            "next-hop": "10.0.0.0"
-          }
-        }
-      }
-    }
-    """
     # TODO: check policy type and action ???
     try:
-        table_name = pkey_ar[1].replace(" ", "_").replace("-", "_").upper().encode('ascii')
-        rule_cfgs = json.loads(val)
         acl_cfgs = {}
         if os.path.exists(ACL_JSON_FILE):
             with open(ACL_JSON_FILE) as infile:
                 acl_cfgs = json.load(infile)
         if "acl" not in acl_cfgs:
             acl_cfgs["acl"] = {"acl-sets": {"acl-set": {}}}
-        if table_name not in acl_cfgs["acl"]["acl-sets"]["acl-set"]:
-            acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name] = {}
-        table_cfgs = acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
-        if "acl-entries" not in table_cfgs:
-            table_cfgs["acl-entries"] = {"acl-entry": {}}
-        rules = table_cfgs["acl-entries"]["acl-entry"]
-        for k in rule_cfgs:
-            rules[k] = convert_rule_to_db_schema(k, rule_cfgs[k])
+        rules = SonicAcl.AclRule.FromString(val)
+        for rule in rules.acl_rule_list:
+            table_name = rule.acl_table_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            rule_name = rule.rule_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            data = rule.acl_rule_list
+            if table_name not in acl_cfgs["acl"]["acl-sets"]["acl-set"]:
+                acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name] = {}
+            table_cfgs = acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
+            if "acl-entries" not in table_cfgs:
+                table_cfgs["acl-entries"] = {"acl-entry": {}}
+            rules = table_cfgs["acl-entries"]["acl-entry"]
+            rules[rule_name] = {
+                "config": {"sequence-id": data.priority.value},
+                "actions": {"config": {"forwarding-action": str(AclPacketAction(data.packet_action))}},
+                "ip": {"config": {
+                    "protocol": str(IPProtocol(data.ip_protocol.value)),
+                    "destination-ip-address": data.dst_ip.value,
+                }}}
         with open(ACL_JSON_FILE, 'w') as outfile:
             json.dump(acl_cfgs, outfile)
         util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
@@ -472,9 +417,8 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
 
 def nwi_pf_delete_rule(root_yph, pkey_ar, disp_args):
     try:
-        id = pkey_ar[2]
-        table_name = pkey_ar[1].replace(" ", "_").replace("-", "_").upper().encode('ascii')
-
+        rule_name = pkey_ar[1]
+        table_name = pkey_ar[0].replace(" ", "_").replace("-", "_").upper().encode('ascii')
         acl_cfgs = {}
         if os.path.exists(ACL_JSON_FILE):
             with open(ACL_JSON_FILE) as infile:
@@ -487,8 +431,8 @@ def nwi_pf_delete_rule(root_yph, pkey_ar, disp_args):
         if "acl-entries" not in table_cfgs:
             return True
         rules = table_cfgs["acl-entries"]["acl-entry"]
-        if id in rules:
-            del rules[id]
+        if rule_name in rules:
+            del rules[rule_name]
             with open(ACL_JSON_FILE, 'w') as outfile:
                 json.dump(acl_cfgs, outfile)
             util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
@@ -641,58 +585,3 @@ def nwi_db_cfg_vrf(oc_yph, pkey_ar, val, is_create, disp_args):
 # delete vrf
 def nwi_delete_vrf(oc_yph, pkey_ar, disp_args):
     return del_vrf(disp_args.cfgdb, pkey_ar[0])
-
-def convert_action(rule):
-    rule_action_props = {}
-    if "action" in rule:
-        action = rule["action"]
-        if "config" in action:
-            config = action["config"]
-            if "discard" not in config or config["discard"]:
-                rule_action_props["forwarding-action"] = "DROP"
-            else:
-                rule_action_props["forwarding-action"] = "ACCEPT"
-        else:
-            raise Exception("Invalid rule action")
-    else:
-        raise Exception("Invalid rule")
-    return {"config": rule_action_props}
-
-def convert_ip(rule):
-    rule_ip_props = {}
-
-    if "ipv4" in rule:
-        ipv4 = rule["ipv4"]
-        if "config" in ipv4:
-            config = ipv4["config"]
-            if "protocol" in config:
-                protocol = config["protocol"]
-                if protocol == 1:
-                    rule_ip_props["protocol"] = "IP_ICMP"
-                elif protocol == 6:
-                    rule_ip_props["protocol"] = "IP_TCP"
-                elif protocol == 17:
-                    rule_ip_props["protocol"] = "IP_UDP"
-                else:
-                    raise Exception("Invalid rule ip protocol")
-            else:
-                raise Exception("Invalid rule ip config")
-
-            if "source-address" in config:
-                rule_ip_props["source-ip-address"] = config["source-address"]
-
-            if "destination-address" in config:
-                rule_ip_props["destination-ip-address"] = config["destination-address"]
-        else:
-            raise Exception("Invalid rule ip")
-    else:
-        raise Exception("Invalid rule")
-
-    return {"config": rule_ip_props}
-
-def convert_rule_to_db_schema(id, rule):
-    return {
-        "config": {"sequence-id": id},
-        "actions": convert_action(rule),
-        "ip": convert_ip(rule)
-    }

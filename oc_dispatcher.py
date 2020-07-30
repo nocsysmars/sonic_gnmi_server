@@ -82,11 +82,9 @@ setPathTable = {
             "util_sys.sys_set_ntp_server",
     '/sonic' :
             "util_sonic.sonic_set_sonic_db",
-    '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config' :
-            "util_nwi.nwi_pf_set_interface",
-    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config' :
+    '/sonic-acl/acl-table' :
             "util_nwi.nwi_pf_set_policy",
-    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule' :
+    '/sonic-acl/acl-rule' :
             "util_nwi.nwi_pf_set_rule",
     '/network-instances/network-instance[name]/config':
             "util_nwi.nwi_db_cfg_vrf",
@@ -113,12 +111,10 @@ deletePathTable = {
         "util_nwi.nwi_delete_vrf",
     '/vlans/vlan[vlan-id]/config/dhcp-relay/ipv4/addresses/address[ip]':
         "util_dhcp.vlan_delete_dhcp_relay",
-    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/config':
+    '/sonic-acl/acl-table[acl-table-name]':
         "util_nwi.nwi_pf_delete_policy",
-    '/network-instances/network-instance[name]/policy-forwarding/policies/policy[policy-id]/rules/rule[sequence-id]':
+    '/sonic-acl/acl-rule[acl-table-name][rule-name]':
         "util_nwi.nwi_pf_delete_rule",
-    '/network-instances/network-instance[name]/policy-forwarding/interfaces/interface[interface-id]/config[apply-forwarding-policy]':
-        "util_nwi.nwi_pf_delete_interface",
 }
 
 
