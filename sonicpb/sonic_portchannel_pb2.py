@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_acl_enums_pb2 as sonic__acl__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17sonic_portchannel.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x15sonic_acl_enums.proto\"\x98\x08\n\x10SonicPortchannel\x12\x63\n\x0bportchannel\x18\xf6\xe7\xb8\x11 \x01(\x0b\x32(.openconfig.SonicPortchannel.PortchannelB!\x82\x41\x1e/sonic-portchannel/portchannel\x1a\x9e\x07\n\x0bPortchannel\x12\x8c\x01\n\x10portchannel_list\x18\xaa\xaa\xcb\x38 \x03(\x0b\x32;.openconfig.SonicPortchannel.Portchannel.PortchannelListKeyB2\x82\x41//sonic-portchannel/portchannel/portchannel-list\x1a\xb5\x04\n\x0fPortchannelList\x12\x82\x01\n\x0c\x61\x64min_status\x18\x8d\x9d\xf6\x89\x01 \x01(\x0e\x32\'.openconfig.SonicPortchannelAdminStatusB?\x82\x41</sonic-portchannel/portchannel/portchannel-list/admin-status\x12n\n\x0b\x64\x65scription\x18\xad\xbc\xbb\xe9\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB>\x82\x41;/sonic-portchannel/portchannel/portchannel-list/description\x12\x66\n\x07members\x18\xd2\xdb\xa0\xba\x01 \x03(\x0b\x32\x15.ywrapper.StringValueB:\x82\x41\x37/sonic-portchannel/portchannel/portchannel-list/members\x12g\n\tmin_links\x18\xcb\x8c\xfa\x32 \x01(\x0b\x32\x13.ywrapper.UintValueB<\x82\x41\x39/sonic-portchannel/portchannel/portchannel-list/min-links\x12\\\n\x03mtu\x18\xef\x92\xdd\xfb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-portchannel/portchannel/portchannel-list/mtu\x1a\xc7\x01\n\x12PortchannelListKey\x12]\n\x10portchannel_name\x18\x01 \x01(\tBC\x82\x41@/sonic-portchannel/portchannel/portchannel-list/portchannel-name\x12R\n\x10portchannel_list\x18\x02 \x01(\x0b\x32\x38.openconfig.SonicPortchannel.Portchannel.PortchannelListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x17sonic_portchannel.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\x98\x08\n\x10SonicPortchannel\x12\x63\n\x0bportchannel\x18\xf6\xe7\xb8\x11 \x01(\x0b\x32(.openconfig.SonicPortchannel.PortchannelB!\x82\x41\x1e/sonic-portchannel/portchannel\x1a\x9e\x07\n\x0bPortchannel\x12\x8c\x01\n\x10portchannel_list\x18\xaa\xaa\xcb\x38 \x03(\x0b\x32;.openconfig.SonicPortchannel.Portchannel.PortchannelListKeyB2\x82\x41//sonic-portchannel/portchannel/portchannel-list\x1a\xb5\x04\n\x0fPortchannelList\x12\x82\x01\n\x0c\x61\x64min_status\x18\x8d\x9d\xf6\x89\x01 \x01(\x0e\x32\'.openconfig.SonicPortchannelAdminStatusB?\x82\x41</sonic-portchannel/portchannel/portchannel-list/admin-status\x12n\n\x0b\x64\x65scription\x18\xad\xbc\xbb\xe9\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB>\x82\x41;/sonic-portchannel/portchannel/portchannel-list/description\x12\x66\n\x07members\x18\xd2\xdb\xa0\xba\x01 \x03(\x0b\x32\x15.ywrapper.StringValueB:\x82\x41\x37/sonic-portchannel/portchannel/portchannel-list/members\x12g\n\tmin_links\x18\xcb\x8c\xfa\x32 \x01(\x0b\x32\x13.ywrapper.UintValueB<\x82\x41\x39/sonic-portchannel/portchannel/portchannel-list/min-links\x12\\\n\x03mtu\x18\xef\x92\xdd\xfb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-portchannel/portchannel/portchannel-list/mtu\x1a\xc7\x01\n\x12PortchannelListKey\x12]\n\x10portchannel_name\x18\x01 \x01(\tBC\x82\x41@/sonic-portchannel/portchannel/portchannel-list/portchannel-name\x12R\n\x10portchannel_list\x18\x02 \x01(\x0b\x32\x38.openconfig.SonicPortchannel.Portchannel.PortchannelListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__acl__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -84,8 +84,8 @@ _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=372,
-  serialized_end=937,
+  serialized_start=362,
+  serialized_end=927,
 )
 
 _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLISTKEY = _descriptor.Descriptor(
@@ -122,8 +122,8 @@ _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=940,
-  serialized_end=1139,
+  serialized_start=930,
+  serialized_end=1129,
 )
 
 _SONICPORTCHANNEL_PORTCHANNEL = _descriptor.Descriptor(
@@ -153,8 +153,8 @@ _SONICPORTCHANNEL_PORTCHANNEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=213,
-  serialized_end=1139,
+  serialized_start=203,
+  serialized_end=1129,
 )
 
 _SONICPORTCHANNEL = _descriptor.Descriptor(
@@ -184,11 +184,11 @@ _SONICPORTCHANNEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=91,
-  serialized_end=1139,
+  serialized_start=81,
+  serialized_end=1129,
 )
 
-_SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST.fields_by_name['admin_status'].enum_type = sonic__acl__enums__pb2._SONICPORTCHANNELADMINSTATUS
+_SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST.fields_by_name['admin_status'].enum_type = enums__pb2._SONICPORTCHANNELADMINSTATUS
 _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST.fields_by_name['description'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST.fields_by_name['members'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICPORTCHANNEL_PORTCHANNEL_PORTCHANNELLIST.fields_by_name['min_links'].message_type = ywrapper__pb2._UINTVALUE

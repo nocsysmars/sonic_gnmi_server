@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_loopback_interface_enums_pb2 as sonic__loopback__interface__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1esonic_loopback_interface.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a$sonic_loopback_interface_enums.proto\"\xe1\x0e\n\x16SonicLoopbackInterface\x12\x85\x01\n\x12loopback_interface\x18\x8b\xe7\x8f\xd0\x01 \x01(\x0b\x32\x34.openconfig.SonicLoopbackInterface.LoopbackInterfaceB/\x82\x41,/sonic-loopback-interface/loopback-interface\x1a\xbe\r\n\x11LoopbackInterface\x12\xd5\x01\n loopback_interface_ipprefix_list\x18\x9c\xe8\xf4\xac\x01 \x03(\x0b\x32U.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixListKeyBP\x82\x41M/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list\x12\xb9\x01\n\x17loopback_interface_list\x18\xc4\xe6s \x03(\x0b\x32M.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceListKeyBG\x82\x41\x44/sonic-loopback-interface/loopback-interface/loopback-interface-list\x1a\xd0\x03\n\x1dLoopbackInterfaceIpprefixList\x12\x97\x01\n\x06\x66\x61mily\x18\xbf\xde\xbf\xe3\x01 \x01(\x0e\x32*.openconfig.SonicLoopbackInterfaceIpFamilyBW\x82\x41T/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/family\x12\xc2\x01\n\x05scope\x18\xb5\xd7\xfe{ \x01(\x0e\x32X.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixList.ScopeBV\x82\x41S/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\x9b\x03\n LoopbackInterfaceIpprefixListKey\x12\x89\x01\n\x17loopback_interface_name\x18\x01 \x01(\tBh\x82\x41\x65/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/loopback-interface-name\x12m\n\tip_prefix\x18\x02 \x01(\tBZ\x82\x41W/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/ip-prefix\x12|\n loopback_interface_ipprefix_list\x18\x03 \x01(\x0b\x32R.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixList\x1a\x96\x01\n\x15LoopbackInterfaceList\x12}\n\x08vrf_name\x18\x85\xac\x81\x80\x01 \x01(\x0b\x32\x15.ywrapper.StringValueBP\x82\x41M/sonic-loopback-interface/loopback-interface/loopback-interface-list/vrf-name\x1a\x8a\x02\n\x18LoopbackInterfaceListKey\x12\x80\x01\n\x17loopback_interface_name\x18\x01 \x01(\tB_\x82\x41\\/sonic-loopback-interface/loopback-interface/loopback-interface-list/loopback-interface-name\x12k\n\x17loopback_interface_list\x18\x02 \x01(\x0b\x32J.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x1esonic_loopback_interface.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\xe1\x0e\n\x16SonicLoopbackInterface\x12\x85\x01\n\x12loopback_interface\x18\x8b\xe7\x8f\xd0\x01 \x01(\x0b\x32\x34.openconfig.SonicLoopbackInterface.LoopbackInterfaceB/\x82\x41,/sonic-loopback-interface/loopback-interface\x1a\xbe\r\n\x11LoopbackInterface\x12\xd5\x01\n loopback_interface_ipprefix_list\x18\x9c\xe8\xf4\xac\x01 \x03(\x0b\x32U.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixListKeyBP\x82\x41M/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list\x12\xb9\x01\n\x17loopback_interface_list\x18\xc4\xe6s \x03(\x0b\x32M.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceListKeyBG\x82\x41\x44/sonic-loopback-interface/loopback-interface/loopback-interface-list\x1a\xd0\x03\n\x1dLoopbackInterfaceIpprefixList\x12\x97\x01\n\x06\x66\x61mily\x18\xbf\xde\xbf\xe3\x01 \x01(\x0e\x32*.openconfig.SonicLoopbackInterfaceIpFamilyBW\x82\x41T/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/family\x12\xc2\x01\n\x05scope\x18\xb5\xd7\xfe{ \x01(\x0e\x32X.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixList.ScopeBV\x82\x41S/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\x9b\x03\n LoopbackInterfaceIpprefixListKey\x12\x89\x01\n\x17loopback_interface_name\x18\x01 \x01(\tBh\x82\x41\x65/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/loopback-interface-name\x12m\n\tip_prefix\x18\x02 \x01(\tBZ\x82\x41W/sonic-loopback-interface/loopback-interface/loopback-interface-ipprefix-list/ip-prefix\x12|\n loopback_interface_ipprefix_list\x18\x03 \x01(\x0b\x32R.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceIpprefixList\x1a\x96\x01\n\x15LoopbackInterfaceList\x12}\n\x08vrf_name\x18\x85\xac\x81\x80\x01 \x01(\x0b\x32\x15.ywrapper.StringValueBP\x82\x41M/sonic-loopback-interface/loopback-interface/loopback-interface-list/vrf-name\x1a\x8a\x02\n\x18LoopbackInterfaceListKey\x12\x80\x01\n\x17loopback_interface_name\x18\x01 \x01(\tB_\x82\x41\\/sonic-loopback-interface/loopback-interface/loopback-interface-list/loopback-interface-name\x12k\n\x17loopback_interface_list\x18\x02 \x01(\x0b\x32J.openconfig.SonicLoopbackInterface.LoopbackInterface.LoopbackInterfaceListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__loopback__interface__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -53,8 +53,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST_SCOPE = 
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1086,
-  serialized_end=1166,
+  serialized_start=1061,
+  serialized_end=1141,
 )
 _sym_db.RegisterEnumDescriptor(_SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST_SCOPE)
 
@@ -94,8 +94,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST = _descr
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=702,
-  serialized_end=1166,
+  serialized_start=677,
+  serialized_end=1141,
 )
 
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLISTKEY = _descriptor.Descriptor(
@@ -139,8 +139,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLISTKEY = _de
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1169,
-  serialized_end=1580,
+  serialized_start=1144,
+  serialized_end=1555,
 )
 
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACELIST = _descriptor.Descriptor(
@@ -170,8 +170,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACELIST = _descriptor.De
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1583,
-  serialized_end=1733,
+  serialized_start=1558,
+  serialized_end=1708,
 )
 
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACELISTKEY = _descriptor.Descriptor(
@@ -208,8 +208,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACELISTKEY = _descriptor
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1736,
-  serialized_end=2002,
+  serialized_start=1711,
+  serialized_end=1977,
 )
 
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE = _descriptor.Descriptor(
@@ -246,8 +246,8 @@ _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=276,
-  serialized_end=2002,
+  serialized_start=251,
+  serialized_end=1977,
 )
 
 _SONICLOOPBACKINTERFACE = _descriptor.Descriptor(
@@ -277,11 +277,11 @@ _SONICLOOPBACKINTERFACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=113,
-  serialized_end=2002,
+  serialized_start=88,
+  serialized_end=1977,
 )
 
-_SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = sonic__loopback__interface__enums__pb2._SONICLOOPBACKINTERFACEIPFAMILY
+_SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = enums__pb2._SONICLOOPBACKINTERFACEIPFAMILY
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST.fields_by_name['scope'].enum_type = _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST_SCOPE
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST.containing_type = _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE
 _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST_SCOPE.containing_type = _SONICLOOPBACKINTERFACE_LOOPBACKINTERFACE_LOOPBACKINTERFACEIPPREFIXLIST

@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_acl_enums_pb2 as sonic__acl__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10sonic_port.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x15sonic_acl_enums.proto\"\xd1\x07\n\tSonicPort\x12\x41\n\x04port\x18\xfb\xb6\xa2\xea\x01 \x01(\x0b\x32\x1a.openconfig.SonicPort.PortB\x13\x82\x41\x10/sonic-port/port\x1a\x80\x07\n\x04Port\x12[\n\tport_list\x18\xe0\xcd\xee` \x03(\x0b\x32&.openconfig.SonicPort.Port.PortListKeyB\x1d\x82\x41\x1a/sonic-port/port/port-list\x1a\x96\x05\n\x08PortList\x12\x65\n\x0c\x61\x64min_status\x18\xe7\xb8\xaa\x61 \x01(\x0e\x32 .openconfig.SonicPortAdminStatusB*\x82\x41\'/sonic-port/port/port-list/admin-status\x12M\n\x05\x61lias\x18\xe5\x92\x94\xd7\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB#\x82\x41 /sonic-port/port/port-list/alias\x12Y\n\x0b\x64\x65scription\x18\xab\xac\xcc\xb1\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB)\x82\x41&/sonic-port/port/port-list/description\x12I\n\x03\x66\x65\x63\x18\xef\xed\xf9\xa7\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB!\x82\x41\x1e/sonic-port/port/port-list/fec\x12K\n\x05index\x18\xb1\x9b\xf5\x85\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB#\x82\x41 /sonic-port/port/port-list/index\x12M\n\x05lanes\x18\xf4\x8b\xea\xb4\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB#\x82\x41 /sonic-port/port/port-list/lanes\x12\x46\n\x03mtu\x18\xd9\xef\x8a\x1f \x01(\x0b\x32\x13.ywrapper.UintValueB!\x82\x41\x1e/sonic-port/port/port-list/mtu\x12J\n\x05speed\x18\xf8\xf0\xd6\x35 \x01(\x0b\x32\x13.ywrapper.UintValueB#\x82\x41 /sonic-port/port/port-list/speed\x1a\x81\x01\n\x0bPortListKey\x12:\n\tport_name\x18\x01 \x01(\tB\'\x82\x41$/sonic-port/port/port-list/port-name\x12\x36\n\tport_list\x18\x02 \x01(\x0b\x32#.openconfig.SonicPort.Port.PortListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x10sonic_port.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\xd1\x07\n\tSonicPort\x12\x41\n\x04port\x18\xfb\xb6\xa2\xea\x01 \x01(\x0b\x32\x1a.openconfig.SonicPort.PortB\x13\x82\x41\x10/sonic-port/port\x1a\x80\x07\n\x04Port\x12[\n\tport_list\x18\xe0\xcd\xee` \x03(\x0b\x32&.openconfig.SonicPort.Port.PortListKeyB\x1d\x82\x41\x1a/sonic-port/port/port-list\x1a\x96\x05\n\x08PortList\x12\x65\n\x0c\x61\x64min_status\x18\xe7\xb8\xaa\x61 \x01(\x0e\x32 .openconfig.SonicPortAdminStatusB*\x82\x41\'/sonic-port/port/port-list/admin-status\x12M\n\x05\x61lias\x18\xe5\x92\x94\xd7\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB#\x82\x41 /sonic-port/port/port-list/alias\x12Y\n\x0b\x64\x65scription\x18\xab\xac\xcc\xb1\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB)\x82\x41&/sonic-port/port/port-list/description\x12I\n\x03\x66\x65\x63\x18\xef\xed\xf9\xa7\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB!\x82\x41\x1e/sonic-port/port/port-list/fec\x12K\n\x05index\x18\xb1\x9b\xf5\x85\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB#\x82\x41 /sonic-port/port/port-list/index\x12M\n\x05lanes\x18\xf4\x8b\xea\xb4\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB#\x82\x41 /sonic-port/port/port-list/lanes\x12\x46\n\x03mtu\x18\xd9\xef\x8a\x1f \x01(\x0b\x32\x13.ywrapper.UintValueB!\x82\x41\x1e/sonic-port/port/port-list/mtu\x12J\n\x05speed\x18\xf8\xf0\xd6\x35 \x01(\x0b\x32\x13.ywrapper.UintValueB#\x82\x41 /sonic-port/port/port-list/speed\x1a\x81\x01\n\x0bPortListKey\x12:\n\tport_name\x18\x01 \x01(\tB\'\x82\x41$/sonic-port/port/port-list/port-name\x12\x36\n\tport_list\x18\x02 \x01(\x0b\x32#.openconfig.SonicPort.Port.PortListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__acl__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -105,8 +105,8 @@ _SONICPORT_PORT_PORTLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=267,
-  serialized_end=929,
+  serialized_start=257,
+  serialized_end=919,
 )
 
 _SONICPORT_PORT_PORTLISTKEY = _descriptor.Descriptor(
@@ -143,8 +143,8 @@ _SONICPORT_PORT_PORTLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=932,
-  serialized_end=1061,
+  serialized_start=922,
+  serialized_end=1051,
 )
 
 _SONICPORT_PORT = _descriptor.Descriptor(
@@ -174,8 +174,8 @@ _SONICPORT_PORT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=165,
-  serialized_end=1061,
+  serialized_start=155,
+  serialized_end=1051,
 )
 
 _SONICPORT = _descriptor.Descriptor(
@@ -205,11 +205,11 @@ _SONICPORT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=84,
-  serialized_end=1061,
+  serialized_start=74,
+  serialized_end=1051,
 )
 
-_SONICPORT_PORT_PORTLIST.fields_by_name['admin_status'].enum_type = sonic__acl__enums__pb2._SONICPORTADMINSTATUS
+_SONICPORT_PORT_PORTLIST.fields_by_name['admin_status'].enum_type = enums__pb2._SONICPORTADMINSTATUS
 _SONICPORT_PORT_PORTLIST.fields_by_name['alias'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICPORT_PORT_PORTLIST.fields_by_name['description'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICPORT_PORT_PORTLIST.fields_by_name['fec'].message_type = ywrapper__pb2._STRINGVALUE

@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_acl_enums_pb2 as sonic__acl__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0fsonic_acl.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x15sonic_acl_enums.proto\"\xed\x1d\n\x08SonicAcl\x12J\n\x08\x61\x63l_rule\x18\xc3\xf9\xe3\xfe\x01 \x01(\x0b\x32\x1c.openconfig.SonicAcl.AclRuleB\x16\x82\x41\x13/sonic-acl/acl-rule\x12M\n\tacl_table\x18\xc3\xdc\xee\xb9\x01 \x01(\x0b\x32\x1d.openconfig.SonicAcl.AclTableB\x17\x82\x41\x14/sonic-acl/acl-table\x1a\xa8\x16\n\x07\x41\x63lRule\x12l\n\racl_rule_list\x18\xce\xdf\xff\xa5\x01 \x03(\x0b\x32+.openconfig.SonicAcl.AclRule.AclRuleListKeyB$\x82\x41!/sonic-acl/acl-rule/acl-rule-list\x1a\xca\x13\n\x0b\x41\x63lRuleList\x12l\n\x11L4_DST_PORT_RANGE\x18\xbe\xb5\xe6\xd8\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/L4_DST_PORT_RANGE\x12P\n\x04\x64scp\x18\xff\xb2\xef\xad\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB)\x82\x41&/sonic-acl/acl-rule/acl-rule-list/dscp\x12V\n\x06\x64st_ip\x18\x96\x8f\xda\xd9\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB+\x82\x41(/sonic-acl/acl-rule/acl-rule-list/dst-ip\x12W\n\x07\x64st_ip6\x18\x9a\x99\xe0: \x01(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/dst-ip6\x12^\n\nether_type\x18\xd0\xc6\x95\xc3\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB/\x82\x41,/sonic-acl/acl-rule/acl-rule-list/ether-type\x12Z\n\ticmp_code\x18\xf0\xe1\x92\x83\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/icmp-code\x12Y\n\ticmp_type\x18\xab\xa4\xde\x15 \x01(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/icmp-type\x12]\n\x0bicmpv6_code\x18\xaa\x99\xe0> \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/icmpv6-code\x12]\n\x0bicmpv6_type\x18\xcd\x91\x95\x17 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/icmpv6-type\x12X\n\x08in_ports\x18\x87\xbe\xd1\xf8\x01 \x03(\x0b\x32\x13.ywrapper.UintValueB-\x82\x41*/sonic-acl/acl-rule/acl-rule-list/in-ports\x12j\n\x10inner_ether_type\x18\xf1\xbe\xea\x9c\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB5\x82\x41\x32/sonic-acl/acl-rule/acl-rule-list/inner-ether-type\x12j\n\x11inner_ip_protocol\x18\xac\x9d\xaa\xbb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-ip-protocol\x12j\n\x11inner_l4_dst_port\x18\xfa\xb3\xd0\xe2\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-l4-dst-port\x12i\n\x11inner_l4_src_port\x18\xfb\xe2\xeek \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-l4-src-port\x12^\n\x0bip_protocol\x18\xb3\xea\x8b\xdb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/ip-protocol\x12\\\n\x07ip_type\x18\xd3\xe7\xaf\x1e \x01(\x0e\x32\x1a.openconfig.SonicAclIpTypeB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/ip-type\x12^\n\x0bl4_dst_port\x18\xce\xc3\xad\x8f\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/l4-dst-port\x12]\n\x0bl4_src_port\x18\xfb\xaf\xf5R \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/l4-src-port\x12l\n\x11l4_src_port_range\x18\xf7\xe6\xa4\xfa\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/l4-src-port-range\x12Z\n\tout_ports\x18\xcc\xb2\xcc\xff\x01 \x03(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/out-ports\x12o\n\rpacket_action\x18\xf0\xe4\xfb\xad\x01 \x01(\x0e\x32 .openconfig.SonicAclPacketActionB2\x82\x41//sonic-acl/acl-rule/acl-rule-list/packet-action\x12W\n\x08priority\x18\x9d\xd8\x89\n \x01(\x0b\x32\x13.ywrapper.UintValueB-\x82\x41*/sonic-acl/acl-rule/acl-rule-list/priority\x12V\n\x06src_ip\x18\xd7\xb0\xb1\xbe\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB+\x82\x41(/sonic-acl/acl-rule/acl-rule-list/src-ip\x12X\n\x07src_ip6\x18\x9f\xcc\xc8\x90\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/src_ip6\x12K\n\x02tc\x18\xb2\xfb\xf9q \x01(\x0b\x32\x13.ywrapper.UintValueB\'\x82\x41$/sonic-acl/acl-rule/acl-rule-list/tc\x12\\\n\ttcp_flags\x18\xfc\xbc\xd7\xea\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/tcp-flags\x1a\xe1\x01\n\x0e\x41\x63lRuleListKey\x12K\n\x0e\x61\x63l_table_name\x18\x01 \x01(\tB3\x82\x41\x30/sonic-acl/acl-rule/acl-rule-list/acl-table-name\x12\x41\n\trule_name\x18\x02 \x01(\tB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/rule-name\x12?\n\racl_rule_list\x18\x03 \x01(\x0b\x32(.openconfig.SonicAcl.AclRule.AclRuleList\x1a\x9a\x06\n\x08\x41\x63lTable\x12q\n\x0e\x61\x63l_table_list\x18\xda\xf9\xa9\xb2\x01 \x03(\x0b\x32-.openconfig.SonicAcl.AclTable.AclTableListKeyB&\x82\x41#/sonic-acl/acl-table/acl-table-list\x1a\xf3\x03\n\x0c\x41\x63lTableList\x12\x62\n\x0bpolicy_desc\x18\xe3\x9f\xae\xfc\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB2\x82\x41//sonic-acl/acl-table/acl-table-list/policy-desc\x12U\n\x05ports\x18\xdf\xdd\xf6Y \x03(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-table/acl-table-list/ports\x12q\n\x05stage\x18\xe5\xe3\x82\x8b\x01 \x01(\x0e\x32\x30.openconfig.SonicAcl.AclTable.AclTableList.StageB,\x82\x41)/sonic-acl/acl-table/acl-table-list/stage\x12_\n\x04type\x18\xc9\x9f\x9d\xc0\x01 \x01(\x0e\x32 .openconfig.SonicAclAclTableTypeB+\x82\x41(/sonic-acl/acl-table/acl-table-list/type\"T\n\x05Stage\x12\x0f\n\x0bSTAGE_UNSET\x10\x00\x12\x1d\n\rSTAGE_INGRESS\x10\x01\x1a\n\x82\x41\x07INGRESS\x12\x1b\n\x0cSTAGE_EGRESS\x10\x02\x1a\t\x82\x41\x06\x45GRESS\x1a\xa4\x01\n\x0f\x41\x63lTableListKey\x12M\n\x0e\x61\x63l_table_name\x18\x01 \x01(\tB5\x82\x41\x32/sonic-acl/acl-table/acl-table-list/acl-table-name\x12\x42\n\x0e\x61\x63l_table_list\x18\x02 \x01(\x0b\x32*.openconfig.SonicAcl.AclTable.AclTableListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x0fsonic_acl.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\xed\x1d\n\x08SonicAcl\x12J\n\x08\x61\x63l_rule\x18\xc3\xf9\xe3\xfe\x01 \x01(\x0b\x32\x1c.openconfig.SonicAcl.AclRuleB\x16\x82\x41\x13/sonic-acl/acl-rule\x12M\n\tacl_table\x18\xc3\xdc\xee\xb9\x01 \x01(\x0b\x32\x1d.openconfig.SonicAcl.AclTableB\x17\x82\x41\x14/sonic-acl/acl-table\x1a\xa8\x16\n\x07\x41\x63lRule\x12l\n\racl_rule_list\x18\xce\xdf\xff\xa5\x01 \x03(\x0b\x32+.openconfig.SonicAcl.AclRule.AclRuleListKeyB$\x82\x41!/sonic-acl/acl-rule/acl-rule-list\x1a\xca\x13\n\x0b\x41\x63lRuleList\x12l\n\x11L4_DST_PORT_RANGE\x18\xbe\xb5\xe6\xd8\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/L4_DST_PORT_RANGE\x12P\n\x04\x64scp\x18\xff\xb2\xef\xad\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB)\x82\x41&/sonic-acl/acl-rule/acl-rule-list/dscp\x12V\n\x06\x64st_ip\x18\x96\x8f\xda\xd9\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB+\x82\x41(/sonic-acl/acl-rule/acl-rule-list/dst-ip\x12W\n\x07\x64st_ip6\x18\x9a\x99\xe0: \x01(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/dst-ip6\x12^\n\nether_type\x18\xd0\xc6\x95\xc3\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB/\x82\x41,/sonic-acl/acl-rule/acl-rule-list/ether-type\x12Z\n\ticmp_code\x18\xf0\xe1\x92\x83\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/icmp-code\x12Y\n\ticmp_type\x18\xab\xa4\xde\x15 \x01(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/icmp-type\x12]\n\x0bicmpv6_code\x18\xaa\x99\xe0> \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/icmpv6-code\x12]\n\x0bicmpv6_type\x18\xcd\x91\x95\x17 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/icmpv6-type\x12X\n\x08in_ports\x18\x87\xbe\xd1\xf8\x01 \x03(\x0b\x32\x13.ywrapper.UintValueB-\x82\x41*/sonic-acl/acl-rule/acl-rule-list/in-ports\x12j\n\x10inner_ether_type\x18\xf1\xbe\xea\x9c\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB5\x82\x41\x32/sonic-acl/acl-rule/acl-rule-list/inner-ether-type\x12j\n\x11inner_ip_protocol\x18\xac\x9d\xaa\xbb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-ip-protocol\x12j\n\x11inner_l4_dst_port\x18\xfa\xb3\xd0\xe2\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-l4-dst-port\x12i\n\x11inner_l4_src_port\x18\xfb\xe2\xeek \x01(\x0b\x32\x13.ywrapper.UintValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/inner-l4-src-port\x12^\n\x0bip_protocol\x18\xb3\xea\x8b\xdb\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/ip-protocol\x12\\\n\x07ip_type\x18\xd3\xe7\xaf\x1e \x01(\x0e\x32\x1a.openconfig.SonicAclIpTypeB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/ip-type\x12^\n\x0bl4_dst_port\x18\xce\xc3\xad\x8f\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/l4-dst-port\x12]\n\x0bl4_src_port\x18\xfb\xaf\xf5R \x01(\x0b\x32\x13.ywrapper.UintValueB0\x82\x41-/sonic-acl/acl-rule/acl-rule-list/l4-src-port\x12l\n\x11l4_src_port_range\x18\xf7\xe6\xa4\xfa\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB6\x82\x41\x33/sonic-acl/acl-rule/acl-rule-list/l4-src-port-range\x12Z\n\tout_ports\x18\xcc\xb2\xcc\xff\x01 \x03(\x0b\x32\x13.ywrapper.UintValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/out-ports\x12o\n\rpacket_action\x18\xf0\xe4\xfb\xad\x01 \x01(\x0e\x32 .openconfig.SonicAclPacketActionB2\x82\x41//sonic-acl/acl-rule/acl-rule-list/packet-action\x12W\n\x08priority\x18\x9d\xd8\x89\n \x01(\x0b\x32\x13.ywrapper.UintValueB-\x82\x41*/sonic-acl/acl-rule/acl-rule-list/priority\x12V\n\x06src_ip\x18\xd7\xb0\xb1\xbe\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB+\x82\x41(/sonic-acl/acl-rule/acl-rule-list/src-ip\x12X\n\x07src_ip6\x18\x9f\xcc\xc8\x90\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-rule/acl-rule-list/src_ip6\x12K\n\x02tc\x18\xb2\xfb\xf9q \x01(\x0b\x32\x13.ywrapper.UintValueB\'\x82\x41$/sonic-acl/acl-rule/acl-rule-list/tc\x12\\\n\ttcp_flags\x18\xfc\xbc\xd7\xea\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/tcp-flags\x1a\xe1\x01\n\x0e\x41\x63lRuleListKey\x12K\n\x0e\x61\x63l_table_name\x18\x01 \x01(\tB3\x82\x41\x30/sonic-acl/acl-rule/acl-rule-list/acl-table-name\x12\x41\n\trule_name\x18\x02 \x01(\tB.\x82\x41+/sonic-acl/acl-rule/acl-rule-list/rule-name\x12?\n\racl_rule_list\x18\x03 \x01(\x0b\x32(.openconfig.SonicAcl.AclRule.AclRuleList\x1a\x9a\x06\n\x08\x41\x63lTable\x12q\n\x0e\x61\x63l_table_list\x18\xda\xf9\xa9\xb2\x01 \x03(\x0b\x32-.openconfig.SonicAcl.AclTable.AclTableListKeyB&\x82\x41#/sonic-acl/acl-table/acl-table-list\x1a\xf3\x03\n\x0c\x41\x63lTableList\x12\x62\n\x0bpolicy_desc\x18\xe3\x9f\xae\xfc\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB2\x82\x41//sonic-acl/acl-table/acl-table-list/policy-desc\x12U\n\x05ports\x18\xdf\xdd\xf6Y \x03(\x0b\x32\x15.ywrapper.StringValueB,\x82\x41)/sonic-acl/acl-table/acl-table-list/ports\x12q\n\x05stage\x18\xe5\xe3\x82\x8b\x01 \x01(\x0e\x32\x30.openconfig.SonicAcl.AclTable.AclTableList.StageB,\x82\x41)/sonic-acl/acl-table/acl-table-list/stage\x12_\n\x04type\x18\xc9\x9f\x9d\xc0\x01 \x01(\x0e\x32 .openconfig.SonicAclAclTableTypeB+\x82\x41(/sonic-acl/acl-table/acl-table-list/type\"T\n\x05Stage\x12\x0f\n\x0bSTAGE_UNSET\x10\x00\x12\x1d\n\rSTAGE_INGRESS\x10\x01\x1a\n\x82\x41\x07INGRESS\x12\x1b\n\x0cSTAGE_EGRESS\x10\x02\x1a\t\x82\x41\x06\x45GRESS\x1a\xa4\x01\n\x0f\x41\x63lTableListKey\x12M\n\x0e\x61\x63l_table_name\x18\x01 \x01(\tB5\x82\x41\x32/sonic-acl/acl-table/acl-table-list/acl-table-name\x12\x42\n\x0e\x61\x63l_table_list\x18\x02 \x01(\x0b\x32*.openconfig.SonicAcl.AclTable.AclTableListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__acl__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -53,8 +53,8 @@ _SONICACL_ACLTABLE_ACLTABLELIST_STAGE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=3653,
-  serialized_end=3737,
+  serialized_start=3643,
+  serialized_end=3727,
 )
 _sym_db.RegisterEnumDescriptor(_SONICACL_ACLTABLE_ACLTABLELIST_STAGE)
 
@@ -261,8 +261,8 @@ _SONICACL_ACLRULE_ACLRULELIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=373,
-  serialized_end=2879,
+  serialized_start=363,
+  serialized_end=2869,
 )
 
 _SONICACL_ACLRULE_ACLRULELISTKEY = _descriptor.Descriptor(
@@ -306,8 +306,8 @@ _SONICACL_ACLRULE_ACLRULELISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2882,
-  serialized_end=3107,
+  serialized_start=2872,
+  serialized_end=3097,
 )
 
 _SONICACL_ACLRULE = _descriptor.Descriptor(
@@ -337,8 +337,8 @@ _SONICACL_ACLRULE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=251,
-  serialized_end=3107,
+  serialized_start=241,
+  serialized_end=3097,
 )
 
 _SONICACL_ACLTABLE_ACLTABLELIST = _descriptor.Descriptor(
@@ -390,8 +390,8 @@ _SONICACL_ACLTABLE_ACLTABLELIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3238,
-  serialized_end=3737,
+  serialized_start=3228,
+  serialized_end=3727,
 )
 
 _SONICACL_ACLTABLE_ACLTABLELISTKEY = _descriptor.Descriptor(
@@ -428,8 +428,8 @@ _SONICACL_ACLTABLE_ACLTABLELISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3740,
-  serialized_end=3904,
+  serialized_start=3730,
+  serialized_end=3894,
 )
 
 _SONICACL_ACLTABLE = _descriptor.Descriptor(
@@ -459,8 +459,8 @@ _SONICACL_ACLTABLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3110,
-  serialized_end=3904,
+  serialized_start=3100,
+  serialized_end=3894,
 )
 
 _SONICACL = _descriptor.Descriptor(
@@ -497,8 +497,8 @@ _SONICACL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=83,
-  serialized_end=3904,
+  serialized_start=73,
+  serialized_end=3894,
 )
 
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['L4_DST_PORT_RANGE'].message_type = ywrapper__pb2._STRINGVALUE
@@ -516,12 +516,12 @@ _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['inner_ip_protocol'].message_type =
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['inner_l4_dst_port'].message_type = ywrapper__pb2._UINTVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['inner_l4_src_port'].message_type = ywrapper__pb2._UINTVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['ip_protocol'].message_type = ywrapper__pb2._UINTVALUE
-_SONICACL_ACLRULE_ACLRULELIST.fields_by_name['ip_type'].enum_type = sonic__acl__enums__pb2._SONICACLIPTYPE
+_SONICACL_ACLRULE_ACLRULELIST.fields_by_name['ip_type'].enum_type = enums__pb2._SONICACLIPTYPE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['l4_dst_port'].message_type = ywrapper__pb2._UINTVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['l4_src_port'].message_type = ywrapper__pb2._UINTVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['l4_src_port_range'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['out_ports'].message_type = ywrapper__pb2._UINTVALUE
-_SONICACL_ACLRULE_ACLRULELIST.fields_by_name['packet_action'].enum_type = sonic__acl__enums__pb2._SONICACLPACKETACTION
+_SONICACL_ACLRULE_ACLRULELIST.fields_by_name['packet_action'].enum_type = enums__pb2._SONICACLPACKETACTION
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['priority'].message_type = ywrapper__pb2._UINTVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['src_ip'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICACL_ACLRULE_ACLRULELIST.fields_by_name['src_ip6'].message_type = ywrapper__pb2._STRINGVALUE
@@ -535,7 +535,7 @@ _SONICACL_ACLRULE.containing_type = _SONICACL
 _SONICACL_ACLTABLE_ACLTABLELIST.fields_by_name['policy_desc'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICACL_ACLTABLE_ACLTABLELIST.fields_by_name['ports'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICACL_ACLTABLE_ACLTABLELIST.fields_by_name['stage'].enum_type = _SONICACL_ACLTABLE_ACLTABLELIST_STAGE
-_SONICACL_ACLTABLE_ACLTABLELIST.fields_by_name['type'].enum_type = sonic__acl__enums__pb2._SONICACLACLTABLETYPE
+_SONICACL_ACLTABLE_ACLTABLELIST.fields_by_name['type'].enum_type = enums__pb2._SONICACLACLTABLETYPE
 _SONICACL_ACLTABLE_ACLTABLELIST.containing_type = _SONICACL_ACLTABLE
 _SONICACL_ACLTABLE_ACLTABLELIST_STAGE.containing_type = _SONICACL_ACLTABLE_ACLTABLELIST
 _SONICACL_ACLTABLE_ACLTABLELISTKEY.fields_by_name['acl_table_list'].message_type = _SONICACL_ACLTABLE_ACLTABLELIST

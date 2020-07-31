@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_vlan_enums_pb2 as sonic__vlan__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10sonic_vlan.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x16sonic_vlan_enums.proto\"\xc4\x16\n\tSonicVlan\x12\x41\n\x04vlan\x18\xc9\xd9\xda\xe5\x01 \x01(\x0b\x32\x1a.openconfig.SonicVlan.VlanB\x13\x82\x41\x10/sonic-vlan/vlan\x12]\n\x0evlan_interface\x18\xf3\xee\xc9V \x01(\x0b\x32#.openconfig.SonicVlan.VlanInterfaceB\x1d\x82\x41\x1a/sonic-vlan/vlan-interface\x12T\n\x0bvlan_member\x18\xc4\xd3\xce\x0b \x01(\x0b\x32 .openconfig.SonicVlan.VlanMemberB\x1a\x82\x41\x17/sonic-vlan/vlan-member\x1a\xfe\x05\n\x04Vlan\x12\\\n\tvlan_list\x18\xb4\xa5\x9b\x82\x01 \x03(\x0b\x32&.openconfig.SonicVlan.Vlan.VlanListKeyB\x1d\x82\x41\x1a/sonic-vlan/vlan/vlan-list\x1a\x93\x04\n\x08VlanList\x12\x66\n\x0c\x61\x64min_status\x18\xf3\x88\x85\xef\x01 \x01(\x0e\x32 .openconfig.SonicVlanAdminStatusB*\x82\x41\'/sonic-vlan/vlan/vlan-list/admin-status\x12Y\n\x0b\x64\x65scription\x18\x8f\x8c\x90\xe6\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB)\x82\x41&/sonic-vlan/vlan/vlan-list/description\x12[\n\x0c\x64hcp_servers\x18\xcd\xee\x83\x92\x01 \x03(\x0b\x32\x15.ywrapper.StringValueB*\x82\x41\'/sonic-vlan/vlan/vlan-list/dhcp-servers\x12P\n\x07members\x18\xb4\x90\x8ao \x03(\x0b\x32\x15.ywrapper.StringValueB%\x82\x41\"/sonic-vlan/vlan/vlan-list/members\x12\x46\n\x03mtu\x18\xbd\xc9\xe5x \x01(\x0b\x32\x13.ywrapper.UintValueB!\x82\x41\x1e/sonic-vlan/vlan/vlan-list/mtu\x12M\n\x06vlanid\x18\x97\xbe\xa9\xa6\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB$\x82\x41!/sonic-vlan/vlan/vlan-list/vlanid\x1a\x81\x01\n\x0bVlanListKey\x12:\n\tvlan_name\x18\x01 \x01(\tB\'\x82\x41$/sonic-vlan/vlan/vlan-list/vlan-name\x12\x36\n\tvlan_list\x18\x02 \x01(\x0b\x32#.openconfig.SonicVlan.Vlan.VlanList\x1a\xb9\n\n\rVlanInterface\x12\xa6\x01\n\x1cvlan_interface_ipprefix_list\x18\x98\xf8\x91\xe4\x01 \x03(\x0b\x32@.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixListKeyB:\x82\x41\x37/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list\x12\x8b\x01\n\x13vlan_interface_list\x18\x90\xb6\xd0^ \x03(\x0b\x32\x38.openconfig.SonicVlan.VlanInterface.VlanInterfaceListKeyB1\x82\x41./sonic-vlan/vlan-interface/vlan-interface-list\x1a\xfe\x02\n\x19VlanInterfaceIpprefixList\x12t\n\x06\x66\x61mily\x18\xf3\x9c\x8f\xc3\x01 \x01(\x0e\x32\x1d.openconfig.SonicVlanIpFamilyBA\x82\x41>/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/family\x12\x98\x01\n\x05scope\x18\xe9\xfa\x8f\xe7\x01 \x01(\x0e\x32\x43.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixList.ScopeB@\x82\x41=/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\xb5\x02\n\x1cVlanInterfaceIpprefixListKey\x12W\n\tvlan_name\x18\x01 \x01(\tBD\x82\x41\x41/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/vlan-name\x12W\n\tip_prefix\x18\x02 \x01(\tBD\x82\x41\x41/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/ip-prefix\x12\x63\n\x1cvlan_interface_ipprefix_list\x18\x03 \x01(\x0b\x32=.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixList\x1a{\n\x11VlanInterfaceList\x12\x66\n\x08vrf_name\x18\xc7\xaf\xa0\x02 \x01(\x0b\x32\x15.ywrapper.StringValueB:\x82\x41\x37/sonic-vlan/vlan-interface/vlan-interface-list/vrf_name\x1a\xba\x01\n\x14VlanInterfaceListKey\x12N\n\tvlan_name\x18\x01 \x01(\tB;\x82\x41\x38/sonic-vlan/vlan-interface/vlan-interface-list/vlan-name\x12R\n\x13vlan_interface_list\x18\x02 \x01(\x0b\x32\x35.openconfig.SonicVlan.VlanInterface.VlanInterfaceList\x1a\x81\x04\n\nVlanMember\x12|\n\x10vlan_member_list\x18\xf8\xf0\xe2\x37 \x03(\x0b\x32\x32.openconfig.SonicVlan.VlanMember.VlanMemberListKeyB+\x82\x41(/sonic-vlan/vlan-member/vlan-member-list\x1a\x89\x01\n\x0eVlanMemberList\x12w\n\x0ctagging_mode\x18\xe4\xa7\xd8l \x01(\x0e\x32$.openconfig.SonicVlanVlanTaggingModeB8\x82\x41\x35/sonic-vlan/vlan-member/vlan-member-list/tagging-mode\x1a\xe8\x01\n\x11VlanMemberListKey\x12H\n\tvlan_name\x18\x01 \x01(\tB5\x82\x41\x32/sonic-vlan/vlan-member/vlan-member-list/vlan-name\x12>\n\x04port\x18\x02 \x01(\tB0\x82\x41-/sonic-vlan/vlan-member/vlan-member-list/port\x12I\n\x10vlan_member_list\x18\x03 \x01(\x0b\x32/.openconfig.SonicVlan.VlanMember.VlanMemberListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x10sonic_vlan.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\xc4\x16\n\tSonicVlan\x12\x41\n\x04vlan\x18\xc9\xd9\xda\xe5\x01 \x01(\x0b\x32\x1a.openconfig.SonicVlan.VlanB\x13\x82\x41\x10/sonic-vlan/vlan\x12]\n\x0evlan_interface\x18\xf3\xee\xc9V \x01(\x0b\x32#.openconfig.SonicVlan.VlanInterfaceB\x1d\x82\x41\x1a/sonic-vlan/vlan-interface\x12T\n\x0bvlan_member\x18\xc4\xd3\xce\x0b \x01(\x0b\x32 .openconfig.SonicVlan.VlanMemberB\x1a\x82\x41\x17/sonic-vlan/vlan-member\x1a\xfe\x05\n\x04Vlan\x12\\\n\tvlan_list\x18\xb4\xa5\x9b\x82\x01 \x03(\x0b\x32&.openconfig.SonicVlan.Vlan.VlanListKeyB\x1d\x82\x41\x1a/sonic-vlan/vlan/vlan-list\x1a\x93\x04\n\x08VlanList\x12\x66\n\x0c\x61\x64min_status\x18\xf3\x88\x85\xef\x01 \x01(\x0e\x32 .openconfig.SonicVlanAdminStatusB*\x82\x41\'/sonic-vlan/vlan/vlan-list/admin-status\x12Y\n\x0b\x64\x65scription\x18\x8f\x8c\x90\xe6\x01 \x01(\x0b\x32\x15.ywrapper.StringValueB)\x82\x41&/sonic-vlan/vlan/vlan-list/description\x12[\n\x0c\x64hcp_servers\x18\xcd\xee\x83\x92\x01 \x03(\x0b\x32\x15.ywrapper.StringValueB*\x82\x41\'/sonic-vlan/vlan/vlan-list/dhcp-servers\x12P\n\x07members\x18\xb4\x90\x8ao \x03(\x0b\x32\x15.ywrapper.StringValueB%\x82\x41\"/sonic-vlan/vlan/vlan-list/members\x12\x46\n\x03mtu\x18\xbd\xc9\xe5x \x01(\x0b\x32\x13.ywrapper.UintValueB!\x82\x41\x1e/sonic-vlan/vlan/vlan-list/mtu\x12M\n\x06vlanid\x18\x97\xbe\xa9\xa6\x01 \x01(\x0b\x32\x13.ywrapper.UintValueB$\x82\x41!/sonic-vlan/vlan/vlan-list/vlanid\x1a\x81\x01\n\x0bVlanListKey\x12:\n\tvlan_name\x18\x01 \x01(\tB\'\x82\x41$/sonic-vlan/vlan/vlan-list/vlan-name\x12\x36\n\tvlan_list\x18\x02 \x01(\x0b\x32#.openconfig.SonicVlan.Vlan.VlanList\x1a\xb9\n\n\rVlanInterface\x12\xa6\x01\n\x1cvlan_interface_ipprefix_list\x18\x98\xf8\x91\xe4\x01 \x03(\x0b\x32@.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixListKeyB:\x82\x41\x37/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list\x12\x8b\x01\n\x13vlan_interface_list\x18\x90\xb6\xd0^ \x03(\x0b\x32\x38.openconfig.SonicVlan.VlanInterface.VlanInterfaceListKeyB1\x82\x41./sonic-vlan/vlan-interface/vlan-interface-list\x1a\xfe\x02\n\x19VlanInterfaceIpprefixList\x12t\n\x06\x66\x61mily\x18\xf3\x9c\x8f\xc3\x01 \x01(\x0e\x32\x1d.openconfig.SonicVlanIpFamilyBA\x82\x41>/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/family\x12\x98\x01\n\x05scope\x18\xe9\xfa\x8f\xe7\x01 \x01(\x0e\x32\x43.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixList.ScopeB@\x82\x41=/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\xb5\x02\n\x1cVlanInterfaceIpprefixListKey\x12W\n\tvlan_name\x18\x01 \x01(\tBD\x82\x41\x41/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/vlan-name\x12W\n\tip_prefix\x18\x02 \x01(\tBD\x82\x41\x41/sonic-vlan/vlan-interface/vlan-interface-ipprefix-list/ip-prefix\x12\x63\n\x1cvlan_interface_ipprefix_list\x18\x03 \x01(\x0b\x32=.openconfig.SonicVlan.VlanInterface.VlanInterfaceIpprefixList\x1a{\n\x11VlanInterfaceList\x12\x66\n\x08vrf_name\x18\xc7\xaf\xa0\x02 \x01(\x0b\x32\x15.ywrapper.StringValueB:\x82\x41\x37/sonic-vlan/vlan-interface/vlan-interface-list/vrf_name\x1a\xba\x01\n\x14VlanInterfaceListKey\x12N\n\tvlan_name\x18\x01 \x01(\tB;\x82\x41\x38/sonic-vlan/vlan-interface/vlan-interface-list/vlan-name\x12R\n\x13vlan_interface_list\x18\x02 \x01(\x0b\x32\x35.openconfig.SonicVlan.VlanInterface.VlanInterfaceList\x1a\x81\x04\n\nVlanMember\x12|\n\x10vlan_member_list\x18\xf8\xf0\xe2\x37 \x03(\x0b\x32\x32.openconfig.SonicVlan.VlanMember.VlanMemberListKeyB+\x82\x41(/sonic-vlan/vlan-member/vlan-member-list\x1a\x89\x01\n\x0eVlanMemberList\x12w\n\x0ctagging_mode\x18\xe4\xa7\xd8l \x01(\x0e\x32$.openconfig.SonicVlanVlanTaggingModeB8\x82\x41\x35/sonic-vlan/vlan-member/vlan-member-list/tagging-mode\x1a\xe8\x01\n\x11VlanMemberListKey\x12H\n\tvlan_name\x18\x01 \x01(\tB5\x82\x41\x32/sonic-vlan/vlan-member/vlan-member-list/vlan-name\x12>\n\x04port\x18\x02 \x01(\tB0\x82\x41-/sonic-vlan/vlan-member/vlan-member-list/port\x12I\n\x10vlan_member_list\x18\x03 \x01(\x0b\x32/.openconfig.SonicVlan.VlanMember.VlanMemberListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__vlan__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -53,8 +53,8 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST_SCOPE = _descriptor.EnumDescr
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1747,
-  serialized_end=1827,
+  serialized_start=1736,
+  serialized_end=1816,
 )
 _sym_db.RegisterEnumDescriptor(_SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST_SCOPE)
 
@@ -121,8 +121,8 @@ _SONICVLAN_VLAN_VLANLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=450,
-  serialized_end=981,
+  serialized_start=439,
+  serialized_end=970,
 )
 
 _SONICVLAN_VLAN_VLANLISTKEY = _descriptor.Descriptor(
@@ -159,8 +159,8 @@ _SONICVLAN_VLAN_VLANLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=984,
-  serialized_end=1113,
+  serialized_start=973,
+  serialized_end=1102,
 )
 
 _SONICVLAN_VLAN = _descriptor.Descriptor(
@@ -190,8 +190,8 @@ _SONICVLAN_VLAN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=347,
-  serialized_end=1113,
+  serialized_start=336,
+  serialized_end=1102,
 )
 
 _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST = _descriptor.Descriptor(
@@ -229,8 +229,8 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1445,
-  serialized_end=1827,
+  serialized_start=1434,
+  serialized_end=1816,
 )
 
 _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLISTKEY = _descriptor.Descriptor(
@@ -274,8 +274,8 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1830,
-  serialized_end=2139,
+  serialized_start=1819,
+  serialized_end=2128,
 )
 
 _SONICVLAN_VLANINTERFACE_VLANINTERFACELIST = _descriptor.Descriptor(
@@ -305,8 +305,8 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACELIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2141,
-  serialized_end=2264,
+  serialized_start=2130,
+  serialized_end=2253,
 )
 
 _SONICVLAN_VLANINTERFACE_VLANINTERFACELISTKEY = _descriptor.Descriptor(
@@ -343,8 +343,8 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACELISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2267,
-  serialized_end=2453,
+  serialized_start=2256,
+  serialized_end=2442,
 )
 
 _SONICVLAN_VLANINTERFACE = _descriptor.Descriptor(
@@ -381,8 +381,8 @@ _SONICVLAN_VLANINTERFACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1116,
-  serialized_end=2453,
+  serialized_start=1105,
+  serialized_end=2442,
 )
 
 _SONICVLAN_VLANMEMBER_VLANMEMBERLIST = _descriptor.Descriptor(
@@ -412,8 +412,8 @@ _SONICVLAN_VLANMEMBER_VLANMEMBERLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2597,
-  serialized_end=2734,
+  serialized_start=2586,
+  serialized_end=2723,
 )
 
 _SONICVLAN_VLANMEMBER_VLANMEMBERLISTKEY = _descriptor.Descriptor(
@@ -457,8 +457,8 @@ _SONICVLAN_VLANMEMBER_VLANMEMBERLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2737,
-  serialized_end=2969,
+  serialized_start=2726,
+  serialized_end=2958,
 )
 
 _SONICVLAN_VLANMEMBER = _descriptor.Descriptor(
@@ -488,8 +488,8 @@ _SONICVLAN_VLANMEMBER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2456,
-  serialized_end=2969,
+  serialized_start=2445,
+  serialized_end=2958,
 )
 
 _SONICVLAN = _descriptor.Descriptor(
@@ -533,11 +533,11 @@ _SONICVLAN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=85,
-  serialized_end=2969,
+  serialized_start=74,
+  serialized_end=2958,
 )
 
-_SONICVLAN_VLAN_VLANLIST.fields_by_name['admin_status'].enum_type = sonic__vlan__enums__pb2._SONICVLANADMINSTATUS
+_SONICVLAN_VLAN_VLANLIST.fields_by_name['admin_status'].enum_type = enums__pb2._SONICVLANADMINSTATUS
 _SONICVLAN_VLAN_VLANLIST.fields_by_name['description'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICVLAN_VLAN_VLANLIST.fields_by_name['dhcp_servers'].message_type = ywrapper__pb2._STRINGVALUE
 _SONICVLAN_VLAN_VLANLIST.fields_by_name['members'].message_type = ywrapper__pb2._STRINGVALUE
@@ -548,7 +548,7 @@ _SONICVLAN_VLAN_VLANLISTKEY.fields_by_name['vlan_list'].message_type = _SONICVLA
 _SONICVLAN_VLAN_VLANLISTKEY.containing_type = _SONICVLAN_VLAN
 _SONICVLAN_VLAN.fields_by_name['vlan_list'].message_type = _SONICVLAN_VLAN_VLANLISTKEY
 _SONICVLAN_VLAN.containing_type = _SONICVLAN
-_SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = sonic__vlan__enums__pb2._SONICVLANIPFAMILY
+_SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = enums__pb2._SONICVLANIPFAMILY
 _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST.fields_by_name['scope'].enum_type = _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST_SCOPE
 _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST.containing_type = _SONICVLAN_VLANINTERFACE
 _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST_SCOPE.containing_type = _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLIST
@@ -561,7 +561,7 @@ _SONICVLAN_VLANINTERFACE_VLANINTERFACELISTKEY.containing_type = _SONICVLAN_VLANI
 _SONICVLAN_VLANINTERFACE.fields_by_name['vlan_interface_ipprefix_list'].message_type = _SONICVLAN_VLANINTERFACE_VLANINTERFACEIPPREFIXLISTKEY
 _SONICVLAN_VLANINTERFACE.fields_by_name['vlan_interface_list'].message_type = _SONICVLAN_VLANINTERFACE_VLANINTERFACELISTKEY
 _SONICVLAN_VLANINTERFACE.containing_type = _SONICVLAN
-_SONICVLAN_VLANMEMBER_VLANMEMBERLIST.fields_by_name['tagging_mode'].enum_type = sonic__vlan__enums__pb2._SONICVLANVLANTAGGINGMODE
+_SONICVLAN_VLANMEMBER_VLANMEMBERLIST.fields_by_name['tagging_mode'].enum_type = enums__pb2._SONICVLANVLANTAGGINGMODE
 _SONICVLAN_VLANMEMBER_VLANMEMBERLIST.containing_type = _SONICVLAN_VLANMEMBER
 _SONICVLAN_VLANMEMBER_VLANMEMBERLISTKEY.fields_by_name['vlan_member_list'].message_type = _SONICVLAN_VLANMEMBER_VLANMEMBERLIST
 _SONICVLAN_VLANMEMBER_VLANMEMBERLISTKEY.containing_type = _SONICVLAN_VLANMEMBER

@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 import ywrapper_pb2 as ywrapper__pb2
 import yext_pb2 as yext__pb2
-import sonic_interface_enums_pb2 as sonic__interface__enums__pb2
+import enums_pb2 as enums__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -22,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025com.nocsys.openconfig',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15sonic_interface.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x1bsonic_interface_enums.proto\"\xca\n\n\x0eSonicInterface\x12Y\n\tinterface\x18\xd5\xe6\xce) \x01(\x0b\x32$.openconfig.SonicInterface.InterfaceB\x1d\x82\x41\x1a/sonic-interface/interface\x1a\xdc\t\n\tInterface\x12\x98\x01\n\x17interface_ipprefix_list\x18\x96\xd2\x95N \x03(\x0b\x32=.openconfig.SonicInterface.Interface.InterfaceIpprefixListKeyB5\x82\x41\x32/sonic-interface/interface/interface-ipprefix-list\x12\x7f\n\x0einterface_list\x18\xe2\xac\x9e\xf6\x01 \x03(\x0b\x32\x35.openconfig.SonicInterface.Interface.InterfaceListKeyB,\x82\x41)/sonic-interface/interface/interface-list\x1a\xf0\x02\n\x15InterfaceIpprefixList\x12s\n\x06\x66\x61mily\x18\xd5\xab\xffJ \x01(\x0e\x32\".openconfig.SonicInterfaceIpFamilyB<\x82\x41\x39/sonic-interface/interface/interface-ipprefix-list/family\x12\x8f\x01\n\x05scope\x18\xb7\xe7\xc1\x17 \x01(\x0e\x32@.openconfig.SonicInterface.Interface.InterfaceIpprefixList.ScopeB;\x82\x41\x38/sonic-interface/interface/interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\x9f\x02\n\x18InterfaceIpprefixListKey\x12R\n\tport_name\x18\x01 \x01(\tB?\x82\x41</sonic-interface/interface/interface-ipprefix-list/port-name\x12R\n\tip_prefix\x18\x02 \x01(\tB?\x82\x41</sonic-interface/interface/interface-ipprefix-list/ip-prefix\x12[\n\x17interface_ipprefix_list\x18\x03 \x01(\x0b\x32:.openconfig.SonicInterface.Interface.InterfaceIpprefixList\x1ar\n\rInterfaceList\x12\x61\n\x08vrf_name\x18\xc3\xa0\x9b\\ \x01(\x0b\x32\x15.ywrapper.StringValueB5\x82\x41\x32/sonic-interface/interface/interface-list/vrf-name\x1a\xa9\x01\n\x10InterfaceListKey\x12I\n\tport_name\x18\x01 \x01(\tB6\x82\x41\x33/sonic-interface/interface/interface-list/port-name\x12J\n\x0einterface_list\x18\x02 \x01(\x0b\x32\x32.openconfig.SonicInterface.Interface.InterfaceListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
+  serialized_pb=b'\n\x15sonic_interface.proto\x12\nopenconfig\x1a\x0eywrapper.proto\x1a\nyext.proto\x1a\x0b\x65nums.proto\"\xca\n\n\x0eSonicInterface\x12Y\n\tinterface\x18\xd5\xe6\xce) \x01(\x0b\x32$.openconfig.SonicInterface.InterfaceB\x1d\x82\x41\x1a/sonic-interface/interface\x1a\xdc\t\n\tInterface\x12\x98\x01\n\x17interface_ipprefix_list\x18\x96\xd2\x95N \x03(\x0b\x32=.openconfig.SonicInterface.Interface.InterfaceIpprefixListKeyB5\x82\x41\x32/sonic-interface/interface/interface-ipprefix-list\x12\x7f\n\x0einterface_list\x18\xe2\xac\x9e\xf6\x01 \x03(\x0b\x32\x35.openconfig.SonicInterface.Interface.InterfaceListKeyB,\x82\x41)/sonic-interface/interface/interface-list\x1a\xf0\x02\n\x15InterfaceIpprefixList\x12s\n\x06\x66\x61mily\x18\xd5\xab\xffJ \x01(\x0e\x32\".openconfig.SonicInterfaceIpFamilyB<\x82\x41\x39/sonic-interface/interface/interface-ipprefix-list/family\x12\x8f\x01\n\x05scope\x18\xb7\xe7\xc1\x17 \x01(\x0e\x32@.openconfig.SonicInterface.Interface.InterfaceIpprefixList.ScopeB;\x82\x41\x38/sonic-interface/interface/interface-ipprefix-list/scope\"P\n\x05Scope\x12\x0f\n\x0bSCOPE_UNSET\x10\x00\x12\x1b\n\x0cSCOPE_global\x10\x01\x1a\t\x82\x41\x06global\x12\x19\n\x0bSCOPE_local\x10\x02\x1a\x08\x82\x41\x05local\x1a\x9f\x02\n\x18InterfaceIpprefixListKey\x12R\n\tport_name\x18\x01 \x01(\tB?\x82\x41</sonic-interface/interface/interface-ipprefix-list/port-name\x12R\n\tip_prefix\x18\x02 \x01(\tB?\x82\x41</sonic-interface/interface/interface-ipprefix-list/ip-prefix\x12[\n\x17interface_ipprefix_list\x18\x03 \x01(\x0b\x32:.openconfig.SonicInterface.Interface.InterfaceIpprefixList\x1ar\n\rInterfaceList\x12\x61\n\x08vrf_name\x18\xc3\xa0\x9b\\ \x01(\x0b\x32\x15.ywrapper.StringValueB5\x82\x41\x32/sonic-interface/interface/interface-list/vrf-name\x1a\xa9\x01\n\x10InterfaceListKey\x12I\n\tport_name\x18\x01 \x01(\tB6\x82\x41\x33/sonic-interface/interface/interface-list/port-name\x12J\n\x0einterface_list\x18\x02 \x01(\x0b\x32\x32.openconfig.SonicInterface.Interface.InterfaceListB\x17\n\x15\x63om.nocsys.openconfigb\x06proto3'
   ,
-  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,sonic__interface__enums__pb2.DESCRIPTOR,])
+  dependencies=[ywrapper__pb2.DESCRIPTOR,yext__pb2.DESCRIPTOR,enums__pb2.DESCRIPTOR,])
 
 
 
@@ -53,8 +53,8 @@ _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST_SCOPE = _descriptor.EnumDescript
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=791,
-  serialized_end=871,
+  serialized_start=775,
+  serialized_end=855,
 )
 _sym_db.RegisterEnumDescriptor(_SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST_SCOPE)
 
@@ -94,8 +94,8 @@ _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=503,
-  serialized_end=871,
+  serialized_start=487,
+  serialized_end=855,
 )
 
 _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLISTKEY = _descriptor.Descriptor(
@@ -139,8 +139,8 @@ _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=874,
-  serialized_end=1161,
+  serialized_start=858,
+  serialized_end=1145,
 )
 
 _SONICINTERFACE_INTERFACE_INTERFACELIST = _descriptor.Descriptor(
@@ -170,8 +170,8 @@ _SONICINTERFACE_INTERFACE_INTERFACELIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1163,
-  serialized_end=1277,
+  serialized_start=1147,
+  serialized_end=1261,
 )
 
 _SONICINTERFACE_INTERFACE_INTERFACELISTKEY = _descriptor.Descriptor(
@@ -208,8 +208,8 @@ _SONICINTERFACE_INTERFACE_INTERFACELISTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1280,
-  serialized_end=1449,
+  serialized_start=1264,
+  serialized_end=1433,
 )
 
 _SONICINTERFACE_INTERFACE = _descriptor.Descriptor(
@@ -246,8 +246,8 @@ _SONICINTERFACE_INTERFACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=205,
-  serialized_end=1449,
+  serialized_start=189,
+  serialized_end=1433,
 )
 
 _SONICINTERFACE = _descriptor.Descriptor(
@@ -277,11 +277,11 @@ _SONICINTERFACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=95,
-  serialized_end=1449,
+  serialized_start=79,
+  serialized_end=1433,
 )
 
-_SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = sonic__interface__enums__pb2._SONICINTERFACEIPFAMILY
+_SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST.fields_by_name['family'].enum_type = enums__pb2._SONICINTERFACEIPFAMILY
 _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST.fields_by_name['scope'].enum_type = _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST_SCOPE
 _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST.containing_type = _SONICINTERFACE_INTERFACE
 _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST_SCOPE.containing_type = _SONICINTERFACE_INTERFACE_INTERFACEIPPREFIXLIST
