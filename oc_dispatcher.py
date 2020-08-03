@@ -18,7 +18,7 @@ from grpc import StatusCode
 
 from util import util_lldp, util_interface, util_platform, util_utl, \
                  util_nwi, util_lr, util_acl, util_sys, util_qos, util_bcm, \
-                 util_sonic, util_dhcp
+                 util_sonic, util_dhcp, util_vlan
 
 import logging, re, pdb, swsssdk
 
@@ -53,16 +53,14 @@ setPathTable = {
     # [xxx] means key
     '/interfaces/interface[name]/ethernet/config/aggregate-id' :
             "util_interface.interface_set_portchannel_members",
-    '/interfaces/interface[name]/config/name' :
-            "util_interface.interface_set_cfg_name",
+    '/sonic-vlan/vlan' :
+            "util_vlan.vlan_set",
     '/interfaces/interface[name]/config':
             "util_interface.interface_config_interface",
     '/interfaces/interface[name]/config/enabled' :
             "util_interface.interface_set_cfg_enabled",
-    '/interfaces/interface[name]/ethernet/switched-vlan/config/trunk-vlans' :
-            "util_interface.interface_set_trunk_vlans",
-    '/interfaces/interface[name]/ethernet/switched-vlan/config/native-vlan' :
-            "util_interface.interface_set_native_vlan",
+    '/sonic-vlan/vlan-member' :
+            "util_vlan.vlan_set_member",
     '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
             "util_interface.interface_set_ip_v4",
     '/interfaces/interface[name]/routed-vlan/config':
@@ -115,6 +113,10 @@ deletePathTable = {
         "util_nwi.nwi_pf_delete_policy",
     '/sonic-acl/acl-rule[acl-table-name][rule-name]':
         "util_nwi.nwi_pf_delete_rule",
+    '/sonic-vlan/vlan[vlan-name]':
+        "util_vlan.vlan_delete",
+    '/sonic-acl/vlan-member[vlan-name][port]':
+        "util_vlan.vlan_delete_member",
 }
 
 

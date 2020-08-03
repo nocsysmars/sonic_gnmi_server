@@ -38,3 +38,11 @@ class IPProtocol(Enum):
 
     def __str__(self):
         return self.name
+
+
+class VLANTaggingMode(Enum):
+    TAGGED = 1
+    UNTAGGED = 2
+
+    def __str__(self):
+        return self.name.lower()
