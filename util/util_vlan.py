@@ -13,7 +13,9 @@ def vlan_set(oc_yph, pkey_ar, val, is_create, disp_args):
             data = vlan.vlan_list
             if data.vlanid.value in range (VLAN_ID_MIN, VLAN_ID_MAX):
                 vlan_info["vlanid"] = data.vlanid.value
-                vlan_info["members"] = [member.value for member in data.members]
+                members = [member.value for member in data.members]
+                if members:
+                    vlan_info["members"] = members
                 disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN, vlan_name, vlan_info)
     except:
         return False
@@ -36,6 +38,7 @@ def vlan_set_member(oc_yph, pkey_ar, val, is_create, disp_args):
             interface_names = vlan_info.get('members', [])
             if interface_name not in interface_names:
                 interface_names.append(interface_name)
+                vlan_info["members"] = interface_names
                 disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN, vlan_name, vlan_info)
             disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN_MBR, (vlan_name, interface_name), member_info)
     except:
@@ -70,6 +73,8 @@ def vlan_delete_member(root_yph, pkey_ar, disp_args):
         interface_names = vlan_info.get('members', [])
         if interface_name in interface_names:
             interface_names.remove(interface_name)
+            if not interface_names:
+                del vlan_info['members']
             disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN, vlan_name, vlan_info)
         disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN_MBR, (vlan_name, interface_name), None)
     except:

@@ -313,7 +313,9 @@ def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
             table_info["policy_desc"] = data.policy_desc
             table_info["type"] = AclTableType(data.type)
             table_info["stage"] = AclTableStage(data.stage)
-            table_info["ports"] = [port.value for port in data.ports]
+            ports = [port.value for port in data.ports]
+            if ports:
+                table_info["ports"] = ports
             disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
     except:
         return False
