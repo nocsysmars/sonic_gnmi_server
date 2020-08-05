@@ -6,6 +6,8 @@
 
 import subprocess, json, pdb, time, re, swsssdk, util_utl
 import ipaddress
+from sonicpb.sonic_interface_pb2 import SonicInterface
+from sonicpb.sonic_loopback_interface_pb2 import SonicLoopbackInterface
 
 from util_utl import CFG_PC_CMD_TMPL
 
@@ -988,6 +990,26 @@ def interface_set_ip_v4(oc_yph, pkey_ar, val, is_create, disp_args):
     return ret_val
 
 
+def interface_set_ip(oc_yph, pkey_ar, val, is_create, disp_args):
+    try:
+        interface = SonicInterface.Interface.FromString(val)
+
+        for ip_list_key in interface.interface_ipprefix_list:
+            name = ip_list_key.port_name
+            ip = ip_list_key.ip_prefix
+            table_name = interface_db_get_intf_table_name(name)
+
+            if table_name:
+                disp_args.cfgdb.set_entry(table_name, (name, ip), {})
+
+        # TODO(sgk): process InterfaceListKey when wlan support vrf
+    except Exception as e:
+        util_utl.utl_err("{}", e)
+        return False
+
+    return True
+
+
 # ex:   pkey_ar = [u'Vlan3000', u'100.100.100.100']
 #   val for del = '{"link-layer-address" : ""} or {} or ""'
 #   val for add = '{"link-layer-address" : "00:00:00:00:00:20"}'
@@ -1086,6 +1108,25 @@ def interface_config_interface(oc_yph, pkey_ar, val, is_create, disp_args):
     return add_loopback(disp_args.cfgdb, pkey_ar[0], ip_addr)
 
 
+def interface_set_loopback_interface(oc_yph, pkey_ar, val, is_create, disp_args):
+    try:
+        loopback = SonicLoopbackInterface.LoopbackInterface.FromString(val)
+
+        for key in loopback.loopback_interface_ipprefix_list:
+            name = key.loopback_interface_name
+            ip = key.ip_prefix
+
+            if name.find('Loopback') != 0:
+                util_utl.utl_err("Invalid loopback name")
+                continue
+
+            add_loopback(disp_args.cfgdb, name, ip)
+    except:
+        return False
+
+    return True
+
+
 # delete interface
 def interface_delete_interface(oc_yph, pkey_ar, disp_args):
     # support to delete loopback and vlan only
@@ -1099,3 +1140,28 @@ def interface_delete_interface(oc_yph, pkey_ar, disp_args):
         return interface_db_clear_ip(disp_args.cfgdb, pkey_ar[0])
 
     return False
+
+
+def interface_remove_all_ipprefix(oc_yph, pkey_ar, disp_args):
+    try:
+        port_name = pkey_ar[0]
+    except Exception as e:
+        util_utl.utl_err("remove interface's ip failed: " + e.message())
+        return False
+
+    return interface_db_clear_ip(disp_args.cfgdb, port_name)
+
+
+def interface_remove_ipprefix(oc_yph, pkey_ar, disp_args):
+    try:
+        ip_prefix = pkey_ar[0]
+        port_name = pkey_ar[1]
+        table_name = interface_db_get_intf_table_name(port_name)
+
+        if table_name:
+            disp_args.cfgdb.set_entry(table_name, (port_name, ip_prefix), None)
+    except Exception as e:
+        util_utl.utl_err("remove interface's ip failed: " + e.message())
+        return False
+
+    return True

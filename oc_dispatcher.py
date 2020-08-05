@@ -63,6 +63,10 @@ setPathTable = {
             "util_vlan.vlan_set_member",
     '/interfaces/interface[name]/routed-vlan/ipv4/addresses/address[ip]/config' :
             "util_interface.interface_set_ip_v4",
+    "/sonic-interface/interface" :
+            "util_interface.interface_set_ip",
+    "/sonic-loopback-interface/loopback-interface" :
+            "util_interface.interface_set_loopback_interface",
     '/interfaces/interface[name]/routed-vlan/config':
             "util_interface.interface_del_vlan_interface",
     '/interfaces/interface[name]/routed-vlan/ipv4/neighbors/neighbor[ip]/config' :
@@ -117,6 +121,10 @@ deletePathTable = {
         "util_vlan.vlan_delete",
     '/sonic-acl/vlan-member[vlan-name][port]':
         "util_vlan.vlan_delete_member",
+    '/sonic-interface/interface/interface-ipprefix-list[port-name]':
+        "util_interface.interface_remove_all_ipprefix",
+    '/sonic-interface/interface/interface-ipprefix-list[ip-prefix][port-name]':
+        "util_interface.interface_remove_ipprefix",
 }
 
 
