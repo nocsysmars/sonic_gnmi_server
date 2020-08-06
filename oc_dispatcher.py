@@ -115,7 +115,7 @@ deletePathTable = {
         "util_nwi.nwi_pf_delete_rule",
     '/sonic-vlan/vlan[vlan-name]':
         "util_vlan.vlan_delete",
-    '/sonic-acl/vlan-member[vlan-name][port]':
+    '/sonic-vlan/vlan-member[port][vlan-name]':
         "util_vlan.vlan_delete_member",
 }
 

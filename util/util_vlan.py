@@ -75,6 +75,8 @@ def vlan_delete_member(root_yph, pkey_ar, disp_args):
             interface_names.remove(interface_name)
             if not interface_names:
                 del vlan_info['members']
+            else:
+                vlan_info['members'] = interface_names
             disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN, vlan_name, vlan_info)
         disp_args.cfgdb.set_entry(CFGDB_TABLE_NAME_VLAN_MBR, (vlan_name, interface_name), None)
     except:
