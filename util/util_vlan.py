@@ -64,8 +64,8 @@ def vlan_delete(root_yph, pkey_ar, disp_args):
 
 def vlan_delete_member(root_yph, pkey_ar, disp_args):
     try:
-        vlan_name = pkey_ar[0]
-        interface_name = pkey_ar[1]
+        vlan_name = pkey_ar[1]
+        interface_name = pkey_ar[0]
         vlan_info = disp_args.cfgdb.get_entry(CFGDB_TABLE_NAME_VLAN, vlan_name)
         if len(vlan_info) == 0:
             utl_log("cannot find vlan {}".format(vlan_name))
