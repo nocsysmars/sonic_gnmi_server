@@ -18,7 +18,7 @@ from grpc import StatusCode
 
 from util import util_lldp, util_interface, util_platform, util_utl, \
                  util_nwi, util_lr, util_acl, util_sys, util_qos, util_bcm, \
-                 util_sonic, util_dhcp, util_vlan
+                 util_sonic, util_dhcp, util_vlan, util_portchannel
 
 import logging, re, pdb, swsssdk
 
@@ -101,7 +101,15 @@ setPathTable = {
     '/vesta/traffic-seg' :
             "util_bcm.bcm_set_traffic_seg",
     '/dhcp-relay/restart':
-            "util_dhcp.dhcp_relay_restart"
+            "util_dhcp.dhcp_relay_restart",
+    '/sonic-portchannel/portchannel':
+            "util_portchannel.portchannel_add_member",
+}
+
+# Dispatch table for replace in set request
+replacePathTable = {
+    '/sonic-portchannel/portchannel':
+        "util_portchannel.create_portchannel",
 }
 
 # Dispatch table for delete request
@@ -125,6 +133,10 @@ deletePathTable = {
         "util_interface.interface_remove_all_ipprefix",
     '/sonic-interface/interface/interface-ipprefix-list[ip-prefix][port-name]':
         "util_interface.interface_remove_ipprefix",
+    '/sonic-portchannel/portchannel/portchannel-list/portchannel-name[portchannel-name]':
+        "util_portchannel.delete_portchannel",
+    '/sonic-portchannel/portchannel/portchannel-list/members[port-name]':
+        "util_portchannel.remove_portchannel_member",
 }
 
 
@@ -209,8 +221,21 @@ class ocDispatcher:
 
     @util_utl.utl_timeit
     @util_utl.utl_log_outer
-    def SetValByPath(self, yp_str, pkey_ar, val):
+    def ReplaceRequestByPath(self, yp_str, pkey_ar, val):
+        try:
+            # replace key [xxx=yyy] with [xxx]
+            path = re.sub(r'\[([\w-]*)=[^]]*\]', r"[\1]", yp_str)
+            ret_val = eval(replacePathTable[path])(self.oc_yph, pkey_ar, val.strip('"'), self.my_args) \
+                if path in replacePathTable else False
+        except Exception as e:
+            logging.fatal(e, exc_info=True)
+            ret_val = False
 
+        return ret_val
+
+    @util_utl.utl_timeit
+    @util_utl.utl_log_outer
+    def SetValByPath(self, yp_str, pkey_ar, val):
         try:
             tmp_obj = self.oc_yph.get(yp_str)
 

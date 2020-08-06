@@ -661,13 +661,6 @@ def interface_portchannel_add_member(db, portchannel_name, port_name):
                  {'NULL': 'NULL'})
 
 
-def interface_portchannel_del_member(db, port_name):
-    """Delete port from port channel's members"""
-    portchannel_list = db.get_table('PORTCHANNEL_MEMBER')
-    for k, v in portchannel_list:
-        if v == port_name:
-            db.set_entry('PORTCHANNEL_MEMBER', (k, v), None)
-
 
 def interface_set_portchannel_members(oc_yph, pkey_ar, val, is_create, disp_args):
     """Add ports to port channel's member"""
@@ -676,10 +669,7 @@ def interface_set_portchannel_members(oc_yph, pkey_ar, val, is_create, disp_args
     if is_create:
         return False
 
-    if val == "":
-        # remove port from port channel
-        interface_portchannel_del_member(disp_args.cfgdb, pkey_ar[0])
-    else:
+    if val != "":
         interface_portchannel_add_member(disp_args.cfgdb, val, pkey_ar[0])
     return True
 
@@ -1146,7 +1136,7 @@ def interface_remove_all_ipprefix(oc_yph, pkey_ar, disp_args):
     try:
         port_name = pkey_ar[0]
     except Exception as e:
-        util_utl.utl_err("remove interface's ip failed: " + e.message())
+        util_utl.utl_err("remove interface's ip failed: " + e.message)
         return False
 
     return interface_db_clear_ip(disp_args.cfgdb, port_name)
@@ -1161,7 +1151,7 @@ def interface_remove_ipprefix(oc_yph, pkey_ar, disp_args):
         if table_name:
             disp_args.cfgdb.set_entry(table_name, (port_name, ip_prefix), None)
     except Exception as e:
-        util_utl.utl_err("remove interface's ip failed: " + e.message())
+        util_utl.utl_err("remove interface's ip failed: " + e.message)
         return False
 
     return True

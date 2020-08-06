@@ -221,11 +221,29 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         for replace in reqSetObj.replace:
             repPath = pathPrefix + EncodePath(replace.path.elem)
 
-            k = replace.val.WhichOneof("value")
-            util_utl.utl_log(k)
-            val = getattr(replace.val, k)
-            util_utl.utl_log(val)
-            util_utl.utl_log(repPath)
+            # k = replace.val.WhichOneof("value")
+            # util_utl.utl_log(k)
+            # val = getattr(replace.val, k)
+            # util_utl.utl_log(val)
+            # util_utl.utl_log(repPath)
+
+            pkey_ar = EncodePathKey(replace.path.elem)
+            set_val = getattr(replace.val, replace.val.WhichOneof("value"))
+            yp_str = EncodeYangPath(repPath)
+
+            self.lock.acquire()
+            status = self.myDispatcher.ReplaceRequestByPath(yp_str, pkey_ar, set_val)
+            self.lock.release()
+
+            if status:
+                status = grpc.StatusCode.OK
+            else:
+                IsAnyErr = True
+                status = grpc.StatusCode.INVALID_ARGUMENT
+
+            self.__AddOneSetResp(setResp, replace.path, 2, status, None)
+
+            util_utl.utl_log("request-" + "/".join(repPath) + "set code: " + str(status))
 
         # input: same as replace
         for update in reqSetObj.update:
