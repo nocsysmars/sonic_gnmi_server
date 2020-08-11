@@ -419,7 +419,7 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
 
 def nwi_pf_delete_rule(root_yph, pkey_ar, disp_args):
     try:
-        rule_name = pkey_ar[1]
+        rule_name = pkey_ar[1].replace(" ", "_").replace("-", "_").upper().encode('ascii')
         table_name = pkey_ar[0].replace(" ", "_").replace("-", "_").upper().encode('ascii')
         acl_cfgs = {}
         if os.path.exists(ACL_JSON_FILE):
@@ -435,6 +435,8 @@ def nwi_pf_delete_rule(root_yph, pkey_ar, disp_args):
         rules = table_cfgs["acl-entries"]["acl-entry"]
         if rule_name in rules:
             del rules[rule_name]
+            if not rules:
+                del acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
             with open(ACL_JSON_FILE, 'w') as outfile:
                 json.dump(acl_cfgs, outfile)
             util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
