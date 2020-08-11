@@ -70,6 +70,8 @@ TCPFLAG_MAP_TBL = {
     "TCP_CWR" : 0x80
     }
 
+ACL_JSON_FILE = 'acl.json'
+
 # convert sonic's acl type to openconfig's acl type
 def acl_cnv_to_oc_acl_type(in_acl_type):
     # todo ...

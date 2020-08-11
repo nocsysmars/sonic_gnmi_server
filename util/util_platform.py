@@ -4,9 +4,9 @@
 # APIs for processing platform info.
 #
 
-import subprocess, json, re, pdb, util_utl
+import subprocess, json, re, pdb, util_utl, util_data_platform
 
-OLD_COMP_LST = []
+OLD_COMP_DICT = {}
 
 #
 # tag_str : "Manufacture Date"
@@ -20,6 +20,8 @@ def platform_get_syseeprom_output_val(sys_output, tag_str, pos):
 
     return ret_val
 
+
+@util_utl.utl_timeit
 def platform_get_info_psu(oc_comps, old_comp_lst):
     """
     root@switch1:/home/admin# show platform psustatus
@@ -32,7 +34,6 @@ def platform_get_info_psu(oc_comps, old_comp_lst):
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
         output = output.splitlines()
-        #pdb.set_trace()
         psu_beg = False
         for idx in range(len(output)):
             if output[idx] == '': continue
@@ -50,7 +51,9 @@ def platform_get_info_psu(oc_comps, old_comp_lst):
                 if '-----' in output[idx]:
                     psu_beg = True
 
-def platform_get_info_fan(oc_comps, old_comp_lst):
+
+@util_utl.utl_timeit
+def platform_get_info_fan(oc_comps, old_comp_dict):
     """
     root@switch1:/home/admin# show environment
     coretemp-isa-0000
@@ -86,6 +89,9 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
     Adapter: i2c-1-mux (chan_id 3)
     temp1:        +30.5 C  (high = +80.0 C, hyst = +75.0 C)
     """
+    fan_comp_list = old_comp_dict["fan"]
+    temp_comp_list = old_comp_dict["temperature"]
+
     exec_cmd = 'show environment'
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
@@ -116,7 +122,10 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
                         if is_fan or is_tem:
                             sub_comp_name = comp_name + '_' + m.group(1).replace(' ', '_')
                             oc_comp = oc_comps.component.add(sub_comp_name)
-                            old_comp_lst.append(sub_comp_name)
+                            if is_fan:
+                                fan_comp_list.append(sub_comp_name)
+                            else:
+                                temp_comp_list.append(sub_comp_name)
 
                             if is_fan:
                                 # fan
@@ -129,21 +138,37 @@ def platform_get_info_fan(oc_comps, old_comp_lst):
                                 value = float(m.group(2).split(" C")[0].replace('+', ' '))
                                 oc_comp.state.temperature._set_instant(value)
 
+
+@util_utl.utl_timeit
 def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
-    global OLD_COMP_LST
+    if len(path_ar) > 1:
+        if path_ar[1] == "fan":
+            return platform_get_fan(pf_yph)
+        elif path_ar[1] == "temperature":
+            return platform_get_temperature(pf_yph)
+        elif path_ar[1] == "psu":
+            return platform_get_psu(pf_yph)
+        else:
+            return False
+
+    global OLD_COMP_DICT
 
     oc_comps = pf_yph.get("/components")[0]
 
     # remove old entries
-    for old_comp in OLD_COMP_LST:
-        oc_comps.component.delete(old_comp)
-    OLD_COMP_LST = []
+    for old_comp_list in OLD_COMP_DICT.values():
+        for old_comp in old_comp_list:
+            oc_comps.component.delete(old_comp)
+    OLD_COMP_DICT["fan"] = []
+    OLD_COMP_DICT["temperature"] = []
+    OLD_COMP_DICT["psu"] = []
+    OLD_COMP_DICT["fabric"] = []
 
     # get info for psu
-    platform_get_info_psu(oc_comps, OLD_COMP_LST)
+    platform_get_info_psu(oc_comps, OLD_COMP_DICT["psu"])
 
     # get info for fan/sensor
-    platform_get_info_fan(oc_comps, OLD_COMP_LST)
+    platform_get_info_fan(oc_comps, OLD_COMP_DICT)
 
     # show platform syseeprom
     #  ex:  Command: sudo decode-syseeprom
@@ -167,6 +192,7 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     #       Platform Name        0x28  27 x86_64-accton_as5712_54x-r0
     #       ONIE Version         0x29  14 20170619-debug
     #       CRC-32               0xFE   4 0x5B1B4944
+    fabric_comp_list = OLD_COMP_DICT["fabric"]
     show_cmd_pf = 'show platform syseeprom'
     oc_comp = None
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_pf)
@@ -184,7 +210,7 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
             if val:
                 if idx == 0:
                     oc_comp =oc_comps.component.add(val)
-                    OLD_COMP_LST.append(val)
+                    fabric_comp_list.append(val)
                     oc_comp.state._set_type('FABRIC')
 
                     (is_mac_ok, mac_output) = util_utl.utl_get_execute_cmd_output("cat /sys/class/net/eth0/address")
@@ -212,10 +238,117 @@ def platform_get_info(pf_yph, path_ar, key_ar, disp_args):
     #      Built by: johnar@jenkins-worker-3
     show_cmd_ver = 'show version'
     (is_ok, output) = util_utl.utl_get_execute_cmd_output(show_cmd_ver)
+    if is_ok and oc_comp:
+        output = output.splitlines()
+        for idx in range(len(output)):
+            if 'Software Version' in output[idx]:
+                oc_comp.state._set_software_version(output[idx].split(': ')[1])
+                break
+
+    if len(OLD_COMP_DICT["fan"]) == 0 and len(OLD_COMP_DICT["temperature"]) == 0 and \
+            len(OLD_COMP_DICT["psu"]) == 0 and len(OLD_COMP_DICT["fabric"]) == 0:
+        return False
+    return True
+
+
+def get_fan_or_temperature(oc_comps, comp_list, get_fan):
+    exec_cmd = 'show environment'
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
     if is_ok:
-        if oc_comp:
-            output = output.splitlines()
-            oc_comp.state._set_software_version(output[0].split(': ')[1])
+        output = output.splitlines()
 
-    return True if OLD_COMP_LST else False
+        # step 1 get name
+        # step 2 get Adapter
+        # step 3 get component
+        beg_id = 1 if 'Command:' in output[0] else 0
 
+        step = 1
+        pat_obj = re.compile(r'([^:]*):([^(]*)(.*)')
+        for idx in range(beg_id, len(output)):
+            if step == 1:
+                comp_name = output[idx]
+                step = step + 1
+            elif step == 2:
+                step = step + 1
+            elif step == 3:
+                if output[idx] == '':
+                    step = 1  # begin for next component
+                else:
+                    m = pat_obj.match(output[idx])
+                    if m:
+                        if (get_fan and 'RPM' in m.group(2)) or (not get_fan and 'C' in m.group(2)):
+                            sub_comp_name = comp_name + '_' + m.group(1).replace(' ', '_')
+                            oc_comp = oc_comps.component.add(sub_comp_name)
+                            comp_list.append(sub_comp_name)
+                            if get_fan:
+                                oc_comp.state._set_type('FAN')
+                                value = int(m.group(2).split(" RPM")[0])
+                                oc_comp.fan.state._set_speed(value)
+                            else:
+                                oc_comp.state._set_type('SENSOR')
+                                value = float(m.group(2).split(" C")[0].replace('+', ' '))
+                                oc_comp.state.temperature._set_instant(value)
+
+
+def platform_get_fan(pf_yph):
+    global OLD_COMP_DICT
+    oc_comps = pf_yph.get("/components")[0]
+
+    if "fan" in OLD_COMP_DICT:
+        for old_fan in OLD_COMP_DICT.get("fan"):
+            oc_comps.component.delete(old_fan)
+    OLD_COMP_DICT["fan"] = []
+
+    get_fan_or_temperature(oc_comps, OLD_COMP_DICT["fan"], True)
+
+    return True if len(OLD_COMP_DICT["fan"]) > 1 else False
+
+
+def platform_get_temperature(pf_yph):
+    global OLD_COMP_DICT
+    oc_comps = pf_yph.get("/components")[0]
+
+    if "temperature" in OLD_COMP_DICT:
+        for old_temp in OLD_COMP_DICT["temperature"]:
+            oc_comps.component.delete(old_temp)
+    OLD_COMP_DICT["temperature"] = []
+
+    get_fan_or_temperature(oc_comps, OLD_COMP_DICT["temperature"], False)
+
+    return True if len(OLD_COMP_DICT["temperature"]) > 1 else False
+
+
+def platform_get_psu(pf_yph):
+    global OLD_COMP_DICT
+    oc_comps = pf_yph.get("/components")[0]
+
+    if "psu" in OLD_COMP_DICT:
+        for old_psu in OLD_COMP_DICT["psu"]:
+            oc_comps.component.delete(old_psu)
+    OLD_COMP_DICT["psu"] = []
+
+    exec_cmd = 'show platform psustatus'
+    (is_ok, output) = util_utl.utl_get_execute_cmd_output(exec_cmd)
+    if is_ok:
+        output = output.splitlines()
+        psu_beg = False
+
+        for idx in range(len(output)):
+            if output[idx] == '':
+                continue
+
+            if psu_beg:
+                psu_line = output[idx].split("  ")
+                psu_name = psu_line[0].replace(" ", "_")
+                oc_comp = oc_comps.component.add(psu_name)
+                OLD_COMP_DICT["psu"].append(psu_name)
+                oc_comp.state._set_type('POWER_SUPPLY')
+                oc_comp.power_supply.state._set_enabled(
+                    True if "OK" == psu_line[1] else False
+                )
+                oc_comp.power_supply.state.enabled._mchanged = True
+            else:
+                if '-----' in output[idx]:
+                    psu_beg = True
+
+    return True if len(OLD_COMP_DICT["psu"]) > 0 else False

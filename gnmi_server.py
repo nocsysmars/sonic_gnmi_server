@@ -119,7 +119,10 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
                 if isinstance(oc_yph, grpc.StatusCode):
                     er_code = oc_yph
                 else:
-                    tmp_obj = oc_yph.get(yp_str) if oc_yph else []
+                    if path_ar[0] == "components":
+                        tmp_obj = oc_yph.get("/components") if oc_yph else []
+                    else:
+                        tmp_obj = oc_yph.get(yp_str) if oc_yph else []
 
                     # TODO: if got more than one obj ?
                     if len(tmp_obj) >= 1:
@@ -190,7 +193,25 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         # input: path (delete)
         for delete in reqSetObj.delete:
             delPath = pathPrefix + EncodePath(delete.elem)
-            util_utl.utl_log(delPath)
+
+            pkey_ar = EncodePathKey(delete.elem)
+            yp_str = EncodeYangPath(delPath)
+
+            util_utl.utl_log("delete req path: " + yp_str)
+
+            self.lock.acquire()
+            ret_status = self.myDispatcher.DeleteRequestByPath(yp_str, pkey_ar)
+            self.lock.release()
+
+            if ret_status:
+                ret_status = grpc.StatusCode.OK
+            else:
+                IsAnyErr = True
+                ret_status = grpc.StatusCode.INVALID_ARGUMENT
+
+            self.__AddOneSetResp(setResp, delete, 1, ret_status, None)
+
+            util_utl.utl_log("delete request finished code: " + str(ret_status))
 
         # input: path, val
         #  When the `replace` operation omits values that have been previously set,
@@ -200,11 +221,29 @@ class gNMITargetServicer(gnmi_pb2_grpc.gNMIServicer):
         for replace in reqSetObj.replace:
             repPath = pathPrefix + EncodePath(replace.path.elem)
 
-            k = replace.val.WhichOneof("value")
-            util_utl.utl_log(k)
-            val = getattr(replace.val, k)
-            util_utl.utl_log(val)
-            util_utl.utl_log(repPath)
+            # k = replace.val.WhichOneof("value")
+            # util_utl.utl_log(k)
+            # val = getattr(replace.val, k)
+            # util_utl.utl_log(val)
+            # util_utl.utl_log(repPath)
+
+            pkey_ar = EncodePathKey(replace.path.elem)
+            set_val = getattr(replace.val, replace.val.WhichOneof("value"))
+            yp_str = EncodeYangPath(repPath)
+
+            self.lock.acquire()
+            status = self.myDispatcher.ReplaceRequestByPath(yp_str, pkey_ar, set_val)
+            self.lock.release()
+
+            if status:
+                status = grpc.StatusCode.OK
+            else:
+                IsAnyErr = True
+                status = grpc.StatusCode.INVALID_ARGUMENT
+
+            self.__AddOneSetResp(setResp, replace.path, 2, status, None)
+
+            util_utl.utl_log("request-" + "/".join(repPath) + "set code: " + str(status))
 
         # input: same as replace
         for update in reqSetObj.update:

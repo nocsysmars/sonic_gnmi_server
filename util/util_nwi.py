@@ -4,13 +4,24 @@
 # APIs for processing network instance info.
 #
 
+import pyangbind.lib.pybindJSON as pybindJSON
+from pyangbind.lib.pybindJSON import dumps
+import json
 import subprocess, json, pdb, util_utl
+import os
 from swsssdk import port_util
-from util_utl import RULE_MAX_PRI, RULE_MIN_PRI
+from util_utl import RULE_MAX_PRI, RULE_MIN_PRI, \
+                     interface_ipaddr_dependent_on_interface, \
+                     get_interface_table_name
+
 from util_acl import acl_rule_yang2sonic, acl_set_one_acl_entry, \
                      acl_cnv_to_oc_tcp_flags, acl_is_acl_for_pf, \
                      OCYANG_FLDMAP_TBL, INT_TYPE, STR_TYPE, HEX_TYPE, NON_TYPE, \
-                     MIRROR_POLICY_PFX, PROUTE_POLICY_PFX
+                     MIRROR_POLICY_PFX, PROUTE_POLICY_PFX, ACL_JSON_FILE
+
+from oc_binding import oc_acl_binding
+from sonicpb.sonic_acl_pb2 import SonicAcl
+from util.sonic_helper import AclTableType, AclTableStage, AclPacketAction, IPProtocol
 
 DEFAULT_NWI_NAME = 'DEFAULT'
 
@@ -286,88 +297,46 @@ def nwi_get_info(root_yph, path_ar, key_ar, disp_args):
 
     return ret_val
 
-# ex:    pkey_ar = [u'DEFAULT', u'Ethernet10']
-#   val for del  = '' or '{}'
-#   val for add  = '{"apply-forwarding-policy": "lll"}'
-#
-# To bind/unbind a policy to an interface
-# TODO: 1.filter out name not valid for PF ???
-#       2.only one policy per port ???
-def nwi_pf_set_interface(root_yph, pkey_ar, val, is_create, disp_args):
-    #pdb.set_trace()
-
-    tmp_cfg = {} if val == "" or val == "{}" else eval(val)
-    acl_name = tmp_cfg.get('apply-forwarding-policy')
-    is_add = True if acl_name else False
-    ret_val = False if is_add else True
-
-    # 1. get old port list
-    # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
-    acl_lst  = disp_args.cfgdb.get_table(util_utl.CFGDB_TABLE_NAME_ACL)
-
-    # acl must be created b4 binding to interface
-    if acl_lst:
-        # remove port from all policies
-        for acl in acl_lst:
-            if not is_add:
-                # find old acl_name for binding port
-                if pkey_ar[1] in acl_lst[acl]['ports'] and acl_is_acl_for_pf(acl):
-                    acl_name = acl
-                else:
-                    continue
-
-            acl_cfg  = acl_lst.get(acl_name)
-            # ex: {'type': 'MIRROR', 'policy_desc': 'lll', 'ports': ['']}
-            if not acl_cfg: return False
-
-            if '' in acl_cfg['ports']:
-                acl_cfg['ports'].remove('')
-
-            is_changed = False
-            # 2. add/remove new port to/from old port list
-            if is_add:
-                if pkey_ar[1] not in acl_cfg['ports']:
-                    acl_cfg['ports'].append(pkey_ar[1])
-                    is_changed = True
-            else:
-                if pkey_ar[1] in acl_cfg['ports']:
-                    acl_cfg['ports'].remove(pkey_ar[1])
-                    is_changed = True
-
-            ret_val = True
-            if is_changed:
-                disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, acl_name, acl_cfg)
-
-            if is_add: break
-
-    return ret_val
-
 # ex:    pkey_ar = [u'DEFAULT', u'EVERFLOW']
-#   val for del  = '' or '{}'
-#   val for add  = '{"policy-id": "EVERFLOW"}'
+#        val     = '{"policy-id": "EVERFLOW"}'
 #
 # To add/remove a policy (no checking for existence)
 # TODO: filter out name not valid for PF ???
 def nwi_pf_set_policy(root_yph, pkey_ar, val, is_create, disp_args):
     try:
-        pf_cfg = {"policy-id":""} if val == "" else eval(val)
+        tables = SonicAcl.AclTable.FromString(val)
 
-        if pf_cfg["policy-id"] == "":
-            acl_cfg = None
-        else:
-            if pf_cfg["policy-id"] != pkey_ar[1]: return False
-
-            pf_type = 'MIRROR' if pkey_ar[1].find(MIRROR_POLICY_PFX) == 0 else 'L3'
-            acl_cfg = {
-                "type"       : pf_type,
-                "policy_desc": pkey_ar[1],
-                "ports"      :[]
-                }
-
+        for table in tables.acl_table_list:
+            table_info = {}
+            table_name = table.acl_table_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            data = table.acl_table_list
+            table_info["policy_desc"] = data.policy_desc
+            table_info["type"] = AclTableType(data.type)
+            table_info["stage"] = AclTableStage(data.stage)
+            ports = [port.value for port in data.ports]
+            if ports:
+                table_info["ports"] = ports
+            disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, table_info)
     except:
         return False
 
-    disp_args.cfgdb.mod_entry(util_utl.CFGDB_TABLE_NAME_ACL, pkey_ar[1], acl_cfg)
+    return True
+
+def nwi_pf_delete_policy(root_yph, pkey_ar, disp_args):
+    try:
+        table_name = pkey_ar[0].replace(" ", "_").replace("-", "_").upper().encode('ascii')
+        if os.path.exists(ACL_JSON_FILE):
+            with open(ACL_JSON_FILE) as infile:
+                acl_cfgs = json.load(infile)
+        if "acl" in acl_cfgs and table_name in acl_cfgs["acl"]["acl-sets"]["acl-set"]:
+            del acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
+            with open(ACL_JSON_FILE, 'w') as outfile:
+                json.dump(acl_cfgs, outfile)
+            util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
+        disp_args.cfgdb.set_entry(util_utl.CFGDB_TABLE_NAME_ACL, table_name, None)
+    except:
+        return False
+
     return True
 
 # try to remove mirror sessions not used by any rule
@@ -414,51 +383,207 @@ def nwi_pf_set_rule(root_yph, pkey_ar, val, is_create, disp_args):
     #
     # priority    => RULE_MAX_PRI - sequence-id
     #
-    """ example:
-    {
-      "9999": {
-        "sequence-id": 9999,
-        "config": {
-          "sequence-id": 9999,
-        },
-        "ipv4": {
-          "config": {
-            "protocol": 17,
-            "source-address": "10.0.0.0/8"
-          }
-        },
-        "action": {
-          "config": {
-            "next-hop": "10.0.0.0"
-          }
-        }
-      }
-    }
-    """
     # TODO: check policy type and action ???
-    rule_cfg  = {} if val == "" else eval(val)
-    msess_tbl = {}
-    rule_tbl  = {}
-    is_del = False
-    # only one entry
-    if 'sequence-id' in rule_cfg.keys():
-        rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg, msess_tbl)
-        if rule_name == None: return False
-        rule_tbl[rule_name] = rule_cfg
+    try:
+        acl_cfgs = {}
+        if os.path.exists(ACL_JSON_FILE):
+            with open(ACL_JSON_FILE) as infile:
+                acl_cfgs = json.load(infile)
+        if "acl" not in acl_cfgs:
+            acl_cfgs["acl"] = {"acl-sets": {"acl-set": {}}}
+        rules = SonicAcl.AclRule.FromString(val)
+        for rule in rules.acl_rule_list:
+            table_name = rule.acl_table_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            rule_name = rule.rule_name.replace(" ", "_").replace("-", "_").upper().encode('ascii')
+            data = rule.acl_rule_list
+            if table_name not in acl_cfgs["acl"]["acl-sets"]["acl-set"]:
+                acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name] = {}
+            table_cfgs = acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
+            if "acl-entries" not in table_cfgs:
+                table_cfgs["acl-entries"] = {"acl-entry": {}}
+            rules = table_cfgs["acl-entries"]["acl-entry"]
+            rules[rule_name] = {
+                "config": {"sequence-id": data.priority.value},
+                "actions": {"config": {"forwarding-action": str(AclPacketAction(data.packet_action))}},
+                "ip": {"config": {
+                    "protocol": str(IPProtocol(data.ip_protocol.value)),
+                    "destination-ip-address": data.dst_ip.value,
+                }}}
+        with open(ACL_JSON_FILE, 'w') as outfile:
+            json.dump(acl_cfgs, outfile)
+        util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
+    except:
+        return False
+
+    return True
+
+def nwi_pf_delete_rule(root_yph, pkey_ar, disp_args):
+    try:
+        rule_name = pkey_ar[1]
+        table_name = pkey_ar[0].replace(" ", "_").replace("-", "_").upper().encode('ascii')
+        acl_cfgs = {}
+        if os.path.exists(ACL_JSON_FILE):
+            with open(ACL_JSON_FILE) as infile:
+                acl_cfgs = json.load(infile)
+        if "acl" not in acl_cfgs:
+            return True
+        if table_name not in acl_cfgs["acl"]["acl-sets"]["acl-set"]:
+            return True
+        table_cfgs = acl_cfgs["acl"]["acl-sets"]["acl-set"][table_name]
+        if "acl-entries" not in table_cfgs:
+            return True
+        rules = table_cfgs["acl-entries"]["acl-entry"]
+        if rule_name in rules:
+            del rules[rule_name]
+            with open(ACL_JSON_FILE, 'w') as outfile:
+                json.dump(acl_cfgs, outfile)
+            util_utl.utl_execute_cmd("acl-loader update full {}".format(ACL_JSON_FILE))
+    except:
+        return False
+
+    return True
+
+def is_vrf_name_valid(vrf_name):
+    if not vrf_name.startswith("Vrf") and vrf_name != 'mgmt' and vrf_name != 'management':
+        util_utl.utl_err("{} is not start with Vrf, mgmt or management!".format(vrf_name))
+        return False
+    if len(vrf_name) > 15:
+        util_utl.utl_err("{} is too long!".format(vrf_name))
+        return False
+    return True
+
+
+def mvrf_restart_services():
+    """Restart interfaces-config service and NTP service when mvrf is changed"""
+    """
+    When mvrf is enabled, eth0 should be moved to mvrf; when it is disabled,
+    move it back to default vrf. Restarting the "interfaces-config" service
+    will recreate the /etc/network/interfaces file and restart the
+    "networking" service that takes care of the eth0 movement.
+    NTP service should also be restarted to rerun the NTP service with or
+    without "cgexec" accordingly.
+    """
+    cmd="service ntp stop"
+    os.system (cmd)
+    cmd="systemctl restart interfaces-config"
+    os.system (cmd)
+    cmd="service ntp start"
+    os.system (cmd)
+
+
+def vrf_add_management_vrf(config_db):
+    """Enable management vrf in config DB"""
+
+    entry = config_db.get_entry('MGMT_VRF_CONFIG', "vrf_global")
+    if entry and entry['mgmtVrfEnabled'] == 'true':
+        util_utl.utl_log("ManagementVRF is already Enabled.")
+        return None
+    config_db.mod_entry('MGMT_VRF_CONFIG', "vrf_global", {"mgmtVrfEnabled": "true"})
+    mvrf_restart_services()
+
+
+def vrf_delete_management_vrf(config_db):
+    """Disable management vrf in config DB"""
+
+    entry = config_db.get_entry('MGMT_VRF_CONFIG', "vrf_global")
+    if not entry or entry['mgmtVrfEnabled'] == 'false':
+        util_utl.utl_log("ManagementVRF is already Disabled.")
+        return None
+    config_db.mod_entry('MGMT_VRF_CONFIG', "vrf_global", {"mgmtVrfEnabled": "false"})
+    mvrf_restart_services()
+
+
+def del_interface_bind_to_vrf(config_db, vrf_name):
+    """delete interface bind to vrf"""
+    tables = ['INTERFACE', 'PORTCHANNEL_INTERFACE', 'VLAN_INTERFACE', 'LOOPBACK_INTERFACE']
+    for table_name in tables:
+        interface_dict = config_db.get_table(table_name)
+        if interface_dict:
+            for interface_name in interface_dict.keys():
+                if interface_dict[interface_name].has_key('vrf_name') and vrf_name == interface_dict[interface_name]['vrf_name']:
+                    interface_dependent = interface_ipaddr_dependent_on_interface(config_db, interface_name)
+                    for interface_del in interface_dependent:
+                        config_db.set_entry(table_name, interface_del, None)
+                    config_db.set_entry(table_name, interface_name, None)
+
+
+def is_interface_bind_to_vrf(config_db, interface_name):
+    """whether interface bind to vrf or not"""
+    table_name = get_interface_table_name(interface_name)
+    if table_name == "":
+        return False
+    entry = config_db.get_entry(table_name, interface_name)
+    if entry and entry.get("vrf_name"):
+        return True
+    return False
+
+
+def bind_interface_to_vrf(config_db, interface_name, vrf_name):
+    """bind interface to vrf"""
+    table_name = get_interface_table_name(interface_name)
+    if table_name == "":
+        util_utl.utl_err("interface name is not valid.")
+        return False
+    if is_interface_bind_to_vrf(config_db, interface_name) is True and \
+            config_db.get_entry(table_name, interface_name).get('vrf_name') == vrf_name:
+        return True
+
+    # Clean ip addresses if interface configured
+    interface_dependent = interface_ipaddr_dependent_on_interface(config_db,
+                                                                  interface_name)
+    for interface in interface_dependent:
+        config_db.set_entry(table_name, interface, None)
+    config_db.set_entry(table_name, interface_name, {"vrf_name": vrf_name})
+    # if does not work, please reference config source code
+    return True
+
+
+def add_vrf(config_db, vrf_name, vlan_ids):
+    """Add vrf"""
+    if not is_vrf_name_valid(vrf_name):
+        return False
+
+    if vrf_name == 'mgmt' or vrf_name == 'management':
+        vrf_add_management_vrf(config_db)
     else:
-        for seq_id in rule_cfg.keys():
-            rule_name, rule_cfg = acl_rule_yang2sonic(rule_cfg[seq_id], msess_tbl)
-            if rule_name == None: return False
-            rule_tbl[rule_name] = rule_cfg
+        config_db.set_entry('VRF', vrf_name, {"NULL": "NULL"})
 
-    nwi_pf_add_mirror_sessions(disp_args, msess_tbl)
+    for vlan_id in vlan_ids:
+        vlan_name = "Vlan{}".format(vlan_id)
+        if bind_interface_to_vrf(config_db, vlan_name, vrf_name):
+            util_utl.utl_err("bind {} to {} failed".format(vlan_name, vrf_name))
 
-    for rule in rule_tbl.keys():
-        if rule_tbl [rule] == None: is_del = True
-        ret_val = acl_set_one_acl_entry(disp_args, pkey_ar[1], rule, rule_tbl[rule])
-        if not ret_val: break
+    return True
 
-    if is_del:
-        nwi_pf_clear_mirror_sessions(disp_args)
 
-    return ret_val
+def del_vrf(config_db, vrf_name):
+    """Delete vrf"""
+
+    if not is_vrf_name_valid(vrf_name):
+        return False
+
+    if vrf_name == 'mgmt' or vrf_name == 'management':
+        vrf_delete_management_vrf(config_db)
+    else:
+        del_interface_bind_to_vrf(config_db, vrf_name)
+        config_db.set_entry('VRF', vrf_name, None)
+    return True
+
+
+# To create vrf and bind vlan
+# vrf name should be start with "VRF"
+def nwi_db_cfg_vrf(oc_yph, pkey_ar, val, is_create, disp_args):
+    vrf_name = pkey_ar[0]
+
+    try:
+        cfg = {} if val == "" else eval(val)
+        vlan_ids = cfg["vlanIds"]
+    except:
+        return False
+
+    return add_vrf(disp_args.cfgdb, vrf_name, vlan_ids)
+
+
+# delete vrf
+def nwi_delete_vrf(oc_yph, pkey_ar, disp_args):
+    return del_vrf(disp_args.cfgdb, pkey_ar[0])

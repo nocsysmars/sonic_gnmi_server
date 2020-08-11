@@ -113,7 +113,7 @@ def lr_get_info(lr_yph, path_ar, key_ar, disp_args):
 
     return ret_val
 
-# ex:    pkey_ar = [u'172.17.2.0/24']
+# ex:    pkey_ar = [u'17693', '172.17.2.0/24']
 #   val for del all = ''
 #   val for add     = '{'1': {'interface-ref': {'config': {'interface': 'Ethernet71'}},
 #                             'config': {'next-hop': '10.0.0.142'}}}'
@@ -124,25 +124,30 @@ def lr_set_route_v4(oc_yph, pkey_ar, val, is_create, disp_args):
 
         nh_str = ""
         for k, v in rt_cfg.items():
-            rt_inf  = v['interface-ref']['config']['interface']
-            rt_nh   = v['config']['next-hop']
-            nh_tmp  = "nexthop via {0} dev {1}".format(rt_nh, rt_inf)
-            nh_str  = " ".join([nh_str, nh_tmp])
+            rt_inf = ""
+            if v.has_key('interface-ref'):
+                rt_inf  = v['interface-ref']['config']['interface']
+            rt_nh = v['config']['next-hop']
+            if rt_inf != "":
+                nh_tmp = "nexthop vrf Vrf-{0} {1} dev {2}".format(pkey_ar[0], rt_nh, rt_inf)
+            else:
+                nh_tmp = "nexthop vrf Vrf-{0} {1}".format(pkey_ar[0], rt_nh)
+            nh_str = " ".join([nh_str, nh_tmp])
     except:
         return False
 
     # {0} : add/del
     # {1} : 172.17.2.0/24
-    # {2} : nexthop via 10.0.0.108 dev Ethernet54
-    IP_ROUTE_CMD_TMPL = "ip route {0} {1} {2}"
+    # {2} : nexthop vrf Vrf-17693 10.0.0.108 dev Ethernet54
+    IP_ROUTE_CMD_TMPL = "config route {0} prefix {1} {2}"
 
     # add new routes ('replace' works even if old route exists
     if nh_str != "":
-        exec_cmd = IP_ROUTE_CMD_TMPL.format("replace", pkey_ar[0], nh_str)
+        exec_cmd = IP_ROUTE_CMD_TMPL.format("add", pkey_ar[1], nh_str)
         ret_val = util_utl.utl_execute_cmd(exec_cmd)
     else:
         # delete all old routes
-        exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[0], "")
+        exec_cmd = IP_ROUTE_CMD_TMPL.format("del", pkey_ar[1], "")
         ret_val = util_utl.utl_execute_cmd(exec_cmd)
 
     return ret_val
