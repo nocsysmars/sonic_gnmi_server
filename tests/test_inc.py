@@ -3,7 +3,7 @@ import unittest, time, logging, subprocess, threading, sys, types
 sys.path.append("../")
 
 try:
-    from gnmi_server import gNMITarget
+    from nocsys_sonic_gnmi_server import gNMITarget
     GNMI_TARGET_IMPORT = True
 except:
     GNMI_TARGET_IMPORT = False
@@ -43,7 +43,7 @@ def print_test_op_lst():
 
 class MyTestCase(unittest.TestCase):
     # if set to False, need to start the server manually first
-    # ex: ./gnmi_server.py localhost:5001 --log-level 5
+    # ex: ./nocsys_sonic_gnmi_server.py localhost:5001 --log-level 5
     use_internal_svr = True
 
     # if set to True, print debug messages for each test case
@@ -73,7 +73,7 @@ class MyTestCase(unittest.TestCase):
 
             t_beg = time.time()
 
-            log_path = '/var/log/gnmi_server.log'
+            log_path = '/var/log/nocsys_sonic_gnmi_server.log'
             # clear log file
             with open(log_path, 'w'):
                 pass

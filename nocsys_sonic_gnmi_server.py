@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# gnmi_server.py
+# nocsys_sonic_gnmi_server.py
 #
 # GNMI Server
 #
@@ -483,7 +483,7 @@ def main():
     args = parser.parse_args()
 
     #print args
-    log_path = '/var/log/gnmi_server.log'
+    log_path = '/var/log/nocsys_sonic_gnmi_server.log'
 
     if args.log_level < 0:
         # clear log file
