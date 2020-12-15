@@ -1,8 +1,13 @@
 # my_gnmi_server
 
+- Dependent python package
+```sh
+  pyangbind, pyang, protobuf, grpcio, futures
+```
+
 - Run the server:
 ```sh
-  python gnmi_server.py localhost:5001
+  python nocsys_sonic_gnmi_server.py localhost:5001
 ```
 
 - Run the client:
