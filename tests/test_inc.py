@@ -1,6 +1,6 @@
 import unittest, time, logging, subprocess, threading, sys, types
 
-sys.path.append("../")
+sys.path.append("../nocsys_sonic_gnmi_server/")
 
 try:
     from nocsys_sonic_gnmi_server import gNMITarget

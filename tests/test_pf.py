@@ -1,6 +1,6 @@
 import unittest, pdb, argparse, test_inc, types, json, sys
 
-sys.path.append("../util/")
+sys.path.append("../nocsys_sonic_gnmi_server/util/")
 
 from util_acl import MIRROR_POLICY_PFX as TEST_MIRROR_PFX
 from util_acl import PROUTE_POLICY_PFX as TEST_POL_RT_PFX
