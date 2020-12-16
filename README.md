@@ -26,3 +26,8 @@
 ```sh
   gnmi -addr localhost:5001 get "/"
 ```
+
+- To build debian package
+```sh
+  ./build_deb.sh
+```
