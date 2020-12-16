@@ -1,5 +1,0 @@
-#!/bin/bash
-
-systemctl enable nocsys_sonic_gnmi_server.service
-
-systemctl start nocsys_sonic_gnmi_server.service
