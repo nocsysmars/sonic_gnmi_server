@@ -1,6 +1,6 @@
 import unittest, pdb, argparse, test_inc, types, json, sys
 
-sys.path.append("../util/")
+sys.path.append("../nocsys_sonic_gnmi_server/util/")
 
 from util_nwi import DEFAULT_NWI_NAME as TEST_DFT_NWI_NAME
 
